@@ -1,2 +1,0 @@
-binance_API_KEY = 'JFX5kHp4rlXF8rWo4qeuwjKpi8TJt8rmmFDzFtgsP7VhJr5ucAStJxepHdTlg9rs'
-binance_SECRET_KEY = 'J8EatZCiQHuWakGTLfvq3lW63vWVDg6CUNRK3cWeIdOUHTMNXmwcMK1X3C87K6Dy'
