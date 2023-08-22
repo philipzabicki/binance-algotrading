@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import datetime
+import datetime as dt
 from dateutil.parser import parse
 from scipy.stats import skew, kurtosis
 
@@ -48,6 +48,6 @@ def linear_reg_slope(Y):
     return Sxy/Sxx
 
 def minutes_since(data_string):
-    diff = datetime.now() - parse(data_string)
+    diff = dt.datetime.now() - parse(data_string)
     minutes = diff.total_seconds() / 60
     return int(minutes)
