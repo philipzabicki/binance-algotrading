@@ -1,0 +1,12 @@
+numpy
+pandas
+matplotlib
+opencv-python
+scikit-learn
+ta-lib
+binance_data
+gym
+mplfinance
+finta
+ta
+websocket-client
