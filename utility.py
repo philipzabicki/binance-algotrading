@@ -1,3 +1,4 @@
+from os import getcwd
 import numpy as np
 import pandas as pd
 import datetime as dt
@@ -5,15 +6,15 @@ from dateutil.parser import parse
 from scipy.stats import skew, kurtosis
 
 def get_slips_stats():
-    buy = pd.read_csv('\settings\slippages_market_buy.csv')
-    sell = pd.read_csv('\settings\slippages_market_sell.csv')
-    SL = pd.read_csv('\settings\slippages_StopLoss.csv')
+    buy = pd.read_csv(getcwd()+'\settings\slippages_market_buy.csv')
+    sell = pd.read_csv(getcwd()+'\settings\slippages_market_sell.csv')
+    SL = pd.read_csv(getcwd()+'\settings\slippages_StopLoss.csv')
     return {'market_buy':(buy.mean(), buy.std()), 'market_sell':(sell.mean(), sell.std()), 'SL':(SL.mean(), SL.std())}
 
 def get_slips_stats_advanced():
-    buy = pd.read_csv('\settings\slippages_market_buy.csv')
-    sell = pd.read_csv('\settings\slippages_market_buy.csv')
-    SL = pd.read_csv('\settings\slippages_market_buy.csv')
+    buy = pd.read_csv(getcwd()+'\settings\slippages_market_buy.csv')
+    sell = pd.read_csv(getcwd()+'\settings\slippages_market_buy.csv')
+    SL = pd.read_csv(getcwd()+'\settings\slippages_market_buy.csv')
     return {
         'market_buy': {
             'mean': buy.mean(),
