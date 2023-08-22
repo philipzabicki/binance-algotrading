@@ -22,7 +22,7 @@ SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0086,29,4,13,0.75
 print(f'INITIAL PARAMETERS', SL,typeMA,MA_period,ATR_period,ATR_multi)
 candles = client.get_historical_klines(symbol, interval, str(MA_period*300+100)+" minutes ago UTC")
 #print(candles)
-ohlc_v_data = deque([[float(candle[1]), float(candle[2]), float(candle[3]), float(candle[4]), float(candle[5]), float(candle[5])] for candle in candles[:-1]], maxlen=len(candles[:-1]))
+ohlc_v_data = deque([[float(candle[1]), float(candle[2]), float(candle[3]), float(candle[4]), float(candle[5]), 0.0] for candle in candles[:-1]], maxlen=len(candles[:-1]))
 #print(ohlc_v_data)
 socket = f'wss://stream.binance.com:9443/ws/{symbol.lower()}@kline_{interval}'
 
@@ -42,7 +42,7 @@ def on_message(ws, message):
     data = loads(message)
     #print(data)
     data_k = data['k']
-    _ohlc = np.array([float(data_k['o']), float(data_k['h']), float(data_k['l']), float(data_k['c']), float(data_k['v']), float(data_k['v'])])
+    _ohlc = np.array([float(data_k['o']), float(data_k['h']), float(data_k['l']), float(data_k['c']), float(data_k['v']), 0.0])
     _data = np.vstack([np.array(ohlc_v_data), _ohlc])
     #_data = np.hstack((_data, _data[:, -1:]))
     #print(f'_data {_data}')

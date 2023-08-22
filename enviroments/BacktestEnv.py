@@ -152,10 +152,10 @@ class BacktestEnv(Env):
       else:
         _5 = len(values)//20
         percentile25 = linear_reg_slope(values[-_5*5:])
-        percentile50 = linear_reg_slope(values[-_5*10:])
+        #percentile50 = linear_reg_slope(values[-_5*10:])
         percentile75 = linear_reg_slope(values[-_5*15:])
-        percentile95 = linear_reg_slope(values[-_5*19:])
-        slope_avg = (percentile75-percentile95)+(percentile50-percentile75)+(percentile25-percentile50)
+        #percentile95 = linear_reg_slope(values[-_5*19:])
+        slope_avg = percentile25-percentile75
         return copysign(abs(slope_avg)**(1/4), slope_avg)
 
     def _finish_episode(self):
@@ -190,11 +190,11 @@ class BacktestEnv(Env):
           print(f'Episode finished: gain: ${gain:.2f} episode_orders: {self.episode_orders:_} cumulative_fees: ${self.cumulative_fees:.2f} liquidations: {self.liquidations} SL_losses: ${self.SL_losses:.2f}')
           print(f' trades_count(profit/loss): {self.good_trades_count:_}/{self.bad_trades_count:_}, trades_ROE(profit/loss): {self.profit_mean*100:.2f}%/{self.loss_mean*100:.2f}%, max(profit/drawdown): {self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')
           print(f' reward: {self.reward:.3f} sharpe_ratio: {self.sharpe_ratio:.2f} sortino_ratio: {self.sortino_ratio:.2f} hold_ratio: {hold_ratio:.2f} pnl_ratio: {pnl_ratio:.2f} stdev_pnl: {stdev_pnl:.5f} slope_avg: {slope_indicator:.4f}')
-        self.info = {'gain':gain, 'pnl_ratio':pnl_ratio, 'stdev_pnl':stdev_pnl, 'position_hold_sums_ratio':hold_ratio, 'slope_avg':slope_indicator, 'exec_time':time.time()-self.start_t}
+        self.info = {'gain':gain, 'pnl_ratio':pnl_ratio, 'stdev_pnl':stdev_pnl, 'position_hold_sums_ratio':hold_ratio, 'slope_indicator':slope_indicator, 'exec_time':time.time()-self.start_t}
       else:
-        self.reward = 0
+        self.reward = -np.inf
         self.sharpe_ratio,self.sortino_ratio,self.trades_ratio,self.pnl_means_ratio = -1,-1,-1,-1
-        self.info = {'gain':-1, 'episode_orders':self.episode_orders, 'pnl_ratio':-1, 'stdev_pnl':-1, 'position_hold_sums_ratio':-1, 'exec_time':time.time()-self.start_t}
+        self.info = {'gain':0, 'episode_orders':self.episode_orders, 'pnl_ratio':0, 'stdev_pnl':0, 'position_hold_sums_ratio':0, 'slope_indicator':0, 'exec_time':time.time()-self.start_t}
         #print(f'EPISODE FAILED! (end_step not reached OR profit/loss trades less than 2)')
       if self.write_to_csv:
         filename = str(self.__class__.__name__)+str(dt.today())[:-7].replace(':','-')+'.csv'
