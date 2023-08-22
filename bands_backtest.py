@@ -13,14 +13,9 @@ from statistics import mean
 import TA_tools
 from datetime import datetime
 from dateutil.parser import parse
-from TA_tools import add_MA_signal
 
-def minutes_since(data_string):
-    now = datetime.now()
-    date = parse(data_string)
-    diff = now - date
-    minutes = diff.total_seconds() / 60
-    return int(minutes)
+from TA_tools import add_MA_signal
+from utility import minutes_since, get_slips_stats
 
 if __name__=="__main__":
   SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0043, 27, 165, 440, 1.267
@@ -61,10 +56,9 @@ if __name__=="__main__":
 
   #time.sleep(1000)
   #dates_df = df['Opened'].to_numpy()
-  SLIPPAGES = {'market_buy':(1.000022, 0.000045), 'market_sell':(0.999971, 0.000035), 'SL':(1.0, 0.000002)}
   #strat_env = BandParametrizerEnv(df=df[-minutes_since('22-03-2023'):,:], init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPPAGES, visualize=False, Render_range=60, write_to_csv=False)
   strat_env = BacktestEnvSpot(df=df[-minutes_since('23-03-2023'):,:], dates_df=dates_df[-minutes_since('23-03-2023'):],
-                              init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPPAGES, StopLoss=SL,
+                              init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats(), StopLoss=SL,
                               Render_range=30, visualize=False, write_to_csv=False)
 
   strat_env.reset()

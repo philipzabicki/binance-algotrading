@@ -4,12 +4,8 @@ from datetime import datetime
 from dateutil.parser import parse
 
 import TA_tools
+from utility import minutes_since, get_slips_stats
 from enviroments.BacktestEnv import BacktestEnvSpot
-
-def minutes_since(data_string):
-    diff = datetime.now() - parse(data_string)
-    minutes = diff.total_seconds() / 60
-    return int(minutes)
 
 if __name__=='__main__':
     #df = TA_tools.get_combined_intervals_df(ticker='BTCUSDT', interval_list=['5m'], type='um', data='klines', template='basic')
@@ -17,8 +13,7 @@ if __name__=='__main__':
     df = df.iloc[-minutes_since('22-03-2023'):,:].copy()
     df.to_csv('test.csv', index=False)
     df = TA_tools.signal_only_features(df)
-    SLIPPAGES = {'market_buy':(1.000022, 0.000045), 'market_sell':(0.999971, 0.000035), 'SL':(1.0, 0.000002)}
-    strat_env = BacktestEnvSpot(df=df.drop(columns='Opened').to_numpy(), dates_df=df['Opened'].to_numpy(), excluded_left=0, init_balance=1_000, fee=0.0, slippage=SLIPPAGES, StopLoss=0.01, postition_ratio=1.0, Render_range=50, visualize=False, write_to_csv=False)
+    strat_env = BacktestEnvSpot(df=df.drop(columns='Opened').to_numpy(), dates_df=df['Opened'].to_numpy(), excluded_left=0, init_balance=1_000, fee=0.0, slippage=get_slips_stats(), StopLoss=0.01, postition_ratio=1.0, Render_range=50, visualize=False, write_to_csv=False)
     #strat_env = BacktestEnvSpot(df=df[-1_109_336:,:], excluded_left=0, init_balance=1_000, fee=0.0, slippage=slippages, StopLoss=0.0001, postition_ratio=1.0, leverage=1, lookback_window_size=1, Render_range=30, visualize=False, dates_df=dates_df[-1_109_336:], write_to_csv=True)
 
     strat_env.reset()
