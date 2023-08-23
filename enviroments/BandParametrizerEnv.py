@@ -6,16 +6,6 @@ from statistics import mean, stdev
 from enviroments.BacktestEnv import BacktestEnv, BacktestEnvSpot
 from TA_tools import add_MA_signal
 
-'''from pympler import asizeof
-def get_attributes_and_deep_sizes(obj):
-    attributes_and_sizes = {}
-    for attribute_name in dir(obj):
-        attribute_value = getattr(obj, attribute_name)
-        _size = asizeof.asizeof(attribute_value)
-        if _size>1_000:
-            attributes_and_sizes[attribute_name] = asizeof.asizeof(attribute_value)
-    return attributes_and_sizes'''
-
 class RunEnv(BacktestEnvSpot):
   def __init__(self, df, df_mark=None, leverage=1, StopLoss=0.0, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1, excluded_left=0, init_balance=100_000, postition_ratio=1.0, fee=0.0002, coin_step=0.00001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=1, Render_range=120, visualize=False, dates_df=None, write_to_csv=False):
   #def __init__(*args, **kwargs):
@@ -77,7 +67,7 @@ class BandParametrizerEnv(Env):
         lower_bounds = np.array([-np.inf for _ in range(8)])
         upper_bounds = np.array([np.inf for _ in range(8)])
         self.observation_space = spaces.Box(low=lower_bounds, high=upper_bounds)
-        self.action_space = spaces.Box(low=np.array([0.0001, 0, 1, 1, 0.001]), high=np.array([0.015, 33, 200, 500, 5]))
+        self.action_space = spaces.Box(low=np.array([0.0001, 0, 1, 1, 0.001]), high=np.array([0.015, 33, 200, 500, 5.000]))
         #self.action_space = spaces.Box(low=np.array([0.01, 1, 0.0001, 0, 4, 1, 0.01]), high=np.array([1.0, 125, 0.015, 31.999999999, 200, 500, 5]))
 
     def reset(self, postition_ratio=1, leverage=1, StopLoss=0.07, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1):

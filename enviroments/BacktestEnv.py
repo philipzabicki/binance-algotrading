@@ -1,5 +1,6 @@
 from gc import collect
 import numpy as np
+import pandas as pd
 from  math import copysign, sqrt, floor
 import time
 from datetime import datetime as dt
@@ -7,28 +8,8 @@ from collections import deque
 from random import randint
 from gym import spaces, Env
 from statistics import mean, stdev
-from visualize import TradingGraph, Write_to_file
-import pandas as pd
-
-'''from pympler import asizeof
-def get_attributes_and_deep_sizes(obj):
-    attributes_and_sizes = {}
-    for attribute_name in dir(obj):
-        attribute_value = getattr(obj, attribute_name)
-        _size = asizeof.asizeof(attribute_value)
-        if _size>1_000:
-            attributes_and_sizes[attribute_name] = asizeof.asizeof(attribute_value)
-    return attributes_and_sizes'''
-
-def linear_reg_slope(Y):
-    Y = np.array(Y)
-    n = len(Y)
-    X = np.arange(1, n+1)
-    #print(f'X: {X}')
-    x_mean = np.mean(X)
-    Sxy = np.sum(X*Y)- n*x_mean*np.mean(Y)
-    Sxx = np.sum(X*X)-n*x_mean**2
-    return Sxy/Sxx
+from visualize import TradingGraph
+from utility import linear_reg_slope, get_attributes_and_deep_sizes
 
 class BacktestEnv(Env):
     def __init__(self, df, df_mark=None, excluded_left=5, init_balance=1_000, postition_ratio=1.0, leverage=1, StopLoss=0.0, fee=0.0002, coin_step=0.001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=0, Render_range=120, visualize=False, dates_df=None, write_to_csv=False):
@@ -134,8 +115,8 @@ class BacktestEnv(Env):
             self.end_step = self.df_total_steps
         self.current_step = self.start_step
         ### Garbage collector call ;)
-        collect()
         #print(get_attributes_and_deep_sizes(self))
+        collect()
         return self._next_observation()
 
         '''for i in reversed(range(self.lookback_window_size)):

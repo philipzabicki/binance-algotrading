@@ -2,6 +2,7 @@ from os import getcwd
 from sys import modules
 import pandas as pd
 import numpy as np
+np.seterr(divide='ignore', invalid='ignore')
 from time import time
 #import datetime as dt
 #import inspect

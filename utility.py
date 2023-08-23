@@ -4,6 +4,7 @@ import pandas as pd
 import datetime as dt
 from dateutil.parser import parse
 from scipy.stats import skew, kurtosis
+from pympler import asizeof
 
 def get_slips_stats():
     buy = pd.read_csv(getcwd()+'\settings\slippages_market_buy.csv')
@@ -52,3 +53,12 @@ def minutes_since(data_string):
     diff = dt.datetime.now() - parse(data_string)
     minutes = diff.total_seconds() / 60
     return int(minutes)
+
+def get_attributes_and_deep_sizes(obj):
+    attributes_and_sizes = {}
+    for attribute_name in dir(obj):
+        attribute_value = getattr(obj, attribute_name)
+        _size = asizeof.asizeof(attribute_value)
+        if _size>1_000:
+            attributes_and_sizes[attribute_name] = asizeof.asizeof(attribute_value)
+    return attributes_and_sizes

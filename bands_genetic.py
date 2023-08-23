@@ -22,7 +22,7 @@ class CustomProblem(ElementwiseProblem):
                          n_obj=1,
                          n_constr=0,
                          xl=np.array([0.0001, 0, 1, 1, 0.001]),
-                         xu=np.array([0.015, 33, 200, 500, 5.000]), **kwargs)
+                         xu=np.array([0.015, 32, 200, 500, 2.000]), **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
@@ -44,11 +44,11 @@ def main():
 
     problem = CustomProblem(env, elementwise_runner=runner)
     #algorithm = NSGA2(pop_size=100)
-    algorithm = DNSGA2(pop_size=256)
+    algorithm = DNSGA2(pop_size=1024)
 
     res = minimize(problem,
                    algorithm,
-                   termination=('n_gen', 50),
+                   termination=('n_gen', 25),
                    seed=1,
                    verbose=True)
 
@@ -61,4 +61,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
