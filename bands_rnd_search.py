@@ -13,6 +13,7 @@ import get_data
 from utility import minutes_since, get_slips_stats
 
 CPU_CORES_COUNT = cpu_count()//2
+CPU_CORES_COUNT = 6
 #REPORT_FULL_PATH = 'Z:/home/philipz_abicki/binance-algotrading/reports/BTCTUSD1m_since0322_ATR.csv'
 REPORT_FULL_PATH = getcwd()+'\\reports\\BTCTUSD1m_since0322_ATR.csv'
 EPISODES = randint(10, 250)
@@ -32,7 +33,7 @@ def run_indefinitely(_):
         _, reward, _, info = env.step(action)
         if reward!=0 and not np.isnan(reward):
             #print(f'usd_gains: {info["gain"]:.2f}, indicator: {indicator:.4f}, order_count: {info["episode_orders"]} PNL_ratio: {info["pnl_ratio"]:.3f}, StDev: {info["stdev_pnl"]:.5f}, pos_hold_ratio: {info["position_hold_sums_ratio"]:.3f}, reg_slope_avg: {slope_avg} ')
-            results.append([round(info["gain"],2), reward, round(info["pnl_ratio"],3), round(info["stdev_pnl"],5), round(info["position_hold_sums_ratio"],3),
+            results.append([round(info["gain"],2), round(reward,2), round(info["pnl_ratio"],3), round(info["stdev_pnl"],5), round(info["position_hold_sums_ratio"],3),
                             round(info['slope_indicator'],4), round(action[0],4), int(action[1]), int(action[2]), int(action[3]), round(action[4],2)])
         _t = time()-timer
         #print(f'[{i}/{episodes}] {_t}')

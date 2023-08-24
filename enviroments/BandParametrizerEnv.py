@@ -7,9 +7,13 @@ from enviroments.BacktestEnv import BacktestEnv, BacktestEnvSpot
 from TA_tools import add_MA_signal
 
 class RunEnv(BacktestEnvSpot):
-  def __init__(self, df, df_mark=None, leverage=1, StopLoss=0.0, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1, excluded_left=0, init_balance=100_000, postition_ratio=1.0, fee=0.0002, coin_step=0.00001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=1, Render_range=120, visualize=False, dates_df=None, write_to_csv=False):
+  def __init__(self, df, df_mark=None, dates_df=None, excluded_left=0, leverage=1, StopLoss=0.0, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1,
+               init_balance=100_000, postition_ratio=1.0, fee=0.0002, coin_step=0.00001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)},
+               max_steps=0, lookback_window_size=1, Render_range=120, visualize=False, write_to_csv=False):
   #def __init__(*args, **kwargs):
-     super().__init__(df=df, df_mark=df_mark, excluded_left=excluded_left, init_balance=init_balance, postition_ratio=postition_ratio, leverage=leverage, StopLoss=StopLoss, fee=fee, coin_step=coin_step, slippage=slippage, max_steps=max_steps, lookback_window_size=lookback_window_size, Render_range=Render_range, visualize=visualize, dates_df=dates_df, write_to_csv=write_to_csv)
+     super().__init__(df=df, df_mark=df_mark, dates_df=dates_df, excluded_left=excluded_left, init_balance=init_balance, postition_ratio=postition_ratio,
+                      leverage=leverage, StopLoss=StopLoss, fee=fee, coin_step=coin_step, slippage=slippage, max_steps=max_steps,
+                      lookback_window_size=lookback_window_size, Render_range=Render_range, visualize=visualize, write_to_csv=write_to_csv)
      #super().__init__(*args, **kwargs)
      self.typeMA = typeMA
      self.MA_period = MA_period
@@ -60,15 +64,19 @@ class RunEnv(BacktestEnvSpot):
       return obs,reward,done,info
 
 class BandParametrizerEnv(Env):
-    def __init__(self, df, df_mark=None, excluded_left=0, init_balance=100_000, postition_ratio=1.0, fee=0.0002, coin_step=0.00001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, \
-                  max_steps=0, lookback_window_size=1, Render_range=120, visualize=False, dates_df=None, write_to_csv=False):
-        self.running_enviroment = RunEnv(df, df_mark=df_mark, leverage=1, StopLoss=0.0, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1, excluded_left=excluded_left, init_balance=init_balance, postition_ratio=postition_ratio,
-                                         fee=fee, coin_step=coin_step, slippage=slippage, max_steps=max_steps, lookback_window_size=lookback_window_size, Render_range=Render_range, visualize=visualize, dates_df=dates_df, write_to_csv=write_to_csv)
+    def __init__(self, df, df_mark=None, excluded_left=0, init_balance=100_000, postition_ratio=1.0,
+                 fee=0.0002, coin_step=0.00001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)},
+                 max_steps=0, lookback_window_size=1, Render_range=120, visualize=False, dates_df=None, write_to_csv=False):
+        self.running_enviroment = RunEnv(df, df_mark=df_mark, leverage=1, StopLoss=0.0, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1,
+                                         excluded_left=excluded_left, init_balance=init_balance, postition_ratio=postition_ratio,
+                                         fee=fee, coin_step=coin_step, slippage=slippage, max_steps=max_steps, lookback_window_size=lookback_window_size,
+                                         Render_range=Render_range, visualize=visualize, dates_df=dates_df, write_to_csv=write_to_csv)
         lower_bounds = np.array([-np.inf for _ in range(8)])
         upper_bounds = np.array([np.inf for _ in range(8)])
         self.observation_space = spaces.Box(low=lower_bounds, high=upper_bounds)
-        self.action_space = spaces.Box(low=np.array([0.0001, 0, 1, 1, 0.001]), high=np.array([0.0150, 33, 200, 500, 5.000]), dtype=np.float64)
-        #self.action_space = spaces.Box(low=np.array([0.01, 1, 0.0001, 0, 4, 1, 0.01]), high=np.array([1.0, 125, 0.015, 31.999999999, 200, 500, 5]))
+        #self.action_space = spaces.Box(low=np.array([0.0001, 0, 1, 1, 0.001]), high=np.array([0.0150, 33, 200, 500, 5.000]), dtype=np.float64)
+        self.action_space = spaces.Box(low=np.array([0.0001, 0, 2, 1, 0.001]), high=np.array([0.0150, 32, 200, 500, 5.000]), dtype=np.float64)
+        #self.action_space = spaces.Box(low=np.array([0.01, 1, 0.0001, 0, 2, 1, 0.01]), high=np.array([1.0, 125, 0.015, 32, 200, 500, 5]))
 
     def reset(self, postition_ratio=1, leverage=1, StopLoss=0.07, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1):
         #print(f'{self.running_enviroment.reset(postition_ratio, leverage, typeMA, MA_period, ATR_period, ATR_multi)}')

@@ -1,22 +1,17 @@
-from os import getcwd
-from sys import modules
 import pandas as pd
 import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
 from time import time
-#import datetime as dt
-#import inspect
 from statistics import mean, stdev
 from math import sqrt
-#from sklearn import preprocessing
 from finta import TA as finTA
-#from talib import ATR, SMA, EMA, WMA, T3, TRIMA, KAMA, TEMA, DEMA, RSI, ULTOSC, ADX, MINUS_DI, PLUS_DI, MFI, MACD, ADOSC
 import talib
 import ta 
-
 import get_data
+#import datetime as dt
 #from numba import njit
 #from scipy.ndimage import convolve1d as conv
+#from sklearn import preprocessing
 
 
 def feature_timeit(feature_func):
@@ -192,7 +187,7 @@ def Daily_seasonality(df):
 def HullMA(close, timeperiod):
   return talib.WMA( (talib.WMA(close, timeperiod//2 )*2)-(talib.WMA(close, timeperiod)), int(np.sqrt(timeperiod)) )
 
-#@feature_timeit
+'''#@feature_timeit
 def RMA(close, timeperiod):
   alpha = 1.0 / timeperiod
   rma = [0.0] * len(close)
@@ -200,6 +195,20 @@ def RMA(close, timeperiod):
   for i in range(len(close)-timeperiod, len(close)):
     suma = alpha * close[i] + (1.0 - alpha) * suma
     rma[i] = suma
+  return rma'''
+
+#@feature_timeit
+def RMA(close, timeperiod):
+  alpha = 1.0 / timeperiod
+  if len(close) == 0:
+    return []
+  rma = [0.0] * len(close)
+  # Calculating the SMA for the first 'length' values
+  sma = sum(close[:timeperiod]) / timeperiod
+  rma[timeperiod - 1] = sma
+    # Calculating the rma for the rest of the values
+  for i in range(timeperiod, len(close)):
+    rma[i] = alpha * close[i] + (1 - alpha) * rma[i - 1]
   return rma
 
 #@feature_timeit
@@ -321,12 +330,13 @@ def GMA(close, period):
 #@feature_timeit
 def FBA(close, period):
     def fibonacci_sequence(n):
-      n = int(sqrt(n))
+      n = max(4,int(sqrt(n)))
       fib_sequence = [0, 1]
       while len(fib_sequence)<n:
           fib_sequence.append(fib_sequence[-1] + fib_sequence[-2])
-      return fib_sequence[1:]
+      return fib_sequence[2:]
     fib_seq = fibonacci_sequence(period)
+    #print(f'fib_seq {fib_seq}')
     moving_averages = []
     for i in fib_seq:
         # Use np.convolve to calculate the moving average
@@ -365,40 +375,40 @@ def get_MA(np_df, type, MA_period):
   #np_df[:,1:5] = np_df[:,1:5].astype('float')
   #print(np_df)
   if type==0: return np.around(RMA(np_df[:,3], timeperiod=MA_period), 2)
-  elif type==1: return np.around(talib.SMA(np_df[:,3], timeperiod=max(2,MA_period)), 2)
-  elif type==2: return np.around(talib.EMA(np_df[:,3], timeperiod=max(2,MA_period)), 2)
-  elif type==3: return np.around(talib.WMA(np_df[:,3], timeperiod=max(2,MA_period)), 2)
+  elif type==1: return np.around(talib.SMA(np_df[:,3], timeperiod=MA_period), 2)
+  elif type==2: return np.around(talib.EMA(np_df[:,3], timeperiod=MA_period), 2)
+  elif type==3: return np.around(talib.WMA(np_df[:,3], timeperiod=MA_period), 2)
   elif type==4: return np.around(VWMA(np_df[:,3], np_df[:,4], timeperiod=MA_period), 2)
-  elif type==5: return np.around(talib.KAMA(np_df[:,3], timeperiod=max(2,MA_period)), 2)
-  elif type==6: return np.around(talib.TRIMA(np_df[:,3], timeperiod=max(2,MA_period)), 2)
-  elif type==7: return np.around(HullMA(np_df[:,3], timeperiod=max(4,MA_period)), 2)
-  elif type==8: return np.around(talib.DEMA(np_df[:,3], timeperiod=max(2,MA_period)), 2)
-  elif type==9: return np.around(talib.TEMA(np_df[:,3], timeperiod=max(2,MA_period)), 2)
-  elif type==10: return np.around(talib.T3(np_df[:,3], timeperiod=max(2,MA_period)), 2)
-  elif type==11: return np.around(finTA.SMM(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
-  elif type==12: return np.around(finTA.SSMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
-  elif type==13: return np.around(finTA.VAMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
-  elif type==14: return np.around(finTA.ZLEMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
-  elif type==15: return np.around(finTA.EVWMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
-  elif type==16: return np.around(finTA.SMMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
-  elif type==17: return np.around(finTA.FRAMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), (lambda n: n + n % 2)(MA_period)).to_numpy(), 2)
-  elif type==18: return np.around(ALMA(np_df[:,3], timeperiod=MA_period), 2)
-  elif type==19: return np.around(HammingMA(np_df[:,3], MA_period), 2)
-  elif type==20: return np.around(LSMA(np_df[:,3], MA_period), 2)
-  elif type==21: return np.around(LWMA(np_df[:,3], MA_period), 2)
-  elif type==22: return np.around(MGD(np_df[:,3], MA_period), 2)
-  elif type==23: return np.around(VAMA(np_df[:,3], np_df[:,4], MA_period), 2)
-  elif type==24: return np.around(GMA(np_df[:,3], MA_period), 2)
-  elif type==25: return np.around(FBA(np_df[:,3], MA_period), 2)
-  elif type==26: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=0), 2)
-  elif type==27: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=1), 2)
-  elif type==28: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=2), 2)
-  elif type==29: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=3), 2)
-  elif type==30: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=4), 2)
-  elif type==31: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=5), 2)
-  elif type==32: return np.around(VIDYA(np_df[:,3], MA_period), 2)
+  elif type==5: return np.around(talib.KAMA(np_df[:,3], timeperiod=MA_period), 2)
+  elif type==6: return np.around(talib.TRIMA(np_df[:,3], timeperiod=MA_period), 2)
+  elif type==7: return np.around(talib.DEMA(np_df[:,3], timeperiod=MA_period), 2)
+  elif type==8: return np.around(talib.TEMA(np_df[:,3], timeperiod=MA_period), 2)
+  elif type==9: return np.around(talib.T3(np_df[:,3], timeperiod=MA_period), 2)
+  elif type==10: return np.around(finTA.SMM(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
+  elif type==11: return np.around(finTA.SSMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
+  elif type==12: return np.around(finTA.VAMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
+  elif type==13: return np.around(finTA.ZLEMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), max(4,MA_period)).to_numpy(), 2)
+  elif type==14: return np.around(finTA.EVWMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
+  elif type==15: return np.around(finTA.SMMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
+  elif type==16: return np.around(finTA.HMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), MA_period).to_numpy(), 2)
+  elif type==17: return np.around(ALMA(np_df[:,3], timeperiod=MA_period), 2)
+  elif type==18: return np.around(HammingMA(np_df[:,3], MA_period), 2)
+  elif type==19: return np.around(LSMA(np_df[:,3], max(3,MA_period)), 2)
+  elif type==20: return np.around(LWMA(np_df[:,3],  MA_period), 2)
+  elif type==21: return np.around(MGD(np_df[:,3], MA_period), 2)
+  elif type==22: return np.around(VAMA(np_df[:,3], np_df[:,4], MA_period), 2)
+  elif type==23: return np.around(GMA(np_df[:,3], MA_period), 2)
+  elif type==24: return np.around(FBA(np_df[:,3], MA_period), 2)
+  elif type==25: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=0), 2)
+  elif type==26: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=1), 2)
+  elif type==27: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=2), 2)
+  elif type==28: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=3), 2)
+  elif type==29: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=4), 2)
+  elif type==30: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=5), 2)
+  elif type==31: return np.around(VIDYA(np_df[:,3], MA_period), 2)
   # testing
-  #elif type==-1: return np.c_[np_df, VWATR(np_df[:,1], np_df[:,2], np_df[:,3], np_df[:,4], MA_period)]
+  #elif type==-1: return np.around(HullMA(np_df[:,3], timeperiod=max(4,MA_period)), 2)
+  #elif type==-2: return np.around(finTA.FRAMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), (lambda n: n + n % 2)(MA_period)).to_numpy(), 2)
 
 def add_MA_signal(np_df, type, MA_period, ATR_period, ATR_multi):
   atr = talib.ATR(np_df[:,1], np_df[:,2], np_df[:,3], ATR_period)

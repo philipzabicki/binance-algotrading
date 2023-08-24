@@ -129,16 +129,14 @@ class BacktestEnv(Env):
         #return np.concatenate((self.market_history, self.orders_history), axis=1)'''
 
     def _linear_slope_indicator(self, values: list):
-      if len(values)<20:
-        return -1
-      else:
-        _5 = len(values)//20
-        percentile25 = linear_reg_slope(values[-_5*5:])
-        #percentile50 = linear_reg_slope(values[-_5*10:])
-        percentile75 = linear_reg_slope(values[-_5*15:])
-        #percentile95 = linear_reg_slope(values[-_5*19:])
-        slope_avg = percentile25-percentile75
-        return copysign(abs(slope_avg)**(1/4), slope_avg)
+      _5 = len(values)//20
+      percentile25 = linear_reg_slope(values[-_5*5:])
+      #percentile50 = linear_reg_slope(values[-_5*10:])
+      #percentile75 = linear_reg_slope(values[-_5*15:])
+      #percentile95 = linear_reg_slope(values[-_5*19:])
+      slope_avg = percentile25
+      #return slope_avg
+      return copysign(abs(slope_avg)**(1/4), slope_avg)
 
     def _finish_episode(self):
       #print('_finish_episode')
@@ -153,8 +151,7 @@ class BacktestEnv(Env):
         stdev_pnl = stdev(self.realized_PNLs)
         self.profit_mean = mean(profits)
         self.loss_mean = mean(losses)
-        if self.loss_hold_counter>0 and self.profit_hold_counter>0: hold_ratio = self.profit_hold_counter/self.loss_hold_counter
-        else: hold_ratio = 1
+        hold_ratio = self.profit_hold_counter/self.loss_hold_counter if self.loss_hold_counter>0 and self.profit_hold_counter>0 else 1
         risk_free_return = (self.df[-1,3]/self.df[0,3])-1
         self.sharpe_ratio = (mean_pnl-risk_free_return)/stdev_pnl if stdev_pnl!=0 else -1
         self.sortino_ratio = (total_return_ratio-risk_free_return)/stdev(losses) if stdev(losses)!=0 else -1
@@ -162,11 +159,12 @@ class BacktestEnv(Env):
         self.pnl_means_ratio = abs(self.profit_mean/self.loss_mean)
         pnl_ratio = self.trades_ratio*self.pnl_means_ratio
         self.reward = copysign(gain*(1/(abs(stdev_pnl)**(1/7)))*sqrt(pnl_ratio)*(hold_ratio**(1/3))*self.episode_orders, gain)
-        slope_indicator = self._linear_slope_indicator(self.trades_PNL_ratio)
+        slope_indicator = 1
+        '''slope_indicator = self._linear_slope_indicator(self.trades_PNL_ratio)
         if self.reward<0 and slope_indicator<0:
           self.reward = self.reward*slope_indicator*-1
         else:
-          self.reward = self.reward*slope_indicator
+          self.reward = self.reward*slope_indicator'''
         if gain>0.25*self.init_balance:
         #if True:
           print(f'Episode finished: gain: ${gain:.2f} episode_orders: {self.episode_orders:_} cumulative_fees: ${self.cumulative_fees:.2f} liquidations: {self.liquidations} SL_losses: ${self.SL_losses:.2f}')
@@ -174,7 +172,7 @@ class BacktestEnv(Env):
           print(f' reward: {self.reward:.3f} sharpe_ratio: {self.sharpe_ratio:.2f} sortino_ratio: {self.sortino_ratio:.2f} hold_ratio: {hold_ratio:.2f} pnl_ratio: {pnl_ratio:.2f} stdev_pnl: {stdev_pnl:.5f} slope_avg: {slope_indicator:.4f}')
         self.info = {'gain':gain, 'pnl_ratio':pnl_ratio, 'stdev_pnl':stdev_pnl, 'position_hold_sums_ratio':hold_ratio, 'slope_indicator':slope_indicator, 'exec_time':time.time()-self.start_t}
       else:
-        self.reward = -np.inf
+        self.reward = 0
         self.sharpe_ratio,self.sortino_ratio,self.trades_ratio,self.pnl_means_ratio = -1,-1,-1,-1
         self.info = {'gain':0, 'episode_orders':self.episode_orders, 'pnl_ratio':0, 'stdev_pnl':0, 'position_hold_sums_ratio':0, 'slope_indicator':0, 'exec_time':time.time()-self.start_t}
         #print(f'EPISODE FAILED! (end_step not reached OR profit/loss trades less than 2)')
