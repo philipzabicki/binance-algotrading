@@ -10,3 +10,4 @@ mplfinance
 finta
 ta
 websocket-client
+pympler

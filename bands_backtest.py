@@ -18,7 +18,7 @@ from TA_tools import add_MA_signal
 from utility import minutes_since, get_slips_stats
 
 if __name__=="__main__":
-  SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0043, 27, 165, 440, 1.267
+  SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0055, 11, 109, 89, 4.997
   '''BTCTUSD_s = TA_tools.get_df(ticker='BTCTUSD', interval_list=['1m'], type='backtest', futures=False, indicator=None, period=None)
   BTCUSDT_f = TA_tools.get_df(ticker='BTCUSDT', interval_list=['1m'], type='backtest', futures=True, indicator=None, period=None)
   #df = pd.read_csv('C:/github/binance-trading/data/binance_data_spot/1s_data/BTCTUSD/BTCTUSD.csv').iloc[1_100_000:,:]

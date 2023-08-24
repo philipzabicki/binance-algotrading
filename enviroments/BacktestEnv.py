@@ -12,14 +12,15 @@ from visualize import TradingGraph
 from utility import linear_reg_slope, get_attributes_and_deep_sizes
 
 class BacktestEnv(Env):
-    def __init__(self, df, df_mark=None, excluded_left=5, init_balance=1_000, postition_ratio=1.0, leverage=1, StopLoss=0.0, fee=0.0002, coin_step=0.001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=0, Render_range=120, visualize=False, dates_df=None, write_to_csv=False):
+    def __init__(self, df, dates_df=None, df_mark=None, excluded_left=0, init_balance=1_000, postition_ratio=1.0, leverage=1, StopLoss=0.0, fee=0.0002, coin_step=0.001,
+                 slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=0, Render_range=120, visualize=False, write_to_csv=False):
         self.start_t = time.time()
         # https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin
-        self.POSITION_TIER = {  1:(125, .0040,  0), 2:(105, .0050,  50), 
-                                3:(50,  .001, 1_300), 4:(20,  .00250, 46_300), 
-                                5:(10,  .005, 421_300), 6:(5, .0010,  1_921_300), 
-                                7:(4, .00125, 3_921_300), 8:(3, .0015,  6_421_300), 
-                                9:(2, .0025, 26_421_300), 0:(1, .0050, 101_421_300)  }
+        self.POSITION_TIER = {  1:(125, .0040, 0), 2:(105, .005, 50), 
+                                3:(50, .01, 1_300), 4:(20, .025, 46_300), 
+                                5:(10, .05, 546_300), 6:(5, .10, 2_546_300), 
+                                7:(4, .125, 5_046_300), 8:(3, .15, 8_046_300), 
+                                9:(2, .25, 28_046_300), 10:(1, .50, 103_046_300)  }
         self.dates_df = dates_df
         try:
           print(f'start_date:{self.dates_df[0]}')
@@ -142,8 +143,8 @@ class BacktestEnv(Env):
     def _finish_episode(self):
       #print('_finish_episode')
       self.done = True
-      if (self.current_step==self.end_step) and self.good_trades_count>1 and self.bad_trades_count>1:
-      #if self.good_trades_count>1 and self.bad_trades_count>1:
+      #if (self.current_step==self.end_step) and self.good_trades_count>1 and self.bad_trades_count>1:
+      if self.good_trades_count>1 and self.bad_trades_count>1:
         gain = self.balance-self.init_balance
         losses = [pnl if pnl<0 else 0 for pnl in self.realized_PNLs]
         profits = [pnl if pnl>0 else 0 for pnl in self.realized_PNLs]
