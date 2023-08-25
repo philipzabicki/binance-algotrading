@@ -21,7 +21,7 @@ class CustomProblem(ElementwiseProblem):
         super().__init__(n_var=5,
                          n_obj=1,
                          n_constr=0,
-                         xl=np.array([0.0001, 0, 1, 1, 0.001]),
+                         xl=np.array([0.0001, 0, 2, 1, 0.001]),
                          xu=np.array([0.015, 32, 200, 500, 2.000]), **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
