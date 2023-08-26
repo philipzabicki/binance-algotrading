@@ -11,3 +11,4 @@ finta
 ta
 websocket-client
 pympler
+pymoo

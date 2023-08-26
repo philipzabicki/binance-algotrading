@@ -17,7 +17,7 @@ client = Client(binance_API_KEY, binance_SECRET_KEY)
 
 symbol = 'BTCTUSD'
 interval = '1m'
-SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0086,29,4,13,0.75
+SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0014, 31, 3, 1, 0.572
 
 print(f'INITIAL PARAMETERS', SL,typeMA,MA_period,ATR_period,ATR_multi)
 candles = client.get_historical_klines(symbol, interval, str(MA_period*300+100)+" minutes ago UTC")
