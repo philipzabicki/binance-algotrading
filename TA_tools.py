@@ -298,20 +298,10 @@ def MGD(close, period):
     return md
 
 #@feature_timeit
-def VIDYA(close, period, select=True):
+def VIDYA(close, period):
     alpha = 2 / (period + 1)
-    momm = np.diff(close, prepend=0)
-    m1 = np.where(momm >= 0, momm, 0.0)
-    m2 = np.where(momm<0, -momm, 0.0)
-    sm1 = np.convolve(m1, np.ones((period,))/period, mode='same')
-    sm2 = np.convolve(m2, np.ones((period,))/period, mode='same')
-    # Avoid division by zero
-    divisor = np.where((sm1 + sm2) != 0, sm1 + sm2, 1)
-    chandeMO = 100 * (sm1 - sm2) / divisor
-    if select:
-        k = np.abs(chandeMO) / 100
-    else:
-        k = np.array([np.std(close[max(0, i-period+1):i+1]) for i in range(len(close))])
+    #k = talib.CMO(close, period)
+    k = np.abs(talib.CMO(close, period))/100
     VIDYA = np.zeros_like(close)
     VIDYA[period-1] = close[period-1]
     for i in range(period, len(close)):

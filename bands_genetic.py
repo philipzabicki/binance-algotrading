@@ -1,11 +1,9 @@
 import numpy as np
 import multiprocessing
 #from multiprocessing.pool import ThreadPool
-
 import get_data
 from utility import minutes_since, get_slips_stats
 from enviroments.BandParametrizerEnv import BandParametrizerEnv
-
 from pymoo.core.problem import StarmapParallelization
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.factory import get_sampling, get_crossover, get_mutation
@@ -23,7 +21,7 @@ class CustomProblem(ElementwiseProblem):
                          n_obj=1,
                          n_constr=0,
                          xl=np.array([0.0001, 0, 2, 1, 0.001]),
-                         xu=np.array([0.0200, 31, 300, 500, 7.500]), **kwargs)
+                         xu=np.array([0.0200, 32, 300, 500, 7.500]), **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
@@ -45,11 +43,11 @@ def main():
 
     problem = CustomProblem(env, elementwise_runner=runner)
     #algorithm = NSGA2(pop_size=100)
-    algorithm = DNSGA2(pop_size=128)
+    algorithm = DNSGA2(pop_size=512)
 
     res = minimize(problem,
                    algorithm,
-                   termination=('n_gen', 10),
+                   termination=('n_gen', 25),
                    seed=1,
                    verbose=True)
 

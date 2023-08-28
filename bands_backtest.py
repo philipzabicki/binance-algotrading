@@ -12,7 +12,7 @@ from TA_tools import add_MA_signal
 from utility import minutes_since, get_slips_stats
 
 if __name__=="__main__":
-  SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0038, 0, 168, 416, 5.273
+  SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0014, 31, 3, 1, 0.572
   '''BTCTUSD_s = TA_tools.get_df(ticker='BTCTUSD', interval_list=['1m'], type='backtest', futures=False, indicator=None, period=None)
   BTCUSDT_f = TA_tools.get_df(ticker='BTCUSDT', interval_list=['1m'], type='backtest', futures=True, indicator=None, period=None)
   #df = pd.read_csv('C:/github/binance-trading/data/binance_data_spot/1s_data/BTCTUSD/BTCTUSD.csv').iloc[1_100_000:,:]
@@ -28,8 +28,8 @@ if __name__=="__main__":
   df = np.hstack((df, np.zeros((df.shape[0], 1))))
   df = add_MA_signal(df,typeMA,MA_period,ATR_period,ATR_multi)
   print(df)
-  plt.plot(df[-1000:,-1])
-  plt.show()
+  #plt.plot(df[-1000:,-1])
+  #plt.show()
   #=[ leverage=1, postition_ratio=1.000, typeMA=4, MA_period=11, ATR_period=408, ATR_multi=0.81 ]
   #14,16,334,0.3 46.38%
   #print('params: 10,28,296,0.19')
@@ -75,3 +75,5 @@ if __name__=="__main__":
        if obs[-1]<=0: action = 2
        else: action = 0
     if strat_env.visualize: strat_env.render()
+  plt.plot(strat_env.trades_PNL_ratio)
+  plt.show()

@@ -158,7 +158,7 @@ class BacktestEnv(Env):
         self.trades_ratio = self.good_trades_count/self.bad_trades_count
         self.pnl_means_ratio = abs(self.profit_mean/self.loss_mean)
         pnl_ratio = self.trades_ratio*self.pnl_means_ratio
-        self.reward = copysign(gain*(1/(abs(stdev_pnl)**(1/7)))*pnl_ratio*(hold_ratio**(1/3))*self.episode_orders, gain)/self.df_total_steps
+        self.reward = copysign(gain*(1/(abs(stdev_pnl)**(1/7)))*pnl_ratio*(hold_ratio**(1/5))*self.episode_orders, gain)/self.df_total_steps
         slope_indicator = 1.000
         '''slope_indicator = self._linear_slope_indicator(self.trades_PNL_ratio)
         if self.reward<0 and slope_indicator<0:

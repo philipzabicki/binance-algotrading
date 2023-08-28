@@ -75,7 +75,7 @@ class BandParametrizerEnv(Env):
         upper_bounds = np.array([np.inf for _ in range(8)])
         self.observation_space = spaces.Box(low=lower_bounds, high=upper_bounds)
         #self.action_space = spaces.Box(low=np.array([0.0001, 0, 1, 1, 0.001]), high=np.array([0.0150, 33, 200, 500, 5.000]), dtype=np.float64)
-        self.action_space = spaces.Box(low=np.array([0.0001, 0, 2, 1, 0.001]), high=np.array([0.0200, 31, 300, 500, 7.500]), dtype=np.float64)
+        self.action_space = spaces.Box(low=np.array([0.0001, 0, 2, 1, 0.001]), high=np.array([0.0200, 32, 300, 500, 7.500]), dtype=np.float64)
         #self.action_space = spaces.Box(low=np.array([0.01, 1, 0.0001, 0, 2, 1, 0.01]), high=np.array([1.0, 125, 0.015, 32, 200, 500, 5]))
 
     def reset(self, postition_ratio=1, leverage=1, StopLoss=0.07, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1):
