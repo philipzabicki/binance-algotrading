@@ -3,7 +3,7 @@ import multiprocessing
 #from multiprocessing.pool import ThreadPool
 import get_data
 from utility import minutes_since, get_slips_stats
-from enviroments.BandParametrizerEnv import BandParametrizerEnv
+from enviroments.BandsStratEnv import BandsStratEnvSpot
 from pymoo.core.problem import StarmapParallelization
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.factory import get_sampling, get_crossover, get_mutation
@@ -31,7 +31,7 @@ def main():
     df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=300)
     df = df.drop(columns='Opened').to_numpy()
     df = np.hstack((df, np.zeros((df.shape[0], 1))))
-    env = BandParametrizerEnv(df=df[-minutes_since('23-03-2023'):,:].copy(), init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats())
+    env = BandsStratEnvSpot(df=df[-minutes_since('23-03-2023'):,:].copy(), init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats())
 
     pool = multiprocessing.Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)

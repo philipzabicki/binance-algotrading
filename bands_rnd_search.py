@@ -1,21 +1,20 @@
+import numpy as np
+import pandas as pd
 from gc import collect
 from os import getcwd 
 from random import randint
 from csv import writer
 from time import time
-import numpy as np
-import pandas as pd
-from enviroments.BandParametrizerEnv import BandParametrizerEnv
 from statistics import mean
 from multiprocessing import Pool, cpu_count
-
 import get_data
+from enviroments.BandsStratEnv import BandsStratEnvSpot
 from utility import minutes_since, get_slips_stats
 
 CPU_CORES_COUNT = cpu_count()//2
 CPU_CORES_COUNT = 6
 #REPORT_FULL_PATH = 'Z:/home/philipz_abicki/binance-algotrading/reports/BTCTUSD1m_since0322_ATR.csv'
-REPORT_FULL_PATH = getcwd()+'\\reports\\BTCTUSD1m_since0322_ATR.csv'
+REPORT_FULL_PATH = getcwd()+'/reports/BTCTUSD1m_since0322_ATR.csv'
 EPISODES = randint(10, 250)
 TICKER, ITV, FUTURES, START_DATE = 'BTCTUSD', '1m', False, '22-03-2023'
 
@@ -23,7 +22,7 @@ def run_indefinitely(_):
     df = get_data.by_DataClient(ticker=TICKER, interval=ITV, futures=FUTURES, statements=True, delay=3_600)
     df = df.drop(columns='Opened').to_numpy()
     df = np.hstack((df, np.zeros((df.shape[0], 1))))
-    env = BandParametrizerEnv(df=df[-minutes_since(START_DATE):,:], init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats(), visualize=False, Render_range=60, write_to_csv=False)
+    env = BandsStratEnvSpot(df=df[-minutes_since(START_DATE):,:], init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats(), visualize=False, Render_range=60, write_to_csv=False)
 
     timers, results = [], []
     i, timer = 0, time()

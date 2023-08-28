@@ -108,7 +108,7 @@ class BacktestEnv(Env):
         #self.balance_history = [self.balance, self.balance]
         #self.reward = 0
 
-        if self.max_steps > 0:
+        if self.max_steps>0:
             self.start_step = randint(self.lookback_window_size, self.df_total_steps - self.max_steps)
             self.end_step = self.start_step + self.max_steps
         else:
@@ -167,14 +167,16 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator'''
         if gain>0.25*self.init_balance:
         #if True:
-          print(f'Episode finished: gain: ${gain:.2f} episode_orders: {self.episode_orders:_} cumulative_fees: ${self.cumulative_fees:.2f} liquidations: {self.liquidations} SL_losses: ${self.SL_losses:.2f}')
-          print(f' trades_count(profit/loss): {self.good_trades_count:_}/{self.bad_trades_count:_}, trades_ROE(profit/loss): {self.profit_mean*100:.2f}%/{self.loss_mean*100:.2f}%, max(profit/drawdown): {self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')
-          print(f' reward: {self.reward:.3f} sharpe_ratio: {self.sharpe_ratio:.2f} sortino_ratio: {self.sortino_ratio:.2f} hold_ratio: {hold_ratio:.2f} pnl_ratio: {pnl_ratio:.2f} stdev_pnl: {stdev_pnl:.5f} slope_avg: {slope_indicator:.4f}')
-        self.info = {'gain':gain, 'pnl_ratio':pnl_ratio, 'stdev_pnl':stdev_pnl, 'position_hold_sums_ratio':hold_ratio, 'slope_indicator':slope_indicator, 'exec_time':time.time()-self.start_t}
+          print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}, episode_orders:{self.episode_orders:_}')
+          print(f' trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{self.profit_mean*100:.2f}%/{self.loss_mean*100:.2f}%, ', end='')
+          print(f'max(profit/drawdown):{self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')
+          print(f' reward:{self.reward:.3f}, hold_time_ratio:{hold_ratio:.2f}, pnl_ratio:{pnl_ratio:.2f}, stdev_pnl:{stdev_pnl:.5f}, slope_avg:{slope_indicator:.4f}, ', end='')
+          print(f'sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
+        self.info = {'gain':gain, 'pnl_ratio':pnl_ratio, 'stdev_pnl':stdev_pnl, 'hold_time_ratio':hold_ratio, 'slope_indicator':slope_indicator, 'exec_time':time.time()-self.start_t}
       else:
         self.reward = 0
         self.sharpe_ratio,self.sortino_ratio,self.trades_ratio,self.pnl_means_ratio = -1,-1,-1,-1
-        self.info = {'gain':0, 'episode_orders':self.episode_orders, 'pnl_ratio':0, 'stdev_pnl':0, 'position_hold_sums_ratio':0, 'slope_indicator':0, 'exec_time':time.time()-self.start_t}
+        self.info = {'gain':0, 'episode_orders':self.episode_orders, 'pnl_ratio':0, 'stdev_pnl':0, 'hold_time_ratio':0, 'slope_indicator':0, 'exec_time':time.time()-self.start_t}
         #print(f'EPISODE FAILED! (end_step not reached OR profit/loss trades less than 2)')
       if self.write_to_csv:
         filename = str(self.__class__.__name__)+str(dt.today())[:-7].replace(':','-')+'.csv'
@@ -315,7 +317,7 @@ class BacktestEnv(Env):
           elif liquidated: trade_type="liquidate_short"
           else: trade_type= "close_short"
           print(f'CLOSING SHORT at {price} liquidated:{liquidated} SL:{SL} SL_price:{self.stop_loss_price}')
-        self.trades.append({'Date' : self.dates_df[self.current_step], 'High' : self.df[self.current_step, 1], 'Low' : self.df[self.current_step, 2], 'total':self.qty, 'type':trade_type})
+        self.trades.append({'Date':self.dates_df[self.current_step], 'High':self.df[self.current_step,1], 'Low':self.df[self.current_step,2], 'total':self.qty, 'type':trade_type})
       price = round(price*rnd_factor, 2)
       #print(f'CLOSING position at price {price} liquidated:{liquidated} SL:{SL} SL_price:{self.stop_loss_price}')
       _position_value = abs(self.qty)*price

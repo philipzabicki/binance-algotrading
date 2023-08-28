@@ -1,15 +1,11 @@
-#import numpy as np
-from enviroments.BandParametrizerEnv import BandParametrizerEnv
+from enviroments.BandsStratEnv import BandsStratEnvSpot
 from TA_tools import get_df
 from stable_baselines3.common.env_checker import check_env
-
 from stable_baselines3 import DDPG
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
 from stable_baselines3.common.env_util import make_vec_env
-
 from sb3_contrib import RecurrentPPO
 from stable_baselines3.common.evaluation import evaluate_policy
-
 from sb3_contrib import ARS
 
 if __name__=="__main__":
@@ -18,7 +14,7 @@ if __name__=="__main__":
     df = get_df(ticker='BTCTUSD', interval_list=['1m'], type='backtest', futures=False, indicator=None, period=None)
     dates_df = df['Opened'].to_numpy()
     df = df.drop(columns='Opened').to_numpy()
-    env = BandParametrizerEnv(df=df[-136_304:,:], init_balance=1_000, fee=0.0, slippage=slippages, dates_df=False, visualize=False, Render_range=60, write_to_csv=False)
+    env = BandsStratEnvSpot(df=df[-136_304:,:], init_balance=1_000, fee=0.0, slippage=slippages, dates_df=False, visualize=False, Render_range=60, write_to_csv=False)
     #check_env(env)
     #env = make_vec_env(env, n_envs=10)
 
