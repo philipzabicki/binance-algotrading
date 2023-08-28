@@ -14,6 +14,7 @@ from pymoo.algorithms.moo.dnsga2 import DNSGA2
 from pymoo.algorithms.moo.nsga2 import NSGA2
 
 CPU_CORES_COUNT = multiprocessing.cpu_count()//2
+CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
@@ -22,7 +23,7 @@ class CustomProblem(ElementwiseProblem):
                          n_obj=1,
                          n_constr=0,
                          xl=np.array([0.0001, 0, 2, 1, 0.001]),
-                         xu=np.array([0.015, 32, 200, 500, 2.000]), **kwargs)
+                         xu=np.array([0.0200, 31, 300, 500, 7.500]), **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
@@ -44,11 +45,11 @@ def main():
 
     problem = CustomProblem(env, elementwise_runner=runner)
     #algorithm = NSGA2(pop_size=100)
-    algorithm = DNSGA2(pop_size=1024)
+    algorithm = DNSGA2(pop_size=128)
 
     res = minimize(problem,
                    algorithm,
-                   termination=('n_gen', 25),
+                   termination=('n_gen', 10),
                    seed=1,
                    verbose=True)
 

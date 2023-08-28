@@ -144,8 +144,8 @@ class BacktestEnv(Env):
       #if (self.current_step==self.end_step) and self.good_trades_count>1 and self.bad_trades_count>1:
       if self.good_trades_count>1 and self.bad_trades_count>1:
         gain = self.balance-self.init_balance
-        losses = [pnl if pnl<0 else 0 for pnl in self.realized_PNLs]
-        profits = [pnl if pnl>0 else 0 for pnl in self.realized_PNLs]
+        losses = [pnl for pnl in self.realized_PNLs if pnl<0]
+        profits = [pnl for pnl in self.realized_PNLs if pnl>0]
         total_return_ratio = (self.balance/self.init_balance)-1
         mean_pnl = mean(self.realized_PNLs)
         stdev_pnl = stdev(self.realized_PNLs)
@@ -158,8 +158,8 @@ class BacktestEnv(Env):
         self.trades_ratio = self.good_trades_count/self.bad_trades_count
         self.pnl_means_ratio = abs(self.profit_mean/self.loss_mean)
         pnl_ratio = self.trades_ratio*self.pnl_means_ratio
-        self.reward = copysign(gain*(1/(abs(stdev_pnl)**(1/7)))*sqrt(pnl_ratio)*(hold_ratio**(1/3))*self.episode_orders, gain)
-        slope_indicator = 1
+        self.reward = copysign(gain*(1/(abs(stdev_pnl)**(1/7)))*pnl_ratio*(hold_ratio**(1/3))*self.episode_orders, gain)/self.df_total_steps
+        slope_indicator = 1.000
         '''slope_indicator = self._linear_slope_indicator(self.trades_PNL_ratio)
         if self.reward<0 and slope_indicator<0:
           self.reward = self.reward*slope_indicator*-1

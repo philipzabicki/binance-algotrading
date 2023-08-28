@@ -11,6 +11,7 @@ from collections import deque
 from random import uniform
 from talib import ATR
 from TA_tools import get_MA
+import os
 
 from credentials import binance_API_KEY,binance_SECRET_KEY
 client = Client(binance_API_KEY, binance_SECRET_KEY)
@@ -95,7 +96,7 @@ def on_message(ws, message):
             market_buy_slippages.append(filled_price/close)
             if len(market_buy_slippages)>1:
                 buy_avg_slipp, buy_stdev_slipp = mean(market_buy_slippages), stdev(market_buy_slippages)
-                csv_filename = 'slippages_market_buy.csv'
+                csv_filename = os.getcwd()+'/settings/slippages_market_buy.csv'
                 with open(csv_filename, 'a', newline='') as file:
                     _writer = writer(file)
                     #writer.writerow(header)
@@ -110,7 +111,7 @@ def on_message(ws, message):
                         #print(order)
             if SL_value>0:
                 StopLoss_slippages.append((SL_value/SL_quantity)/prevSL_price)
-                csv_filename = 'slippages_StopLoss.csv'
+                csv_filename = os.getcwd()+'/settings/slippages_StopLoss.csv'
                 with open(csv_filename, 'a', newline='') as file:
                     _writer = writer(file)
                     #writer.writerow(header)
@@ -131,7 +132,7 @@ def on_message(ws, message):
             market_sell_slippages.append(filled_price/close)
             if len(market_sell_slippages)>1:
                 sell_avg_slipp, sell_stdev_slipp = mean(market_sell_slippages), stdev(market_sell_slippages)
-                csv_filename = 'slippages_market_sell.csv'
+                csv_filename = os.getcwd()+'/settings/slippages_market_sell.csv'
                 with open(csv_filename, 'a', newline='') as file:
                     _writer = writer(file)
                     #writer.writerow(header)
@@ -151,7 +152,7 @@ def on_message(ws, message):
                 autoconfig_timer = time()
                 print('#########################')
                 print('UPDATING STRATEGY SETTINGS')
-                df = pd.read_csv('/home/rafalzaorski500eth/binance-trading/BTCTUSD1m_since0322_ATR.csv')
+                df = pd.read_csv(os.getcwd()+'/reports/BTCTUSD1m_since0322_ATR.csv')
                 print(df.iloc[-1,:])
                 SL,typeMA,MA_period,ATR_period,ATR_multi = float(df.iloc[-1, -5]), int(df.iloc[-1, -4]), int(df.iloc[-1, -3]), int(df.iloc[-1, -2]), float(df.iloc[-1, -1])
                 print(SL,typeMA,MA_period,ATR_period,ATR_multi)
