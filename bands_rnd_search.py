@@ -32,7 +32,7 @@ def run_indefinitely(_):
         _, reward, _, info = env.step(action)
         if reward!=0 and not np.isnan(reward):
             #print(f'usd_gains: {info["gain"]:.2f}, indicator: {indicator:.4f}, order_count: {info["episode_orders"]} PNL_ratio: {info["pnl_ratio"]:.3f}, StDev: {info["stdev_pnl"]:.5f}, pos_hold_ratio: {info["position_hold_sums_ratio"]:.3f}, reg_slope_avg: {slope_avg} ')
-            results.append([round(info["gain"],2), round(reward,2), round(info["pnl_ratio"],3), round(info["stdev_pnl"],5), round(info["position_hold_sums_ratio"],3),
+            results.append([round(info["gain"],2), round(reward,4), round(info["pnl_ratio"],3), round(info["hold_time_ratio"],3), round(info["avg_trades_ratio"],3),
                             round(info['slope_indicator'],4), round(action[0],4), int(action[1]), int(action[2]), int(action[3]), round(action[4],2)])
         _t = time()-timer
         #print(f'[{i}/{episodes}] {_t}')
@@ -40,14 +40,14 @@ def run_indefinitely(_):
         timer = time()
     print(f'MEAN EP TIME {mean(timers)}')
     ### Saving results to file
-    results = sorted(results, key=lambda x: x[1])
+    #results = sorted(results, key=lambda x: x[1])
     with open(REPORT_FULL_PATH, 'a', newline='') as file:
         _writer = writer(file)
         #writer.writerow(header)
         _writer.writerows(results)
     df = pd.read_csv(REPORT_FULL_PATH)
     # Removing the first half of the rows
-    df.sort_values(by=['indicator'], inplace=True)
+    df.sort_values(by=['reward'], inplace=True)
     #df = df.tail(df.shape[0] // 1)
     # Save sorted DataFrame back to the csv file
     df.to_csv(REPORT_FULL_PATH, index=False)

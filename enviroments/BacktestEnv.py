@@ -72,7 +72,7 @@ class BacktestEnv(Env):
         self.reward = 0
         if self.visualize: 
           self.trades = deque(maxlen=self.Render_range)
-          self.visualization = TradingGraph(Render_range=self.Render_range)
+          self.visualization = TradingGraph(self.Render_range)
         self.info = {}
         self.trades_PNL_ratio = []
         self.balance = self.init_balance
@@ -158,7 +158,8 @@ class BacktestEnv(Env):
         self.trades_ratio = self.good_trades_count/self.bad_trades_count
         self.pnl_means_ratio = abs(self.profit_mean/self.loss_mean)
         pnl_ratio = self.trades_ratio*self.pnl_means_ratio
-        self.reward = copysign(gain*(1/(abs(stdev_pnl)**(1/7)))*pnl_ratio*(hold_ratio**(1/5))*self.episode_orders, gain)/self.df_total_steps
+        avg_trades_ratio = mean(self.trades_PNL_ratio)
+        self.reward = copysign(gain*avg_trades_ratio*pnl_ratio*hold_ratio*self.episode_orders, gain)/self.df_total_steps
         slope_indicator = 1.000
         '''slope_indicator = self._linear_slope_indicator(self.trades_PNL_ratio)
         if self.reward<0 and slope_indicator<0:
@@ -170,9 +171,9 @@ class BacktestEnv(Env):
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}, episode_orders:{self.episode_orders:_}')
           print(f' trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{self.profit_mean*100:.2f}%/{self.loss_mean*100:.2f}%, ', end='')
           print(f'max(profit/drawdown):{self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')
-          print(f' reward:{self.reward:.3f}, hold_time_ratio:{hold_ratio:.2f}, pnl_ratio:{pnl_ratio:.2f}, stdev_pnl:{stdev_pnl:.5f}, slope_avg:{slope_indicator:.4f}, ', end='')
-          print(f'sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
-        self.info = {'gain':gain, 'pnl_ratio':pnl_ratio, 'stdev_pnl':stdev_pnl, 'hold_time_ratio':hold_ratio, 'slope_indicator':slope_indicator, 'exec_time':time.time()-self.start_t}
+          print(f' reward:{self.reward:.3f}, hold_time_ratio:{hold_ratio:.2f}, pnl_ratio:{pnl_ratio:.2f}, avg_trades_ratio:{avg_trades_ratio:.2f}, stdev_pnl:{stdev_pnl:.5f}, ', end='')
+          print(f'slope_avg:{slope_indicator:.4f}, sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
+        self.info = {'gain':gain, 'pnl_ratio':pnl_ratio, 'stdev_pnl':stdev_pnl, 'hold_time_ratio':hold_ratio, 'slope_indicator':slope_indicator, 'avg_trades_ratio':avg_trades_ratio, 'exec_time':time.time()-self.start_t}
       else:
         self.reward = 0
         self.sharpe_ratio,self.sortino_ratio,self.trades_ratio,self.pnl_means_ratio = -1,-1,-1,-1

@@ -1,5 +1,6 @@
 #import pandas as pd
 #import numpy as np
+import time
 import datetime as dt
 from collections import deque
 import matplotlib.pyplot as plt
@@ -20,15 +21,15 @@ def Write_to_file(list_values, filename='{}.txt'.format(dt.datetime.now().strfti
   file = open("logs\\"+filename, 'a+')
   file.write(line+"\n")
   file.close()
+  
 class TradingGraph:
     # A crypto trading visualization using matplotlib made to render custom prices which come in following way:
     # Date, Open, High, Low, Close, Volume, net_worth, trades
     # call render every step
     def __init__(self, Render_range):
-        self.Volume = deque(maxlen=Render_range)
-        self.net_worth = deque(maxlen=Render_range)
+        #self.Volume = deque(maxlen=Render_range)
+        #self.net_worth = deque(maxlen=Render_range)
         self.render_data = deque(maxlen=Render_range)
-        self.Render_range = Render_range
         # We are using the style ‘ggplot’
         plt.style.use('ggplot')
         # close all plots if there are open
@@ -43,29 +44,32 @@ class TradingGraph:
         self.ax3 = self.ax1.twinx()
         # Formatting Date
         self.date_format = mpl_dates.DateFormatter('%Y-%m-%d %H:%M')
+        self.ax1.xaxis.set_major_formatter(self.date_format)
+        self.ax2.set_xlabel('Date')
+        self.ax1.set_ylabel('Price')
+        self.ax3.set_ylabel('Balance')
         #self.date_format = mpl_dates.DateFormatter('%d-%m-%Y')
         # Add paddings to make graph easier to view
         #plt.subplots_adjust(left=0.07, bottom=-0.1, right=0.93, top=0.97, wspace=0, hspace=0)
     # Render the environment to the screen
     def render(self, Date, Open, High, Low, Close, Volume, net_worth, trades):
-        # append volume and net_worth to deque list
-        self.Volume.append(Volume)
-        self.net_worth.append(net_worth)
-        # before appending to deque list, need to convert Date to special format
         Date = mpl_dates.date2num([Date])[0]
-        self.render_data.append([Date, Open, High, Low, Close])
+        self.render_data.append([Date, Open, High, Low, Close, Volume, net_worth])
+        render_data_zip=list(zip(*self.render_data))
+        tohlc = [list(elem) for elem in zip(*render_data_zip[0:5])]
+        #print(render_data_zip)
+        #time.sleep(5)
         # Clear the frame rendered last step
         self.ax1.clear()
-        candlestick_ohlc(self.ax1, self.render_data, width=0.015/24, colorup='green', colordown='red', alpha=0.8)
+        candlestick_ohlc(self.ax1, tohlc, width=0.015/24, colorup='green', colordown='red', alpha=0.8)
         # Put all dates to one list and fill ax2 sublot with volume
-        Date_Render_range = [i[0] for i in self.render_data]
+        Date_Render_range = render_data_zip[0]
         self.ax2.clear()
-        self.ax2.fill_between(Date_Render_range, self.Volume, 0)
+        self.ax2.fill_between(Date_Render_range, render_data_zip[5], 0)
         # draw our net_worth graph on ax3 (shared with ax1) subplot
         self.ax3.clear()
-        self.ax3.plot(Date_Render_range, self.net_worth, color="blue")
+        self.ax3.plot(Date_Render_range, render_data_zip[6], color="blue")
         # beautify the x-labels (Our Date format)
-        self.ax1.xaxis.set_major_formatter(self.date_format)
         self.fig.autofmt_xdate()
         # sort sell and buy orders, put arrows in appropiate order positions
         for trade in trades:
@@ -96,9 +100,6 @@ class TradingGraph:
                     high_low = trade['Low']-10
                     self.ax1.scatter(trade_date, high_low, c='orange', label='orange', s = 180, edgecolors='orange', marker="^")
         # we need to set layers every step, because we are clearing subplots every step
-        self.ax2.set_xlabel('Date')
-        self.ax1.set_ylabel('Price')
-        self.ax3.set_ylabel('Balance')
         # I use tight_layout to replace plt.subplots_adjust
         self.fig.tight_layout()
         """Display image with matplotlib - interrupting other tasks"""

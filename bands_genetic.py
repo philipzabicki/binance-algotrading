@@ -11,7 +11,7 @@ from pymoo.optimize import minimize
 from pymoo.algorithms.moo.dnsga2 import DNSGA2
 from pymoo.algorithms.moo.nsga2 import NSGA2
 
-CPU_CORES_COUNT = multiprocessing.cpu_count()//2
+#CPU_CORES_COUNT = multiprocessing.cpu_count()-1
 CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
@@ -43,11 +43,11 @@ def main():
 
     problem = CustomProblem(env, elementwise_runner=runner)
     #algorithm = NSGA2(pop_size=100)
-    algorithm = DNSGA2(pop_size=512)
+    algorithm = DNSGA2(pop_size=32)
 
     res = minimize(problem,
                    algorithm,
-                   termination=('n_gen', 25),
+                   termination=('n_gen', 50),
                    seed=1,
                    verbose=True)
 
