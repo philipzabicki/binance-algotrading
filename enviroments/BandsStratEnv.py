@@ -36,7 +36,7 @@ class OneRunEnvSpot(BacktestEnvSpot):
      return np.array([-1.0 for _ in range(7)], dtype="float32")
   def _finish_episode(self):
      _, reward, done, info = super()._finish_episode()
-     obs =  np.array([self.episode_orders, self.cumulative_fees, self.sharpe_ratio, self.sortino_ratio, self.max_drawdown, self.trades_ratio, self.pnl_means_ratio])
+     obs =  np.array([self.episode_orders, self.cumulative_fees, self.sharpe_ratio, self.sortino_ratio, self.max_drawdown, self.PL_count_mean, self.PL_ratio])
      #print(f'      action=[ leverage={self.leverage}, postition_ratio={self.postition_ratio:.3f}, typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.2f} ]')
      return obs, reward, done, info
   def _execute(self):
@@ -69,9 +69,9 @@ class OneRunEnvSpot(BacktestEnvSpot):
             if obs[-1]<=-1: action=2
             else: action=0
         if self.visualize: self.render()
-      #print(f'postition_ratio={self.postition_ratio}, leverage={self.leverage}, StopLoss={self.stop_loss:.4f},', end='')
-      #print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
-      #print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
+      print(f'postition_ratio={self.postition_ratio}, leverage={self.leverage}, StopLoss={self.stop_loss:.4f},', end='')
+      print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
+      print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
       return obs,reward,done,info
   
 class OneRunEnv(BacktestEnv):
