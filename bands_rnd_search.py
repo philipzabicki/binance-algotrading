@@ -16,6 +16,7 @@ CPU_CORES_COUNT = 6
 #REPORT_FULL_PATH = 'Z:/home/philipz_abicki/binance-algotrading/reports/BTCTUSD1m_since0322_ATR.csv'
 REPORT_FULL_PATH = getcwd()+'/reports/BTCTUSD1m_since0322_ATR.csv'
 EPISODES = randint(10, 250)
+EPISODES = 100
 TICKER, ITV, FUTURES, START_DATE = 'BTCTUSD', '1m', False, '22-03-2023'
 
 def run_indefinitely(_):

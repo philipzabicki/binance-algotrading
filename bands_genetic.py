@@ -6,12 +6,17 @@ from utility import minutes_since, get_slips_stats
 from enviroments.BandsStratEnv import BandsStratEnvSpot
 from pymoo.core.problem import StarmapParallelization
 from pymoo.core.problem import ElementwiseProblem
-from pymoo.factory import get_sampling, get_crossover, get_mutation
+from pymoo.core.variable import Real, Integer
+#from pymoo.factory import get_sampling, get_crossover, get_mutation
 from pymoo.optimize import minimize
+from pymoo.visualization.pcp import PCP
 from pymoo.algorithms.moo.dnsga2 import DNSGA2
 from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariableSampling, MixedVariableDuplicateElimination
+#from pymoo.algorithms.soo.nonconvex.optuna import Optuna
 
-CPU_CORES_COUNT = multiprocessing.cpu_count()-1
+
+CPU_CORES_COUNT = multiprocessing.cpu_count()
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
@@ -21,14 +26,28 @@ class CustomProblem(ElementwiseProblem):
                          n_obj=1,
                          n_constr=0,
                          xl=np.array([0.0001, 0, 2, 1, 0.001]),
-                         xu=np.array([0.0200, 32, 300, 500, 7.500]), **kwargs)
-
+                         xu=np.array([0.0150, 32, 350, 500, 8.000]), **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
         out["F"] = np.array([-reward])
 
+class CustomMixedVariableProblem(ElementwiseProblem):
+    def __init__(self, env, **kwargs):
+        self.env = env
+        vars = {"SL": Real(bounds=(0.0001, 0.0150)),
+                "type": Integer(bounds=(0, 31)),
+                "MAperiod": Integer(bounds=(2, 350)),
+                "ATRperiod": Integer(bounds=(1, 500)),
+                "ATRmulti": Real(bounds=(0.001, 8.000))}
+        super().__init__(vars=vars, n_obj=1, **kwargs)
+    def _evaluate(self, X, out, *args, **kwargs):
+        action = [X['SL'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
+        #print(action)
+        _, reward, _, info = self.env.step(action)
+        out["F"] = np.array([-info['gain']])
+
 def main():
-    df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=300)
+    df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_600)
     df = df.drop(columns='Opened').to_numpy()
     df = np.hstack((df, np.zeros((df.shape[0], 1))))
     env = BandsStratEnvSpot(df=df[-minutes_since('23-03-2023'):,:].copy(), init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats())
@@ -41,22 +60,58 @@ def main():
     runner = StarmapParallelization(pool.starmap)
     '''
 
-    problem = CustomProblem(env, elementwise_runner=runner)
+    problem = CustomMixedVariableProblem(env, elementwise_runner=runner)
     #algorithm = NSGA2(pop_size=100)
-    algorithm = DNSGA2(pop_size=64)
+    #algorithm = DNSGA2(pop_size=64)
+    #algorithm = MixedVariableGA(pop=10)
+    algorithm = NSGA2(pop_size=1024,
+                      sampling=MixedVariableSampling(),
+                      mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
+                      eliminate_duplicates=MixedVariableDuplicateElimination())
+    #algorithm = Optuna() 
 
     res = minimize(problem,
                    algorithm,
-                   termination=('n_gen', 50),
-                   seed=1,
+                   termination=('n_gen', 25),
                    verbose=True)
 
     print('Exec time:', res.exec_time)
+    #print(f'res.pop.get(X) {res.pop.get("X")}')
+    #print(f'res.pop.get(F) {res.pop.get("F")}')
     if len(res.F)==1:
-        print(f'Reward {-res.f} Variables {round(res.X[0],4),int(res.X[1]),int(res.X[2]),int(res.X[3]),round(res.X[4],3)}')
+        if isinstance(res.X, dict):
+            print(f'Reward: {-res.f} Variables: {round(res.X["SL"],4), res.X["type"], res.X["MAperiod"], res.X["ATRperiod"], round(res.X["ATRmulti"],3)}')
+        else:
+            print(f'Reward: {-res.f} Variables: {round(res.X[0],4),int(res.X[1]),int(res.X[2]),int(res.X[3]),round(res.X[4],3)}')
     else:
         for front, var in zip(res.F, res.X):
-            print(f"Reward", front , "Variables:", round(var[0],4),int(var[1]),int(var[2]),int(var[3]),round(var[4],3))
+            print(f"Reward:", front , "Variables:", round(var[0],4),int(var[1]),int(var[2]),int(var[3]),round(var[4],3))
+
+    
+    #X_array = np.array([list(entry.values()) for entry in res.pop.get("X")])
+    X_array = np.array([[entry['type'], entry['MAperiod'], entry['ATRperiod'], entry['ATRmulti'], entry['SL']] for entry in res.pop.get("X")])
+    pop_size = len(X_array)
+    #print(X_array)
+    #labels = list(res.X.keys())
+    labels = ['type','MAperiod','ATRperiod','ATRmulti','SL']
+    bounds = np.array([problem.vars[name].bounds for name in labels]).T
+    #X = np.array([[sol.X[name] for name in labels] for sol in res.opt])
+    plot = PCP(labels=labels, bounds=bounds, n_ticks=10)
+    plot.set_axis_style(color="grey", alpha=1)
+    #plot.add(X_array[-1], color="black")
+    #plot.add(X_array, color='#c5f8ff')
+    plot.add(X_array[int(pop_size*.9)+1:], color='#a4f0ff')
+    plot.add(X_array[int(pop_size*.8)+1:int(pop_size*.9)], color='#88e7fa')
+    plot.add(X_array[int(pop_size*.7)+1:int(pop_size*.8)], color='#60d8f3')
+    plot.add(X_array[int(pop_size*.6)+1:int(pop_size*.7)], color='#33c5e8')
+    plot.add(X_array[int(pop_size*.5)+1:int(pop_size*.6)], color='#12b0da')
+    plot.add(X_array[int(pop_size*.4)+1:int(pop_size*.5)], color='#019cc8')
+    plot.add(X_array[int(pop_size*.3)+1:int(pop_size*.4)], color='#0086b4')
+    plot.add(X_array[int(pop_size*.2)+1:int(pop_size*.3)], color='#00719f')
+    plot.add(X_array[int(pop_size*.1)+1:int(pop_size*.2)], color='#005d89')
+    plot.add(X_array[:int(pop_size*.1)], color='#004a73')
+    plot.add(X_array[0], color='red')
+    plot.show()
 
 if __name__ == '__main__':
     main()

@@ -157,7 +157,7 @@ def on_message(ws, message):
                 SL,typeMA,MA_period,ATR_period,ATR_multi = float(df.iloc[-1, -5]), int(df.iloc[-1, -4]), int(df.iloc[-1, -3]), int(df.iloc[-1, -2]), float(df.iloc[-1, -1])
                 print(SL,typeMA,MA_period,ATR_period,ATR_multi)
                 candles = client.get_historical_klines(symbol, interval, str(MA_period*300+100)+" minutes ago UTC")
-                ohlc_v_data = deque([[float(candle[1]), float(candle[2]), float(candle[3]), float(candle[4]), float(candle[5]), float(candle[5])] for candle in candles[:-1]], maxlen=len(candles[:-1]))
+                ohlc_v_data = deque([[float(candle[1]), float(candle[2]), float(candle[3]), float(candle[4]), float(candle[5]), 0.0] for candle in candles[:-1]], maxlen=len(candles[:-1]))
                 #print(ohlc_v_data)
                 print('#########################')
 ws = websocket.WebSocketApp(socket, on_message=on_message)

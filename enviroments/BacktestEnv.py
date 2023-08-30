@@ -159,14 +159,14 @@ class BacktestEnv(Env):
         self.sharpe_ratio = (PNL_mean-risk_free_return)/PNL_stdev if PNL_stdev!=0 else -1
         self.sortino_ratio = (total_return-risk_free_return)/losses_stdev if losses_stdev!=0 else -1
 
-        self.reward = copysign(gain*self.PL_count_mean*PL_ratio_x_count*hold_ratio*self.episode_orders, gain)/self.df_total_steps
+        self.reward = copysign((gain**2)*self.PL_count_mean*PL_ratio_x_count*sqrt(hold_ratio)*self.episode_orders, gain)/self.df_total_steps
         slope_indicator = 1.000
         '''slope_indicator = self._linear_slope_indicator(self.PL_count_ratios)
         if self.reward<0 and slope_indicator<0:
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        if gain>0.25*self.init_balance:
+        if gain>0.4*self.init_balance:
         #if True:
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}, episode_orders:{self.episode_orders:_}')
           print(f' trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
@@ -174,12 +174,15 @@ class BacktestEnv(Env):
           print(f' reward:{self.reward:.3f}, PL_ratio_x_count:{PL_ratio_x_count:.3f}, PL_ratio:{self.PL_ratio:.3f}, hold_ratio:{hold_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, PNL_mean:{PNL_mean*100:.2f}%')
           print(f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
 
-        self.info = {'gain':gain, 'PL_ratio':self.PL_ratio, 'hold_ratio':hold_ratio, 'PL_count_mean':self.PL_count_mean, 'PNL_mean':PNL_mean,
-                     'slope_indicator':slope_indicator, 'exec_time':time.time()-self.start_t}
+        self.info = {'gain':gain, 'PL_ratio':self.PL_ratio, 'hold_ratio':hold_ratio,
+                     'PL_count_mean':self.PL_count_mean, 'PNL_mean':PNL_mean,'slope_indicator':slope_indicator,
+                     'exec_time':time.time()-self.start_t}
       else:
         self.reward = 0
         self.sharpe_ratio,self.sortino_ratio,self.PL_count_mean,self.PL_ratio = -1,-1,-1,-1
-        self.info = {'gain':0, 'PL_ratio':0, 'hold_ratio':0, 'PL_count_mean':0, 'PNL_mean':0, 'slope_indicator':0, 'exec_time':time.time()-self.start_t}
+        self.info = {'gain':0, 'PL_ratio':0, 'hold_ratio':0,
+                     'PL_count_mean':0, 'PNL_mean':0, 'slope_indicator':0,
+                     'exec_time':time.time()-self.start_t}
         #print(f'EPISODE FAILED! (end_step not reached OR profit/loss trades less than 2)')
       if self.write_to_csv:
         filename = str(self.__class__.__name__)+str(dt.today())[:-7].replace(':','-')+'.csv'

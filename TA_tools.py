@@ -8,8 +8,9 @@ from finta import TA as finTA
 import talib
 import ta 
 import get_data
+#import MAs
 #import datetime as dt
-#from numba import njit
+#from numba import njit, jit
 #from scipy.ndimage import convolve1d as conv
 #from sklearn import preprocessing
 
@@ -187,21 +188,9 @@ def Daily_seasonality(df):
 def HullMA(close, timeperiod):
   return talib.WMA( (talib.WMA(close, timeperiod//2 )*2)-(talib.WMA(close, timeperiod)), int(np.sqrt(timeperiod)) )
 
-'''#@feature_timeit
-def RMA(close, timeperiod):
-  alpha = 1.0 / timeperiod
-  rma = [0.0] * len(close)
-  suma = sum(close[-timeperiod:]) / timeperiod
-  for i in range(len(close)-timeperiod, len(close)):
-    suma = alpha * close[i] + (1.0 - alpha) * suma
-    rma[i] = suma
-  return rma'''
-
 #@feature_timeit
 def RMA(close, timeperiod):
   alpha = 1.0 / timeperiod
-  if len(close) == 0:
-    return []
   rma = [0.0] * len(close)
   # Calculating the SMA for the first 'length' values
   sma = sum(close[:timeperiod]) / timeperiod
@@ -340,6 +329,7 @@ def FBA(close, period):
     return fma
 
 #@feature_timeit
+#@jit
 def VAMA(close, volume, period):
     volume_weights = close * volume
     volume_weights_sum = np.convolve(volume_weights, np.ones(period), 'valid')

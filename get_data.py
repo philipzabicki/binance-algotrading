@@ -131,7 +131,7 @@ def by_DataClient(ticker='BTCUSDT', interval='1m', futures=True, statements=True
         print(f'\n updating data... ({futures} {ticker} {interval} )')
         DataClient(futures=futures).kline_data([ticker.upper()], interval, storage=['csv', os.getcwd()+directory], progress_statements=statements)
       else:
-        return fix_and_fill_df(df, interval)
+        return df
   else:
     print(f'\n downloading data... (futures={futures} {ticker} {interval})')
     DataClient(futures=futures).kline_data([ticker.upper()], interval, storage=['csv', os.getcwd()+directory], progress_statements=statements)

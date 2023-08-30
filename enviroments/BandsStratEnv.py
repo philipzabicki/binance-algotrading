@@ -69,9 +69,9 @@ class OneRunEnvSpot(BacktestEnvSpot):
             if obs[-1]<=-1: action=2
             else: action=0
         if self.visualize: self.render()
-      print(f'postition_ratio={self.postition_ratio}, leverage={self.leverage}, StopLoss={self.stop_loss:.4f},', end='')
-      print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
-      print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
+      #print(f'postition_ratio={self.postition_ratio}, leverage={self.leverage}, StopLoss={self.stop_loss:.4f},', end='')
+      #print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
+      #print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
       return obs,reward,done,info
   
 class OneRunEnv(BacktestEnv):
@@ -98,7 +98,7 @@ class BandsStratEnvSpot(Env):
         upper_bounds = np.array([np.inf for _ in range(8)])
         self.observation_space = spaces.Box(low=lower_bounds, high=upper_bounds)
         #self.action_space = spaces.Box(low=np.array([0.0001, 0, 1, 1, 0.001]), high=np.array([0.0150, 33, 200, 500, 5.000]), dtype=np.float64)
-        self.action_space = spaces.Box(low=np.array([0.0001, 0, 2, 1, 0.001]), high=np.array([0.0200, 32, 300, 500, 7.500]), dtype=np.float64)
+        self.action_space = spaces.Box(low=np.array([0.0001, 0, 2, 1, 0.001]), high=np.array([0.0150, 32, 350, 500, 8.000]), dtype=np.float64)
         #self.action_space = spaces.Box(low=np.array([0.01, 1, 0.0001, 0, 2, 1, 0.01]), high=np.array([1.0, 125, 0.015, 32, 200, 500, 5]))
     def reset(self, postition_ratio=1.0, leverage=1, StopLoss=0.01, pos_enter_type=0, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.250):
         #print(f'{self.exec_env.reset(postition_ratio, leverage, typeMA, MA_period, ATR_period, ATR_multi)}')
