@@ -2,3 +2,4 @@
 .other
 credentials.py
 **/__pycache__
+*.png
