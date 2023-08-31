@@ -20,7 +20,8 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 
 
 CPU_CORES_COUNT = multiprocessing.cpu_count()-1
-POP_SIZE = 16
+POP_SIZE = 512
+N_GEN = 10
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
@@ -124,7 +125,7 @@ def main():
     res = minimize(problem,
                    algorithm,
                    save_history=True,
-                   termination=('n_gen', 100),
+                   termination=('n_gen', N_GEN),
                    verbose=True)
 
     print('Exec time:', res.exec_time)
