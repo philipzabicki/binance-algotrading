@@ -154,12 +154,12 @@ class BacktestEnv(Env):
         self.PL_count_mean = np.mean(self.PL_count_ratios)
         self.PL_ratio = abs(profit_mean/losses_mean)
         PL_count_final = self.good_trades_count/self.bad_trades_count
-        PL_ratio_x_count = PL_count_final*self.PL_ratio
+        PLratio_x_PLcount = self.PL_count_mean*self.PL_ratio
         
         self.sharpe_ratio = (PNL_mean-risk_free_return)/PNL_stdev if PNL_stdev!=0 else -1
         self.sortino_ratio = (total_return-risk_free_return)/losses_stdev if losses_stdev!=0 else -1
 
-        self.reward = copysign((gain**2)*self.PL_count_mean*PL_ratio_x_count*sqrt(hold_ratio)*self.episode_orders, gain)/self.df_total_steps
+        self.reward = copysign((gain**2)*(PLratio_x_PLcount**1.5)*PL_count_final**self.episode_orders*sqrt(hold_ratio), gain)/self.df_total_steps
         slope_indicator = 1.000
         '''slope_indicator = self._linear_slope_indicator(self.PL_count_ratios)
         if self.reward<0 and slope_indicator<0:
@@ -171,7 +171,7 @@ class BacktestEnv(Env):
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}, episode_orders:{self.episode_orders:_}')
           print(f' trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
           print(f'max(profit/drawdown):{self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')
-          print(f' reward:{self.reward:.3f}, PL_ratio_x_count:{PL_ratio_x_count:.3f}, PL_ratio:{self.PL_ratio:.3f}, hold_ratio:{hold_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, PNL_mean:{PNL_mean*100:.2f}%')
+          print(f' reward:{self.reward:.3f}, PLratio_x_PLcount:{PLratio_x_PLcount:.3f}, PL_ratio:{self.PL_ratio:.3f}, hold_ratio:{hold_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, PNL_mean:{PNL_mean*100:.2f}%')
           print(f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
 
         self.info = {'gain':gain, 'PL_ratio':self.PL_ratio, 'hold_ratio':hold_ratio,
