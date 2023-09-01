@@ -21,7 +21,7 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 
 CPU_CORES_COUNT = multiprocessing.cpu_count()-1
 POP_SIZE = 512
-N_GEN = 10
+N_GEN = 25
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
@@ -30,8 +30,8 @@ class CustomProblem(ElementwiseProblem):
         super().__init__(n_var=5,
                          n_obj=1,
                          n_constr=0,
-                         xl=np.array([0.0001, 0, 2, 1, 0.001]),
-                         xu=np.array([0.0150, 32, 450, 500, 10.000]), **kwargs)
+                         xl=np.array([0.0015, 0, 2, 1, 1.000]),
+                         xu=np.array([0.0200, 32, 450, 500, 9.000]), **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
         out["F"] = np.array([-reward])
@@ -39,11 +39,11 @@ class CustomProblem(ElementwiseProblem):
 class CustomMixedVariableProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
         self.env = env
-        vars = {"SL": Real(bounds=(0.0001, 0.0150)),
+        vars = {"SL": Real(bounds=(0.0015, 0.0200)),
                 "type": Integer(bounds=(0, 31)),
                 "MAperiod": Integer(bounds=(2, 450)),
                 "ATRperiod": Integer(bounds=(1, 500)),
-                "ATRmulti": Real(bounds=(0.001, 10.000))}
+                "ATRmulti": Real(bounds=(1.000, 9.000))}
         super().__init__(vars=vars, n_obj=1, **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
