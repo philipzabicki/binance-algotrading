@@ -165,8 +165,8 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        #if gain>0.5*self.init_balance:
-        if True:
+        if gain>0.5*self.init_balance:
+        #if True:
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}, episode_orders:{self.episode_orders:_}')
           print(f' trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
           print(f'max(profit/drawdown):{self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')

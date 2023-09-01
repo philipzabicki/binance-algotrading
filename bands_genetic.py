@@ -19,19 +19,20 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 #from pymoo.algorithms.soo.nonconvex.optuna import Optuna
 
 
-CPU_CORES_COUNT = multiprocessing.cpu_count()-1
-POP_SIZE = 512
-N_GEN = 50
+CPU_CORES_COUNT = multiprocessing.cpu_count()
+POP_SIZE = 128
+N_GEN = 5
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
         self.env = env
-        super().__init__(n_var=5,
+        super().__init__(n_var=8,
                          n_obj=1,
                          n_constr=0,
-                         xl=np.array([0.0015, 0, 2, 1, 1.000]),
-                         xu=np.array([0.0200, 32, 450, 500, 9.000]), **kwargs)
+                         xl=np.array([0.0015, 0.001, 0.001, 0, 0, 2, 1, 1.000]),
+                         xu=np.array([0.0150, 1.000, 1.000, 2, 32, 450, 500, 9.000]),
+                         **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
         out["F"] = np.array([-reward])
@@ -39,14 +40,16 @@ class CustomProblem(ElementwiseProblem):
 class CustomMixedVariableProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
         self.env = env
-        vars = {"SL": Real(bounds=(0.0015, 0.0200)),
+        vars = {"SL": Real(bounds=(0.0015, 0.0150)),
+                "enter_at": Real(bounds=(0.001, 1.000)),
+                "close_at": Real(bounds=(0.001, 1.000)),
                 "type": Integer(bounds=(0, 31)),
                 "MAperiod": Integer(bounds=(2, 450)),
                 "ATRperiod": Integer(bounds=(1, 500)),
                 "ATRmulti": Real(bounds=(1.000, 9.000))}
         super().__init__(vars=vars, n_obj=1, **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
-        action = [X['SL'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
+        action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
         _, reward, _, info = self.env.step(action)
         out["F"] = np.array([-reward])
@@ -61,7 +64,6 @@ class MyCallback(Callback):
         self.n_evals.append(algorithm.evaluator.n_eval)
         self.opt.append(algorithm.opt[0].F)
 
-
 def display(result, problem, fname):
     n_evals = np.array([e.evaluator.n_eval for e in result.history])
     opt = np.array([-e.opt[0].F for e in result.history])
@@ -72,28 +74,28 @@ def display(result, problem, fname):
     plt.savefig(os.getcwd()+'/reports/Convergence_'+fname)
 
     #X_array = np.array([list(entry.values()) for entry in res.pop.get("X")])
-    X_array = np.array([[entry['type'], entry['MAperiod'], entry['ATRperiod'], entry['ATRmulti'], entry['SL']] for entry in result.pop.get("X")])
+    X_array = np.array([[entry['type'], entry['MAperiod'], entry['ATRperiod'], entry['ATRmulti'], entry['SL'], entry['enter_at'], entry['close_at']] for entry in result.pop.get("X")])
     pop_size = len(X_array)
     #print(X_array)
     #labels = list(res.X.keys())
-    labels = ['type','MAperiod','ATRperiod','ATRmulti','SL']
+    labels = ['type','MAperiod','ATRperiod','ATRmulti','SL','enter_at','close_at']
     bounds = np.array([problem.vars[name].bounds for name in labels]).T
     #X = np.array([[sol.X[name] for name in labels] for sol in res.opt])
     plot = PCP(labels=labels, bounds=bounds, n_ticks=10)
     plot.set_axis_style(color="grey", alpha=1)
     #plot.add(X_array[-1], color="black")
     #plot.add(X_array, color='#c5f8ff')
-    plot.add(X_array[int(pop_size*.9)+1:], color='#a4f0ff')
-    plot.add(X_array[int(pop_size*.8)+1:int(pop_size*.9)], color='#88e7fa')
-    plot.add(X_array[int(pop_size*.7)+1:int(pop_size*.8)], color='#60d8f3')
-    plot.add(X_array[int(pop_size*.6)+1:int(pop_size*.7)], color='#33c5e8')
-    plot.add(X_array[int(pop_size*.5)+1:int(pop_size*.6)], color='#12b0da')
-    plot.add(X_array[int(pop_size*.4)+1:int(pop_size*.5)], color='#019cc8')
-    plot.add(X_array[int(pop_size*.3)+1:int(pop_size*.4)], color='#0086b4')
-    plot.add(X_array[int(pop_size*.2)+1:int(pop_size*.3)], color='#00719f')
-    plot.add(X_array[int(pop_size*.1)+1:int(pop_size*.2)], color='#005d89')
-    plot.add(X_array[:int(pop_size*.1)], color='#004a73')
-    plot.add(X_array[0], color='red')
+    plot.add(X_array[int(pop_size*.9)+1:], linewidth=1.9, color='#a4f0ff')
+    plot.add(X_array[int(pop_size*.8)+1:int(pop_size*.9)], linewidth=1.8, color='#88e7fa')
+    plot.add(X_array[int(pop_size*.7)+1:int(pop_size*.8)], linewidth=1.7, color='#60d8f3')
+    plot.add(X_array[int(pop_size*.6)+1:int(pop_size*.7)], linewidth=1.6, color='#33c5e8')
+    plot.add(X_array[int(pop_size*.5)+1:int(pop_size*.6)], linewidth=1.5, color='#12b0da')
+    plot.add(X_array[int(pop_size*.4)+1:int(pop_size*.5)], linewidth=1.4, color='#019cc8')
+    plot.add(X_array[int(pop_size*.3)+1:int(pop_size*.4)], linewidth=1.3, color='#0086b4')
+    plot.add(X_array[int(pop_size*.2)+1:int(pop_size*.3)], linewidth=1.2, color='#00719f')
+    plot.add(X_array[int(pop_size*.1)+1:int(pop_size*.2)], linewidth=1.1, color='#005d89')
+    plot.add(X_array[:int(pop_size*.1)], linewidth=1.0, color='#004a73')
+    plot.add(X_array[0], linewidth=1.5, color='red')
     plot.save(os.getcwd()+'/reports/'+fname)
     plt.show()
     plot.show()
@@ -133,8 +135,8 @@ def main():
     #print(f'res.pop.get(F) {res.pop.get("F")}')
     if len(res.F)==1:
         if isinstance(res.X, dict):
-            print(f'Reward: {-res.f} Variables: {round(res.X["SL"],4), res.X["type"], res.X["MAperiod"], res.X["ATRperiod"], round(res.X["ATRmulti"],3)}')
-            filename = f'Pop{POP_SIZE}Rew{-res.f:.0f}Vars{round(res.X["SL"],4):.4f}-{res.X["type"]}-{res.X["MAperiod"]}-{res.X["ATRperiod"]}-{round(res.X["ATRmulti"],3):.3f}.png'
+            print(f'Reward: {-res.f} Variables: {round(res.X["SL"],4), round(res.X["enter_at"],3), round(res.X["close_at"],3), res.X["type"], res.X["MAperiod"], res.X["ATRperiod"], round(res.X["ATRmulti"],3)}')
+            filename = f'Pop{POP_SIZE}Rew{-res.f:.0f}Vars{round(res.X["SL"],4):.4f}-{round(res.X["enter_at"],3):.3f}-{round(res.X["close_at"],3):.3f}-{res.X["type"]}-{res.X["MAperiod"]}-{res.X["ATRperiod"]}-{round(res.X["ATRmulti"],3):.3f}.png'
         else:
             print(f'Reward: {-res.f} Variables: {round(res.X[0],4),int(res.X[1]),int(res.X[2]),int(res.X[3]),round(res.X[4],3)}')
             filename = 'Pop'+str(POP_SIZE)+'Rew'+str(-res.f)+'Vars'+str(round(res.X[0],4))+str(res.X[1])+str(res.X[2])+str(res.X[3])+str(round(res.X[4],3))+'.png'
