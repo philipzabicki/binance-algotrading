@@ -1,9 +1,4 @@
-import time
-import pandas as pd
-from datetime import datetime as dt
-from fileinput import filename
 from enviroments.DCAEnv import DCAEnv
-from statistics import mean
 import TA_tools    
 
 if __name__=="__main__":

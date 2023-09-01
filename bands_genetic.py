@@ -21,7 +21,7 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 
 CPU_CORES_COUNT = multiprocessing.cpu_count()-1
 POP_SIZE = 512
-N_GEN = 25
+N_GEN = 50
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):

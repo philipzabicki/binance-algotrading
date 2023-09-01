@@ -1,8 +1,6 @@
 from gc import collect
-from datetime import datetime as dt
 import numpy as np
 from gym import spaces, Env
-from statistics import mean, stdev
 from enviroments.BacktestEnv import BacktestEnv, BacktestEnvSpot
 from TA_tools import add_MA_signal
 

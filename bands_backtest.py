@@ -1,18 +1,12 @@
 import numpy as np 
 from matplotlib import pyplot as plt
-
-from fileinput import filename
-#import numpy as np
 from enviroments.BacktestEnv import BacktestEnvSpot, BacktestEnv
 import get_data
-from statistics import mean
-from dateutil.parser import parse
-
 from TA_tools import add_MA_signal
 from utility import minutes_since, get_slips_stats
 
 if __name__=="__main__":
-  SL,typeMA,MA_period,ATR_period,ATR_multi = 0.011, 12, 105, 63, 5.328
+  SL,typeMA,MA_period,ATR_period,ATR_multi = 0.004, 10, 113, 181, 5.516
   '''BTCTUSD_s = TA_tools.get_df(ticker='BTCTUSD', interval_list=['1m'], type='backtest', futures=False, indicator=None, period=None)
   BTCUSDT_f = TA_tools.get_df(ticker='BTCUSDT', interval_list=['1m'], type='backtest', futures=True, indicator=None, period=None)
   #df = pd.read_csv('C:/github/binance-trading/data/binance_data_spot/1s_data/BTCTUSD/BTCTUSD.csv').iloc[1_100_000:,:]

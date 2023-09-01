@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 from io import BytesIO
 from zipfile import ZipFile
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 from binance_data import DataClient
