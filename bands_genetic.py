@@ -20,8 +20,8 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 
 
 CPU_CORES_COUNT = multiprocessing.cpu_count()
-POP_SIZE = 128
-N_GEN = 5
+POP_SIZE = 32
+N_GEN = 25
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
@@ -66,7 +66,8 @@ class MyCallback(Callback):
 
 def display(result, problem, fname):
     n_evals = np.array([e.evaluator.n_eval for e in result.history])
-    opt = np.array([-e.opt[0].F for e in result.history])
+    #opt = np.array([-e.opt[0].F for e in result.history])
+    opt = [-np.mean(e.pop.get("F")) for e in result.history]
     plt.title("Convergence")
     plt.ylabel('Reward')
     plt.xlabel('n_evals')
