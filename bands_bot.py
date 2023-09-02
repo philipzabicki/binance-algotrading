@@ -18,7 +18,7 @@ client = Client(binance_API_KEY, binance_SECRET_KEY)
 
 symbol = 'BTCTUSD'
 interval = '1m'
-SL,typeMA,MA_period,ATR_period,ATR_multi = 0.0014, 31, 3, 1, 0.572
+SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.004, 0.744, 0.775, 27, 96, 44, 6.291
 
 print(f'INITIAL PARAMETERS', SL,typeMA,MA_period,ATR_period,ATR_multi)
 candles = client.get_historical_klines(symbol, interval, str(MA_period*300+100)+" minutes ago UTC")
@@ -67,7 +67,7 @@ def on_message(ws, message):
         print(f'    market_buy_slippage(avg/stdev):{buy_avg_slipp:.7f}/{buy_stdev_slipp:.7f} ({len(market_buy_slippages)})')
         print(f'    market_sell_slippage(avg/stdev):{sell_avg_slipp:.7f}/{sell_stdev_slipp:.7f} ({len(market_sell_slippages)})')
         print(f'    SL_slippage(avg/stdev):{StopLoss_avg_slipp:.7f}/{StopLoss_stdev_slipp:.7f} ({len(StopLoss_slippages)})')
-        if balance>1 and signal*1.001>=1:
+        if balance>1 and signal>=enter_at:
             q = str(balance/adj_close)[:7]
             market_buy = client.order_market_buy(symbol=symbol, quantity=q)
             filled_price = round(float(market_buy['cummulativeQuoteQty'])/float(market_buy['executedQty']), 2)
@@ -118,7 +118,7 @@ def on_message(ws, message):
                     _writer.writerow([StopLoss_slippages[-1]])
             if len(StopLoss_slippages)>1:
                 StopLoss_avg_slipp, StopLoss_stdev_slipp = mean(StopLoss_slippages), stdev(StopLoss_slippages)
-        elif balance<1 and signal*.999<=0:
+        elif balance<1 and signal<=-close_at:
             try:
                 client._delete('openOrders', True, data={'symbol': symbol})
                 print(f'DELETED STOP_LOSS LIMIT ORDER')

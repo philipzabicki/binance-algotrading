@@ -20,7 +20,7 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 
 
 CPU_CORES_COUNT = multiprocessing.cpu_count()
-POP_SIZE = 32
+POP_SIZE = 128
 N_GEN = 25
 #CPU_CORES_COUNT = 6
 
@@ -30,7 +30,7 @@ class CustomProblem(ElementwiseProblem):
         super().__init__(n_var=8,
                          n_obj=1,
                          n_constr=0,
-                         xl=np.array([0.0015, 0.001, 0.001, 0, 0, 2, 1, 1.000]),
+                         xl=np.array([0.0001, 0.001, 0.001, 0, 0, 2, 1, 1.000]),
                          xu=np.array([0.0150, 1.000, 1.000, 2, 32, 450, 500, 9.000]),
                          **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
@@ -40,7 +40,7 @@ class CustomProblem(ElementwiseProblem):
 class CustomMixedVariableProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
         self.env = env
-        vars = {"SL": Real(bounds=(0.0015, 0.0150)),
+        vars = {"SL": Real(bounds=(0.0001, 0.0150)),
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
                 "type": Integer(bounds=(0, 31)),

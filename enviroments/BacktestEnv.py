@@ -1,35 +1,42 @@
 from gc import collect
 import numpy as np
-import pandas as pd
 from  math import copysign, sqrt, floor
-import time
+from time import time, sleep
 from datetime import datetime as dt
 from collections import deque
 from random import randint
 from gym import spaces, Env
-from visualize import TradingGraph
 from utility import linear_reg_slope
+from visualize import TradingGraph
 
 class BacktestEnv(Env):
     def __init__(self, df, dates_df=None, df_mark=None, excluded_left=0, init_balance=1_000, postition_ratio=1.0, leverage=1, StopLoss=0.0, fee=0.0002, coin_step=0.001,
                  slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=0, Render_range=120, visualize=False, write_to_csv=False):
-        self.start_t = time.time()
+        self.start_t = time()
         # https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin
         self.POSITION_TIER = {  1:(125, .0040, 0), 2:(105, .005, 50), 
                                 3:(50, .01, 1_300), 4:(20, .025, 46_300), 
                                 5:(10, .05, 546_300), 6:(5, .10, 2_546_300), 
                                 7:(4, .125, 5_046_300), 8:(3, .15, 8_046_300), 
                                 9:(2, .25, 28_046_300), 10:(1, .50, 103_046_300)  }
-        self.dates_df = dates_df
-        try:
+        if visualize:
+          self.dates_df = dates_df
           print(f'start_date:{self.dates_df[0]}')
           print(f'end_date:{self.dates_df[-1]}')
-        except: None
+          self.visualize = True
+          self.Render_range = Render_range
+        else:
+          self.visualize = False
+        if write_to_csv:
+          from pandas import DataFrame
+          self.write_to_csv = True
+        else:
+          self.write_to_csv = False
+
         self.df = df
         self.df_mark = df_mark
         self.exclude_count = excluded_left
         self.df_total_steps = len(self.df)-1
-        
         self.coin_step = coin_step
         self.slippage = slippage
         self.fee = fee
@@ -45,9 +52,6 @@ class BacktestEnv(Env):
         self.leverage = leverage
         self.stop_loss = StopLoss
         self.lookback_window_size = lookback_window_size
-        self.Render_range = Render_range
-        self.visualize = visualize
-        self.write_to_csv = write_to_csv
         ###
         # Action space from 0 to 3, 0 is hold, 1 is buy, 2 is sell
         self.action_space = spaces.Discrete(3)
@@ -65,7 +69,7 @@ class BacktestEnv(Env):
 
     # Reset the state of the environment to an initial state
     def reset(self):
-        self.start_t = time.time()
+        self.start_t = time()
         self.df_total_steps = len(self.df)-1
         self.done = False
         self.reward = 0
@@ -173,19 +177,19 @@ class BacktestEnv(Env):
           print(f' reward:{self.reward:.3f}, PL_ratio:{self.PL_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, hold_ratio:{hold_ratio:.3f}, PNL_mean:{PNL_mean*100:.2f}%')
           print(f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
 
-        self.info = {'gain':gain, 'PL_ratio':self.PL_ratio, 'hold_ratio':hold_ratio,
+        self.info = {'gain':gain, 'PL_ratio':self.PL_ratio, 'PL_count_mean':self.PL_count_mean,'hold_ratio':hold_ratio,
                      'PL_count_mean':self.PL_count_mean, 'PNL_mean':PNL_mean,'slope_indicator':slope_indicator,
-                     'exec_time':time.time()-self.start_t}
+                     'exec_time':time()-self.start_t}
       else:
-        self.reward = 0
+        self.reward = -1
         self.sharpe_ratio,self.sortino_ratio,self.PL_count_mean,self.PL_ratio = -1,-1,-1,-1
         self.info = {'gain':0, 'PL_ratio':0, 'hold_ratio':0,
                      'PL_count_mean':0, 'PNL_mean':0, 'slope_indicator':0,
-                     'exec_time':time.time()-self.start_t}
+                     'exec_time':time()-self.start_t}
         #print(f'EPISODE FAILED! (end_step not reached OR profit/loss trades less than 2)')
       if self.write_to_csv:
         filename = str(self.__class__.__name__)+str(dt.today())[:-7].replace(':','-')+'.csv'
-        pd.DataFrame(self.PL_count_ratios).to_csv(filename, index=False)
+        DataFrame(self.PL_count_ratios).to_csv(filename, index=False)
         print(f'writing to file: {filename}')
       return self._next_observation(), self.reward, self.done, self.info
 
@@ -297,7 +301,7 @@ class BacktestEnv(Env):
         self.qty = adj_qty*self.coin_step
       elif side=='short':
         self.qty = -1*adj_qty*self.coin_step
-      #time.sleep(2)
+      #sleep(2)
 
     def _close_position(self, price, liquidated=False, SL=False):
       if SL:
@@ -363,7 +367,7 @@ class BacktestEnv(Env):
       self.in_position_counter = 0
       self.stop_loss_price = 0
       self.pnl = 0
-      #time.sleep(2)
+      #sleep(2)
     
     # Execute one time step within the environment
     def step(self, action):
@@ -403,9 +407,9 @@ class BacktestEnv(Env):
         info = {'action': action,
                 'reward': 0,
                 'step': self.current_step,
-                'exec_time':time.time()-self.start_t}
+                'exec_time':time()-self.start_t}
         self.current_step += 1
-        #time.sleep(0.1)
+        #sleep(0.1)
         return self._next_observation(), 0, self.done, info
         
     # Render environment
@@ -433,40 +437,36 @@ class BacktestEnvSpot(BacktestEnv):
         #if (self.current_step-self.start_step)%43_200 == 0:
           #self.balance+=222
           #self.init_balance+=222
-        close = self.df[self.current_step, 3]
-        if self.current_step==self.end_step:
-          if self.in_position:
-            self._sell(close)
-          return self._finish_episode()
-        if not self.in_position:
-          if action == 0:
-            ## Finish episode if there was 0 orders after 7 days (24*60*7)
-            if ((self.current_step-self.start_step)>10_080) and (not self.episode_orders):
-              #print(f'(episode finished: {self.episode_orders} trades {self.current_step-self.start_step} steps)')
-              return self._finish_episode()
-            else:
-              pass
-          elif action == 1:
-            if self.balance*(1-self.fee)<=(close*self.coin_step):
-              return self._finish_episode()
-            else:
-              self._buy(close)
-        elif self.in_position:
+        if self.in_position:
+          low,close = self.df[self.current_step, 1:3]
           self.in_position_counter+=1
           self._get_pnl(close, update=True)
           if self.pnl<0: self.loss_hold_counter +=1
           elif self.pnl>0: self.profit_hold_counter +=1
-          if self.df[self.current_step, 2]<=self.stop_loss_price:
+          if low<=self.stop_loss_price:
             self._sell(self.stop_loss_price, SL=True)
-          elif action == 0:
-              pass
           elif action==2 and self.qty>0:
-              self._sell(close)
-        info = {'action': action,
-                'reward': 0,
-                'step': self.current_step}
+            self._sell(close)
+        elif action==1:
+          close = self.df[self.current_step, 3]
+          self._buy(close)
+        elif (not self.episode_orders) and ((self.current_step-self.start_step)>2_880):
+          return self._finish_episode()
         self.current_step += 1
-        return self._next_observation(), 0, self.done, info
+        if self.current_step==self.end_step:
+          if self.in_position:
+            close = self.df[self.current_step, 3]
+            self._sell(close)
+          return self._finish_episode()
+        '''info = {'action': action,
+                'in_position': self.in_position,
+                'position_size': self.position_size,
+                'balance': self.balance,
+                'reward': 0,
+                'current_step': self.current_step,
+                'end_step': self.end_step}'''
+        #print(info)
+        return self._next_observation(), 0, self.done, None
 
   def _buy(self, price):
       if self.visualize:
@@ -478,7 +478,7 @@ class BacktestEnvSpot(BacktestEnv):
       self.enter_price = price
       self.stop_loss_price = round((1-self.stop_loss)*price,2)
       ### When there is no fee, substract 1 just to be sure balance can buy this amount
-      step_adj_qty = floor((self.position_size*(1-3*self.fee))/(price*self.coin_step))
+      step_adj_qty = floor((self.position_size*(1-2*self.fee))/(price*self.coin_step))
       if step_adj_qty==0:
         self._finish_episode()
       self.qty = round(step_adj_qty*self.coin_step, 5)
@@ -486,7 +486,7 @@ class BacktestEnvSpot(BacktestEnv):
       self.prev_bal = self.balance
       self.balance -= self.position_size
       fee = (self.position_size*self.fee)
-      self.balance -= fee
+      self.position_size -= fee
       self.cumulative_fees += fee
 
   def _sell(self, price, SL=False):
@@ -525,6 +525,9 @@ class BacktestEnvSpot(BacktestEnv):
       if self.good_trades_count>0 and self.bad_trades_count>0:
         self.PL_count_ratios.append(self.good_trades_count/self.bad_trades_count)
       self.position_size = (self.balance*self.postition_ratio)
+      ### If balance minus position_size and fee is less or eq 0
+      if (self.position_size<(price*self.coin_step)):
+        return self._finish_episode()
       self.qty = 0
       self.in_position = 0
       self.in_position_counter = 0
