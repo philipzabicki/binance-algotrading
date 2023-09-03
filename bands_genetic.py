@@ -1,11 +1,10 @@
-import os
-import numpy as np
-import multiprocessing
-#from multiprocessing.pool import ThreadPool
-import get_data
+from os import getcwd
+from numpy import array, hstack, mean, zeros
+from multiprocessing import Pool, cpu_count
+from get_data import by_DataClient
 from utility import minutes_since, get_slips_stats
-from enviroments.BandsStratEnv import BandsStratEnvSpot
-import matplotlib.pyplot as plt
+from enviroments.BandsStratEnv import BandsStratEnv
+from matplotlib import pyplot as plt
 from pymoo.core.problem import StarmapParallelization
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
@@ -19,23 +18,23 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 #from pymoo.algorithms.soo.nonconvex.optuna import Optuna
 
 
-CPU_CORES_COUNT = multiprocessing.cpu_count()
-POP_SIZE = 128
-N_GEN = 25
+CPU_CORES_COUNT = cpu_count()-1
+POP_SIZE = 64
+N_GEN = 10
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
         self.env = env
-        super().__init__(n_var=8,
+        super().__init__(n_var=7,
                          n_obj=1,
                          n_constr=0,
-                         xl=np.array([0.0001, 0.001, 0.001, 0, 0, 2, 1, 1.000]),
-                         xu=np.array([0.0150, 1.000, 1.000, 2, 32, 450, 500, 9.000]),
+                         xl=array([0.0001, 0.001, 0.001, 0, 2, 1, 1.000]),
+                         xu=array([0.0150, 1.000, 1.000, 32, 450, 500, 9.000]),
                          **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
-        out["F"] = np.array([-reward])
+        out["F"] = array([-reward])
 
 class CustomMixedVariableProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
@@ -52,7 +51,7 @@ class CustomMixedVariableProblem(ElementwiseProblem):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
         _, reward, _, info = self.env.step(action)
-        out["F"] = np.array([-reward])
+        out["F"] = array([-reward])
 
 class MyCallback(Callback):
     def __init__(self) -> None:
@@ -65,23 +64,23 @@ class MyCallback(Callback):
         self.opt.append(algorithm.opt[0].F)
 
 def display(result, problem, fname):
-    n_evals = np.array([e.evaluator.n_eval for e in result.history])
-    #opt = np.array([-e.opt[0].F for e in result.history])
-    opt = [-np.mean(e.pop.get("F")) for e in result.history]
+    n_evals = array([e.evaluator.n_eval for e in result.history])
+    #opt = array([-e.opt[0].F for e in result.history])
+    opt = [-mean(e.pop.get("F")) for e in result.history]
     plt.title("Convergence")
     plt.ylabel('Reward')
     plt.xlabel('n_evals')
     plt.plot(n_evals, opt, "--")
-    plt.savefig(os.getcwd()+'/reports/Convergence_'+fname)
+    plt.savefig(getcwd()+'/reports/Convergence_'+fname)
 
-    #X_array = np.array([list(entry.values()) for entry in res.pop.get("X")])
-    X_array = np.array([[entry['type'], entry['MAperiod'], entry['ATRperiod'], entry['ATRmulti'], entry['SL'], entry['enter_at'], entry['close_at']] for entry in result.pop.get("X")])
+    #X_array = array([list(entry.values()) for entry in res.pop.get("X")])
+    X_array = array([[entry['type'], entry['MAperiod'], entry['ATRperiod'], entry['ATRmulti'], entry['SL'], entry['enter_at'], entry['close_at']] for entry in result.pop.get("X")])
     pop_size = len(X_array)
     #print(X_array)
     #labels = list(res.X.keys())
     labels = ['type','MAperiod','ATRperiod','ATRmulti','SL','enter_at','close_at']
-    bounds = np.array([problem.vars[name].bounds for name in labels]).T
-    #X = np.array([[sol.X[name] for name in labels] for sol in res.opt])
+    bounds = array([problem.vars[name].bounds for name in labels]).T
+    #X = array([[sol.X[name] for name in labels] for sol in res.opt])
     plot = PCP(labels=labels, bounds=bounds, n_ticks=10)
     plot.set_axis_style(color="grey", alpha=1)
     #plot.add(X_array[-1], color="black")
@@ -97,17 +96,17 @@ def display(result, problem, fname):
     plot.add(X_array[int(pop_size*.1)+1:int(pop_size*.2)], linewidth=1.1, color='#005d89')
     plot.add(X_array[:int(pop_size*.1)], linewidth=1.0, color='#004a73')
     plot.add(X_array[0], linewidth=1.5, color='red')
-    plot.save(os.getcwd()+'/reports/'+fname)
+    plot.save(getcwd()+'/reports/'+fname)
     plt.show()
     plot.show()
 
 def main():
-    df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_600)
+    df = by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_600)
     df = df.drop(columns='Opened').to_numpy()
-    df = np.hstack((df, np.zeros((df.shape[0], 1))))
-    env = BandsStratEnvSpot(df=df[-minutes_since('23-03-2023'):,:].copy(), init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats())
+    df = hstack((df, zeros((df.shape[0], 1))))
+    env = BandsStratEnv(df=df[-minutes_since('23-03-2023'):,:].copy(), init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats())
 
-    pool = multiprocessing.Pool(CPU_CORES_COUNT)
+    pool = Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)
 
     '''

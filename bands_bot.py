@@ -18,9 +18,9 @@ client = Client(binance_API_KEY, binance_SECRET_KEY)
 
 symbol = 'BTCTUSD'
 interval = '1m'
-SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.004, 0.744, 0.775, 27, 96, 44, 6.291
+SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0015,0.242,0.84,27,33,1,3.797
 
-print(f'INITIAL PARAMETERS', SL,typeMA,MA_period,ATR_period,ATR_multi)
+print(f'INITIAL PARAMETERS', SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi)
 candles = client.get_historical_klines(symbol, interval, str(MA_period*300+100)+" minutes ago UTC")
 #print(candles)
 ohlc_v_data = deque([[float(candle[1]), float(candle[2]), float(candle[3]), float(candle[4]), float(candle[5]), 0.0] for candle in candles[:-1]], maxlen=len(candles[:-1]))
@@ -63,7 +63,7 @@ def on_message(ws, message):
         adj_close = uniform(close, round(close*(1+0.00005), 2))
         print(f' INFO close:{close} band_mid:{round(band_mid[-1],2)} atr:{atr[-1]:.2f} signal:{signal:.3f} adj_close:{adj_close:.2f} balance:{balance:.2f} init_balance:{init_balance:.2f}')
         print(f'    EST_ROI(D/W/M/Q/Y):{D:.3f}/{W:.3f}/{M:.3f}/{Q:.3f}/{Y:.3f}/{Y2:.3f}')
-        print(f'    current settings: {SL} {typeMA} {MA_period} {ATR_period} {ATR_multi}', )
+        print(f'    current settings: {SL} {enter_at} {close_at} {typeMA} {MA_period} {ATR_period} {ATR_multi}', )
         print(f'    market_buy_slippage(avg/stdev):{buy_avg_slipp:.7f}/{buy_stdev_slipp:.7f} ({len(market_buy_slippages)})')
         print(f'    market_sell_slippage(avg/stdev):{sell_avg_slipp:.7f}/{sell_stdev_slipp:.7f} ({len(market_sell_slippages)})')
         print(f'    SL_slippage(avg/stdev):{StopLoss_avg_slipp:.7f}/{StopLoss_stdev_slipp:.7f} ({len(StopLoss_slippages)})')

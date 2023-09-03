@@ -3,11 +3,12 @@ import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
 from time import time
 from statistics import mean, stdev
-from math import sqrt
+from math import sqrt, copysign
 from finta import TA as finTA
 import talib
 import ta 
 import get_data
+from utility import linear_reg_slope
 #import MAs
 #import datetime as dt
 #from numba import njit, jit
@@ -32,6 +33,16 @@ def scaleColumns(df, scaler):
         #caler.fit(df[[col]])
         df[col] = scaler.fit_transform(df[[col]])
     return df
+
+def linear_slope_indicator(self, values: list):
+      _5 = len(values)//20
+      percentile25 = linear_reg_slope(values[-_5*5:])
+      #percentile50 = linear_reg_slope(values[-_5*10:])
+      #percentile75 = linear_reg_slope(values[-_5*15:])
+      #percentile95 = linear_reg_slope(values[-_5*19:])
+      slope_avg = percentile25
+      #return slope_avg
+      return copysign(abs(slope_avg)**(1/4), slope_avg)
 
 ######################################################################################
 ############################# SIGNAL GENERATORS ######################################
@@ -390,10 +401,10 @@ def get_MA(np_df, type, MA_period):
   #elif type==-1: return np.around(HullMA(np_df[:,3], timeperiod=max(4,MA_period)), 2)
   #elif type==-2: return np.around(finTA.FRAMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), (lambda n: n + n % 2)(MA_period)).to_numpy(), 2)
 
-def add_MA_signal(np_df, type, MA_period, ATR_period, ATR_multi):
+def get_MA_signal(np_df, type, MA_period, ATR_period, ATR_multi):
   atr = talib.ATR(np_df[:,1], np_df[:,2], np_df[:,3], ATR_period)
-  np_df[:,-1] = anyMA_sig(np_df[:,3], get_MA(np_df, type, MA_period), atr, atr_multi=ATR_multi)
-  return np_df
+  return anyMA_sig(np_df[:,3], get_MA(np_df, type, MA_period), atr, atr_multi=ATR_multi)
+  #return np_df
 
 #@feature_timeit
 def other_features(df: pd.DataFrame, suffix=''):
