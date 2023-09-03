@@ -1,4 +1,4 @@
-from gc import collect
+#from gc import collect
 from numpy import array, float64, inf
 from gym import spaces, Env
 from enviroments.BacktestEnv import BacktestEnv, BacktestEnvFutures
@@ -30,7 +30,7 @@ class OneRunEnv(BacktestEnv):
      self.ATR_multi = ATR_multi
      self.df[:,-1] = get_MA_signal(self.df, self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
      super().reset()
-     collect()
+     #collect()
      return array([-1.0 for _ in range(7)], dtype="float32")
   def _finish_episode(self):
      _, reward, done, info = super()._finish_episode()
@@ -61,9 +61,10 @@ class OneRunEnv(BacktestEnv):
             action=2
          else:
             action=0
-      #print(f'postition_ratio={self.postition_ratio}, leverage={self.leverage}, StopLoss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
-      #print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
-      #print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
+      if self.balance-self.init_balance>.5*self.init_balance:
+         print(f'postition_ratio={self.postition_ratio}, StopLoss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
+         print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
+         print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
       return obs,reward,done,info
 
 class BandsStratEnv(Env):

@@ -1,4 +1,4 @@
-from gc import collect
+#from gc import collect
 from numpy import array, inf, mean, std, random
 from math import copysign, sqrt, floor
 from time import time, sleep
@@ -83,7 +83,6 @@ class BacktestEnv(Env):
         self.current_step = self.start_step
         ### Garbage collector call ;)
         #print(get_attributes_and_deep_sizes(self))
-        collect()
         return self._next_observation()
         '''for i in reversed(range(self.lookback_window_size)):
             current_step = self.current_step - i
@@ -112,7 +111,7 @@ class BacktestEnv(Env):
         #PLratio_x_PLcount = self.PL_ratio*self.PL_count_mean
         self.sharpe_ratio = (PNL_mean-risk_free_return)/PNL_stdev if PNL_stdev!=0 else -1
         self.sortino_ratio = (total_return-risk_free_return)/losses_stdev if losses_stdev!=0 else -1
-        self.reward = copysign((gain**3)*(self.episode_orders**2)*(self.PL_ratio**(1/4))*self.PL_count_mean*sqrt(hold_ratio), gain)/(self.df_total_steps**2)
+        self.reward = copysign((gain**2)*(self.PL_ratio**(1/4))*self.PL_count_mean*self.episode_orders*sqrt(hold_ratio), gain)/self.df_total_steps
         slope_indicator = 1.000
         '''slope_indicator = linear_slope_indicator(self.PL_count_ratios)
         if self.reward<0 and slope_indicator<0:

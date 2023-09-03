@@ -18,9 +18,9 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 #from pymoo.algorithms.soo.nonconvex.optuna import Optuna
 
 
-CPU_CORES_COUNT = cpu_count()-1
-POP_SIZE = 64
-N_GEN = 10
+CPU_CORES_COUNT = cpu_count()
+POP_SIZE = 2048
+N_GEN = 50
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
