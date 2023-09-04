@@ -21,7 +21,7 @@ def feature_timeit(feature_func):
     start_t = time()
     print(f'\r adding {feature_func.__name__} feature...', end='')
     ret = feature_func(*args, **kwargs)
-    print(f' ({(time()-start_t):.2f}s)')
+    print(f' ({(time()-start_t):.3f}s)')
     return ret
   return wrapper
 
@@ -259,15 +259,17 @@ def LSMA(close, timeperiod):
 def LSMA(close, timeperiod):
     n = len(close)
     lsma = np.empty(n)
-    lsma[:timeperiod-1] = np.nan  # Wypełnij pierwsze wartości jako NaN
+    lsma[:timeperiod-1] = np.nan
+    # Przygotuj x raz i używaj w pętli
+    x = np.arange(0, timeperiod)
+    A = np.empty((timeperiod, 2))
+    A[:, 0] = x
+    A[:, 1] = 1
+    AT = A.T.copy()  # This creates a contiguous array
+    ATA_inv = np.linalg.inv(np.dot(AT, A))
     for i in range(timeperiod - 1, n):
-        x = np.arange(0, timeperiod)
-        y = close[i - timeperiod + 1:i + 1]
-        # Stosuj wierzchołki ręcznie zamiast korzystać z np.vstack
-        A = np.empty((timeperiod, 2))
-        A[:, 0] = x
-        A[:, 1] = 1
-        m, c = np.linalg.lstsq(A, y, rcond=-1)[0]
+        y = close[i - timeperiod + 1:i + 1].copy()
+        m, c = np.dot(ATA_inv, np.dot(AT, y))
         lsma[i] = m * (timeperiod-1) + c
     return lsma
 
@@ -462,39 +464,40 @@ def get_MA(np_df, type, MA_period):
   #elif type==-2: return np.around(finTA.FRAMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), (lambda n: n + n % 2)(MA_period)).to_numpy(), 2)
 '''
 MA_TYPES = {0: lambda np_df,period: RMA(np_df[:,3], timeperiod=period),
-          1: lambda np_df,period: talib.SMA(np_df[:,3], timeperiod=period),
-          2: lambda np_df,period: talib.EMA(np_df[:,3], timeperiod=period),
-          3: lambda np_df,period: talib.WMA(np_df[:,3], timeperiod=period),
-          4: lambda np_df,period: VWMA(np_df[:,3], np_df[:,4], timeperiod=period),
-          5: lambda np_df,period: talib.KAMA(np_df[:,3], timeperiod=period),
-          6: lambda np_df,period: talib.TRIMA(np_df[:,3], timeperiod=period),
-          7: lambda np_df,period: talib.DEMA(np_df[:,3], timeperiod=period),
-          8: lambda np_df,period: talib.TEMA(np_df[:,3], timeperiod=period),
-          9: lambda np_df,period: talib.T3(np_df[:,3], timeperiod=period),
-          10: lambda np_df,period: finTA.SMM(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
-          11: lambda np_df,period: finTA.SSMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
-          12: lambda np_df,period: finTA.VAMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
-          13: lambda np_df,period: finTA.ZLEMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), max(4,period)).to_numpy(),
-          14: lambda np_df,period: finTA.EVWMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
-          15: lambda np_df,period: finTA.SMMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
-          16: lambda np_df,period: finTA.HMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
-          17: lambda np_df,period: ALMA(np_df[:,3], timeperiod=period),
-          18: lambda np_df,period: HammingMA(np_df[:,3], period),
-          19: lambda np_df,period: LSMA(np_df[:,3], max(3,period)),
-          20: lambda np_df,period: LWMA(np_df[:,3],  period),
-          21: lambda np_df,period: MGD(np_df[:,3], period),
-          22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
-          23: lambda np_df,period: GMA(np_df[:,3], period),
-          24: lambda np_df,period: FBA(np_df[:,3], period),
-          25: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=0),
-          26: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=1),
-          27: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=2),
-          28: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=3),
-          29: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=4),
-          30: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=5),
-          31: lambda np_df,period: VIDYA(np_df[:,3], period)
-          }
+            1: lambda np_df,period: talib.SMA(np_df[:,3], timeperiod=period),
+            2: lambda np_df,period: talib.EMA(np_df[:,3], timeperiod=period),
+            3: lambda np_df,period: talib.WMA(np_df[:,3], timeperiod=period),
+            4: lambda np_df,period: VWMA(np_df[:,3], np_df[:,4], timeperiod=period),
+            5: lambda np_df,period: talib.KAMA(np_df[:,3], timeperiod=period),
+            6: lambda np_df,period: talib.TRIMA(np_df[:,3], timeperiod=period),
+            7: lambda np_df,period: talib.DEMA(np_df[:,3], timeperiod=period),
+            8: lambda np_df,period: talib.TEMA(np_df[:,3], timeperiod=period),
+            9: lambda np_df,period: talib.T3(np_df[:,3], timeperiod=period),
+            10: lambda np_df,period: finTA.SMM(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+            11: lambda np_df,period: finTA.SSMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+            12: lambda np_df,period: finTA.VAMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+            13: lambda np_df,period: finTA.ZLEMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), max(4,period)).to_numpy(),
+            14: lambda np_df,period: finTA.EVWMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+            15: lambda np_df,period: finTA.SMMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+            16: lambda np_df,period: finTA.HMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+            17: lambda np_df,period: ALMA(np_df[:,3], timeperiod=period),
+            18: lambda np_df,period: HammingMA(np_df[:,3], period),
+            19: lambda np_df,period: LSMA(np_df[:,3], max(3,period)),
+            20: lambda np_df,period: LWMA(np_df[:,3],  period),
+            21: lambda np_df,period: MGD(np_df[:,3], period),
+            22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
+            23: lambda np_df,period: GMA(np_df[:,3], period),
+            24: lambda np_df,period: FBA(np_df[:,3], period),
+            25: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=0),
+            26: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=1),
+            27: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=2),
+            28: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=3),
+            29: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=4),
+            30: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=5),
+            31: lambda np_df,period: VIDYA(np_df[:,3], period)
+            }
 
+#@feature_timeit
 def get_MA(np_df, type, MA_period):
    return np.around(MA_TYPES[type](np_df, MA_period),2)
 

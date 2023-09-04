@@ -13,9 +13,9 @@ from enviroments.BandsStratEnv import BandsStratEnv
 from utility import minutes_since, get_slips_stats
 import cProfile
 
-#CPU_CORES_COUNT = cpu_count()
+#CPU_CORES_COUNT = cpu_count()//2
 CPU_CORES_COUNT = 1
-EPISODES_PER_CORE = 128
+EPISODES_PER_CORE = 150
 #CPU_CORES_COUNT = 6
 #REPORT_FULL_PATH = 'Z:/home/philipz_abicki/binance-algotrading/reports/BTCTUSD1m_since0322_ATR.csv'
 REPORT_FULL_PATH = getcwd()+'/reports/BTCTUSD1m_since0322_ATR.csv'
@@ -28,7 +28,6 @@ def run_indefinitely(_, df):
     env = BandsStratEnv(df=df, 
                             init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats(),
                             visualize=False, Render_range=60)
-
     timers, results = [], []
     i, timer = 0, time()
     while len(results)<EPISODES_PER_CORE:
@@ -50,12 +49,6 @@ def run_indefinitely(_, df):
         _writer = writer(file)
         #writer.writerow(header)
         _writer.writerows(results)
-    df = read_csv(REPORT_FULL_PATH)
-    # Removing the first half of the rows
-    df.sort_values(by=['reward'], inplace=True)
-    #df = df.tail(df.shape[0] // 1)
-    # Save sorted DataFrame back to the csv file
-    df.to_csv(REPORT_FULL_PATH, index=False)
     profiler.disable()  # Zakończ profilowanie
     profiler.print_stats(sort='tottime')
 
@@ -72,7 +65,12 @@ def main():
             # The list(range(num_processes)) is just to provide a different argument to each process (even though it's not used in the function)
             pool.starmap(run_indefinitely, [(i, df) for i in range(CPU_CORES_COUNT)])
             #pool.map(run_indefinitely, range(CPU_CORES_COUNT))
-        print(f'POOL exec time: {time()-start_t:.2f}s')
+        df = read_csv(REPORT_FULL_PATH)
+        df.sort_values(by=['reward'], inplace=True)
+        df.to_csv(REPORT_FULL_PATH, index=False)
+        exec_time = time()-start_t
+        eps = (CPU_CORES_COUNT*EPISODES_PER_CORE)/exec_time
+        print(f'POOL exec time: {exec_time:.2f}s EpisodesPerSecond: {eps:.3f}')
         #sleep(10000)
         break
         collect()

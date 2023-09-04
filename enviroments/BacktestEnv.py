@@ -35,6 +35,10 @@ class BacktestEnv(Env):
         self.leverage = 1
         self.stop_loss = StopLoss
         self.lookback_window_size = lookback_window_size
+        rnd_size = int(sqrt(self.df_total_steps))
+        self.RND_SET = {'market_buy':random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], rnd_size),
+                        'market_sell':random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1], rnd_size),
+                        'stop_loss':random.normal(self.slippage['SL'][0], self.slippage['SL'][1], rnd_size)}
         # Action space from 0 to 3, 0 is hold, 1 is buy, 2 is sell
         self.action_space = spaces.Discrete(3)
         #self.action_space_n = len(self.action_space)
@@ -97,17 +101,17 @@ class BacktestEnv(Env):
       self.done = True
       #if (self.current_step==self.end_step) and self.good_trades_count>1 and self.bad_trades_count>1:
       if self.good_trades_count>1 and self.bad_trades_count>1:
-        PNLarrs = array(self.PL_ratios_and_PNLs)
+        self.PNLarrs = array(self.PL_ratios_and_PNLs)
         #self.realized_PNLs, self.PL_count_ratios = array([e[0] for e in self.PL_ratios_and_PNLs]), array([e[1] for e in self.PL_ratios_and_PNLs])
         gain = self.balance-self.init_balance
         total_return = (self.balance/self.init_balance)-1
         risk_free_return = (self.df[-1,3]/self.df[0,3])-1
-        PNL_mean, PNL_stdev = mean(PNLarrs[:,0]), std(PNLarrs[:,0])
-        profit_mean = mean(PNLarrs[:,0][PNLarrs[:,0]>0])
-        losses_mean = mean(PNLarrs[:,0][PNLarrs[:,0]<0])
-        losses_stdev = std(PNLarrs[:,0][PNLarrs[:,0]<0])
+        PNL_mean, PNL_stdev = mean(self.PNLarrs[:,0]), std(self.PNLarrs[:,0])
+        profit_mean = mean(self.PNLarrs[:,0][self.PNLarrs[:,0]>0])
+        losses_mean = mean(self.PNLarrs[:,0][self.PNLarrs[:,0]<0])
+        losses_stdev = std(self.PNLarrs[:,0][self.PNLarrs[:,0]<0])
         hold_ratio = self.profit_hold_counter/self.loss_hold_counter if self.loss_hold_counter>0 and self.profit_hold_counter>0 else 1
-        self.PL_count_mean = mean(PNLarrs[:,1])
+        self.PL_count_mean = mean(self.PNLarrs[:,1])
         self.PL_ratio = abs(profit_mean/losses_mean)
         #PL_count_final = self.good_trades_count/self.bad_trades_count
         #PLratio_x_PLcount = self.PL_ratio*self.PL_count_mean
@@ -144,7 +148,7 @@ class BacktestEnv(Env):
     def _next_observation(self):
       return self.df[self.current_step, self.exclude_count:]
     
-    def _random_factor(self, price, trade_type):
+    '''def _random_factor(self, price, trade_type):
       if trade_type=='market_buy':
         market_buy_rnd_factor = random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], 1)[0]
         return round(price*market_buy_rnd_factor, 2)
@@ -155,8 +159,14 @@ class BacktestEnv(Env):
         SL_rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1], 1)[0]
         while price*SL_rnd_factor>self.enter_price:
           SL_rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1], 1)[0]
-        return round(price*SL_rnd_factor, 2)
-      
+        return round(price*SL_rnd_factor, 2)'''
+    
+    def _random_factor(self, price, trade_type):
+      #rnd = random.choice(self.RND_SET[trade_type])
+      #print(rnd)
+      return round(price*random.choice(self.RND_SET[trade_type]), 2)
+      #random.choice(self.RND_SET[trade_type],1)
+
     def _buy(self, price):
       price = self._random_factor(price, 'market_buy')
       self.in_position = 1

@@ -29,7 +29,7 @@ class OneRunEnv(BacktestEnv):
      self.MA_period = MA_period
      self.ATR_period = ATR_period
      self.ATR_multi = ATR_multi
-     self.df[:,-1] = get_MA_signal(self.df, self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
+     self.df[:,-1] = get_MA_signal(self.df.copy(), self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
      super().reset()
      #collect()
      return array([-1.0 for _ in range(7)], dtype="float32")

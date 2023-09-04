@@ -7,7 +7,7 @@ from TA_tools import get_MA_signal
 from utility import minutes_since, get_slips_stats
 
 if __name__=="__main__":
-  SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0039, 0.744, 0.429, 6, 134, 38, 8.366
+  SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0039, 0.744, 0.429, 19, 10, 38, 8.366
 
   df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_000)
   dates_df = df['Opened'].to_numpy()
@@ -25,7 +25,7 @@ if __name__=="__main__":
                                 init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats(),
                                 Render_range=120, visualize=False)
   _,_,_,_ = strat_env.step([SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi])
-  plt.plot(strat_env.exec_env.PL_count_ratios)
+  plt.plot(strat_env.exec_env.PNLarrs[:,0])
   plt.show()
-  plt.plot(strat_env.exec_env.realized_PNLs)
+  plt.plot(strat_env.exec_env.PNLarrs[:,1])
   plt.show()
