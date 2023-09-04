@@ -97,15 +97,17 @@ class BacktestEnv(Env):
       self.done = True
       #if (self.current_step==self.end_step) and self.good_trades_count>1 and self.bad_trades_count>1:
       if self.good_trades_count>1 and self.bad_trades_count>1:
-        self.realized_PNLs, self.PL_count_ratios = array([e[0] for e in self.PL_ratios_and_PNLs]), array([e[1] for e in self.PL_ratios_and_PNLs])
+        PNLarrs = array(self.PL_ratios_and_PNLs)
+        #self.realized_PNLs, self.PL_count_ratios = array([e[0] for e in self.PL_ratios_and_PNLs]), array([e[1] for e in self.PL_ratios_and_PNLs])
         gain = self.balance-self.init_balance
         total_return = (self.balance/self.init_balance)-1
         risk_free_return = (self.df[-1,3]/self.df[0,3])-1
-        PNL_mean, PNL_stdev = mean(self.realized_PNLs), std(self.realized_PNLs)
-        profit_mean = mean(self.realized_PNLs[self.realized_PNLs>0])
-        losses_mean, losses_stdev = mean(self.realized_PNLs[self.realized_PNLs<0]), std(self.realized_PNLs[self.realized_PNLs<0])
+        PNL_mean, PNL_stdev = mean(PNLarrs[:,0]), std(PNLarrs[:,0])
+        profit_mean = mean(PNLarrs[:,0][PNLarrs[:,0]>0])
+        losses_mean = mean(PNLarrs[:,0][PNLarrs[:,0]<0])
+        losses_stdev = std(PNLarrs[:,0][PNLarrs[:,0]<0])
         hold_ratio = self.profit_hold_counter/self.loss_hold_counter if self.loss_hold_counter>0 and self.profit_hold_counter>0 else 1
-        self.PL_count_mean = mean(self.PL_count_ratios)
+        self.PL_count_mean = mean(PNLarrs[:,1])
         self.PL_ratio = abs(profit_mean/losses_mean)
         #PL_count_final = self.good_trades_count/self.bad_trades_count
         #PLratio_x_PLcount = self.PL_ratio*self.PL_count_mean
@@ -120,8 +122,8 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator'''
         if gain>.5*self.init_balance:
         #if True:
-          print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}, episode_orders:{self.episode_orders:_}')
-          print(f' trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
+          print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
+          print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
           print(f'max(profit/drawdown):{self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')
           print(f' reward:{self.reward:.3f}, PL_ratio:{self.PL_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, hold_ratio:{hold_ratio:.3f}, PNL_mean:{PNL_mean*100:.2f}%')
           print(f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
