@@ -68,6 +68,7 @@ class BacktestEnv(Env):
         self.df_total_steps = len(self.df)-1
         self.done = False
         self.reward = 0
+        self.output = False
         if self.visualize: 
           self.trades = deque(maxlen=self.Render_range)
           self.visualization = TradingGraph(self.Render_range)
@@ -147,6 +148,7 @@ class BacktestEnv(Env):
                      'PL_count_mean':self.PL_count_mean, 'PNL_mean':PNL_mean,'slope_indicator':slope_indicator,
                      'exec_time':time()-self.start_t}
       else:
+        self.output = False
         self.reward = -1
         self.sharpe_ratio,self.sortino_ratio,self.PL_count_mean,self.PL_ratio = -1,-1,-1,-1
         self.info = {'gain':0, 'PL_ratio':0, 'hold_ratio':0,
@@ -200,7 +202,7 @@ class BacktestEnv(Env):
 
     def _sell(self, price, SL=False):
       if SL:
-        price = self._random_factor(price, 'stop_loss')
+        price = self._random_factor(price, 'SL')
         order_type = 'open_short'
       else:
         price = self._random_factor(price, 'market_sell')

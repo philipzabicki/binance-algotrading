@@ -114,7 +114,7 @@ def main():
     runner = StarmapParallelization(pool.starmap)
     '''
 
-    problem = CustomMixedVariableProblem(env.copy(), elementwise_runner=runner)
+    problem = CustomMixedVariableProblem(env, elementwise_runner=runner)
     #algorithm = NSGA2(pop_size=100)
     #algorithm = DNSGA2(pop_size=64)
     #algorithm = MixedVariableGA(pop=10)
