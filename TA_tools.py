@@ -321,9 +321,9 @@ def cosine_kernel(x):
 def NadarayWatsonMA(close, timeperiod, kernel=0):
     nwma = np.empty_like(close)
     nwma[:timeperiod-1] = np.nan
+    distances = np.abs(np.arange(timeperiod) - (timeperiod-1))
     for i in range(timeperiod-1, len(close)):
         window_prices = np.ascontiguousarray(close[i-timeperiod+1:i+1])
-        distances = np.abs(np.arange(timeperiod) - (timeperiod-1))
         # Explicitly branching for kernels
         if kernel == 0:
             weights = gaussian_kernel(distances / timeperiod)
@@ -371,6 +371,7 @@ def VIDYA(close, period):
     return VIDYA
 
 #@feature_timeit
+@jit(nopython=True)
 def GMA(close, period):
     """Compute Geometric Moving Average using logarithms for efficiency."""
     gma = np.zeros(len(close))

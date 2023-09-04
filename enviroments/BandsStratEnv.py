@@ -1,4 +1,4 @@
-#from gc import collect
+from gc import collect
 from numpy import array, float64, inf
 from gym import spaces, Env
 from enviroments.BacktestEnv import BacktestEnv, BacktestEnvFutures
@@ -31,7 +31,7 @@ class OneRunEnv(BacktestEnv):
      self.ATR_multi = ATR_multi
      self.df[:,-1] = get_MA_signal(self.df.copy(), self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
      super().reset()
-     #collect()
+     collect()
      return array([-1.0 for _ in range(7)], dtype="float32")
   def _finish_episode(self):
      _, reward, done, info = super()._finish_episode()
