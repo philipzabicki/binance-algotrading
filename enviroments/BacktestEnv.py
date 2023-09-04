@@ -40,9 +40,15 @@ class BacktestEnv(Env):
         self.RND_SET = {'market_buy':random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], rnd_size),
                         'market_sell':random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1], rnd_size),
                         'stop_loss':random.normal(self.slippage['SL'][0], self.slippage['SL'][1], rnd_size)}'''
-        self.RND_SET = {'market_buy':lambda: normalvariate(self.slippage['market_buy'][0], self.slippage['market_buy'][1]),
-                        'market_sell':lambda: normalvariate(self.slippage['market_sell'][0], self.slippage['market_sell'][1]),
-                        'stop_loss':lambda: normalvariate(self.slippage['SL'][0], self.slippage['SL'][1])}
+        '''def _market_buy_rnd():
+          return normalvariate(self.slippage['market_buy'][0], self.slippage['market_buy'][1])
+        def _market_sell_rnd():
+          return normalvariate(self.slippage['market_sell'][0], self.slippage['market_sell'][1])
+        def _stop_loss_rnd():
+          return normalvariate(self.slippage['SL'][0], self.slippage['SL'][1])
+        self.RND_SET = {'market_buy':_market_buy_rnd,
+                        'market_sell':_market_sell_rnd,
+                        'stop_loss':_stop_loss_rnd}'''
         # Action space from 0 to 3, 0 is hold, 1 is buy, 2 is sell
         self.action_space = spaces.Discrete(3)
         #self.action_space_n = len(self.action_space)
@@ -170,7 +176,7 @@ class BacktestEnv(Env):
       return round(price*random.choice(self.RND_SET[trade_type]), 2)'''
     
     def _random_factor(self, price, trade_type):
-      return round(price*self.RND_SET[trade_type](), 2)
+      return round(price*normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1]), 2)
 
     def _buy(self, price):
       price = self._random_factor(price, 'market_buy')

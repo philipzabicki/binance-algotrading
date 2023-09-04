@@ -322,24 +322,23 @@ def NadarayWatsonMA(close, timeperiod, kernel=0):
     nwma = np.empty_like(close)
     nwma[:timeperiod-1] = np.nan
     distances = np.abs(np.arange(timeperiod) - (timeperiod-1))
+    if kernel == 0:
+        weights = gaussian_kernel(distances / timeperiod)
+    elif kernel == 1:
+        weights = epanechnikov_kernel(distances / timeperiod)
+    elif kernel == 2:
+        weights = rectangular_kernel(distances / timeperiod)
+    elif kernel == 3:
+        weights = triangular_kernel(distances / timeperiod)
+    elif kernel == 4:
+        weights = biweight_kernel(distances / timeperiod)
+    elif kernel == 5:
+        weights = cosine_kernel(distances / timeperiod)
+    else:
+        raise ValueError("Invalid kernel value")
+    weights = np.ascontiguousarray(weights)
     for i in range(timeperiod-1, len(close)):
         window_prices = np.ascontiguousarray(close[i-timeperiod+1:i+1])
-        # Explicitly branching for kernels
-        if kernel == 0:
-            weights = gaussian_kernel(distances / timeperiod)
-        elif kernel == 1:
-            weights = epanechnikov_kernel(distances / timeperiod)
-        elif kernel == 2:
-            weights = rectangular_kernel(distances / timeperiod)
-        elif kernel == 3:
-            weights = triangular_kernel(distances / timeperiod)
-        elif kernel == 4:
-            weights = biweight_kernel(distances / timeperiod)
-        elif kernel == 5:
-            weights = cosine_kernel(distances / timeperiod)
-        else:
-            raise ValueError("Invalid kernel value")
-        weights = np.ascontiguousarray(weights)
         nwma[i] = (weights @ window_prices) / weights.sum()
     return nwma
 
