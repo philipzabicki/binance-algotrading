@@ -6,11 +6,26 @@ from dateutil.parser import parse
 from scipy.stats import skew, kurtosis
 from pympler import asizeof
 
+def get_stats_for_file(file_path):
+    df = pd.read_csv(file_path, header=0)
+    mean = float(df.mean().values[0])
+    std = float(df.std().values[0])
+    return mean, std
+
 def get_slips_stats():
-    buy = pd.read_csv(getcwd()+'/settings/slippages_market_buy.csv')
-    sell = pd.read_csv(getcwd()+'/settings/slippages_market_sell.csv')
-    SL = pd.read_csv(getcwd()+'/settings/slippages_StopLoss.csv')
-    return {'market_buy':(buy.mean(), buy.std()), 'market_sell':(sell.mean(), sell.std()), 'SL':(SL.mean(), SL.std())}
+    base_path = getcwd() + '\\settings\\'
+    file_names = ['slippages_market_buy.csv', 'slippages_market_sell.csv', 'slippages_StopLoss.csv']
+    labels = ['market_buy', 'market_sell', 'SL']
+    stats = { label:get_stats_for_file(base_path + file_name) for label,file_name in zip(labels,file_names) }
+    return stats
+
+'''def get_slips_stats():
+    buy = pd.read_csv(getcwd()+'/settings/slippages_market_buy.csv', header=0)
+    sell = pd.read_csv(getcwd()+'/settings/slippages_market_sell.csv', header=0)
+    SL = pd.read_csv(getcwd()+'/settings/slippages_StopLoss.csv', header=0)
+    return {'market_buy':(float(np.mean(buy)), float(np.std(buy))),
+            'market_sell':(float(np.mean(sell)), float(np.std(sell))),
+            'SL':(float(np.mean(SL)), float(np.std(SL)))}'''
 
 def get_slips_stats_advanced():
     buy = pd.read_csv(getcwd()+'/settings/slippages_market_buy.csv')

@@ -1,5 +1,6 @@
 #from gc import collect
 from numpy import array, inf, mean, std, random
+from random import normalvariate
 from math import copysign, sqrt, floor
 from time import time, sleep
 from collections import deque
@@ -35,10 +36,13 @@ class BacktestEnv(Env):
         self.leverage = 1
         self.stop_loss = StopLoss
         self.lookback_window_size = lookback_window_size
-        rnd_size = int(sqrt(self.df_total_steps))
+        '''rnd_size = int(sqrt(self.df_total_steps))
         self.RND_SET = {'market_buy':random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], rnd_size),
                         'market_sell':random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1], rnd_size),
-                        'stop_loss':random.normal(self.slippage['SL'][0], self.slippage['SL'][1], rnd_size)}
+                        'stop_loss':random.normal(self.slippage['SL'][0], self.slippage['SL'][1], rnd_size)}'''
+        self.RND_SET = {'market_buy':lambda: normalvariate(self.slippage['market_buy'][0], self.slippage['market_buy'][1]),
+                        'market_sell':lambda: normalvariate(self.slippage['market_sell'][0], self.slippage['market_sell'][1]),
+                        'stop_loss':lambda: normalvariate(self.slippage['SL'][0], self.slippage['SL'][1])}
         # Action space from 0 to 3, 0 is hold, 1 is buy, 2 is sell
         self.action_space = spaces.Discrete(3)
         #self.action_space_n = len(self.action_space)
@@ -126,12 +130,13 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator'''
         if gain>.5*self.init_balance:
         #if True:
+          self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
           print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
           print(f'max(profit/drawdown):{self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')
           print(f' reward:{self.reward:.3f}, PL_ratio:{self.PL_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, hold_ratio:{hold_ratio:.3f}, PNL_mean:{PNL_mean*100:.2f}%')
           print(f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
-
+        else: self.output = False
         self.info = {'gain':gain, 'PL_ratio':self.PL_ratio, 'PL_count_mean':self.PL_count_mean,'hold_ratio':hold_ratio,
                      'PL_count_mean':self.PL_count_mean, 'PNL_mean':PNL_mean,'slope_indicator':slope_indicator,
                      'exec_time':time()-self.start_t}
@@ -150,22 +155,22 @@ class BacktestEnv(Env):
     
     '''def _random_factor(self, price, trade_type):
       if trade_type=='market_buy':
-        market_buy_rnd_factor = random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], 1)[0]
+        market_buy_rnd_factor = random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1])
         return round(price*market_buy_rnd_factor, 2)
       elif trade_type=='market_sell':
-        market_sell_rnd_factor = random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1], 1)[0]
+        market_sell_rnd_factor = random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1])
         return round(price*market_sell_rnd_factor, 2)
       elif trade_type=='stop_loss':
-        SL_rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1], 1)[0]
+        SL_rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1])
         while price*SL_rnd_factor>self.enter_price:
-          SL_rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1], 1)[0]
+          SL_rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1])
         return round(price*SL_rnd_factor, 2)'''
     
+    '''def _random_factor(self, price, trade_type):
+      return round(price*random.choice(self.RND_SET[trade_type]), 2)'''
+    
     def _random_factor(self, price, trade_type):
-      #rnd = random.choice(self.RND_SET[trade_type])
-      #print(rnd)
-      return round(price*random.choice(self.RND_SET[trade_type]), 2)
-      #random.choice(self.RND_SET[trade_type],1)
+      return round(price*self.RND_SET[trade_type](), 2)
 
     def _buy(self, price):
       price = self._random_factor(price, 'market_buy')
@@ -232,6 +237,7 @@ class BacktestEnv(Env):
         #self.init_balance+=222
       if self.in_position:
         low,close = self.df[self.current_step, 2:4]
+        #print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
         self.in_position_counter+=1
         if close>self.enter_price: self.profit_hold_counter +=1
         else: self.loss_hold_counter +=1

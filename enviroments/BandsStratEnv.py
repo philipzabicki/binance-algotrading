@@ -58,7 +58,7 @@ class OneRunEnv(BacktestEnv):
          action = 1
         elif (self.qty>0) and (signal<=self.close_threshold):
          action = 2
-      if self.balance-self.init_balance>.5*self.init_balance:
+      if self.output:
          print(f'postition_ratio={self.postition_ratio}, StopLoss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
          print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
          print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
