@@ -9,7 +9,8 @@ import talib
 import ta 
 import get_data
 from utility import linear_reg_slope
-from numba import jit
+from numba import jit, config
+#config.THREADING_LAYER = 'safe'
 #import MAs
 #import datetime as dt
 #from numba import njit, jit
@@ -200,9 +201,11 @@ def HullMA(close, timeperiod):
   return talib.WMA( (talib.WMA(close, timeperiod//2 )*2)-(talib.WMA(close, timeperiod)), int(np.sqrt(timeperiod)) )
 
 #@feature_timeit
+@jit(nopython=True)
 def RMA(close, timeperiod):
   alpha = 1.0 / timeperiod
-  rma = [0.0] * len(close)
+  #rma = [0.0] * len(close)
+  rma = np.zeros_like(close)
   # Calculating the SMA for the first 'length' values
   sma = sum(close[:timeperiod]) / timeperiod
   rma[timeperiod - 1] = sma
@@ -212,11 +215,12 @@ def RMA(close, timeperiod):
   return rma
 
 #@feature_timeit
+@jit(nopython=True)
 def VWMA(close, volume, timeperiod):
     cum_sum = 0
     cum_vol = 0
     vwmas = []
-    cv_list = [close[i] * volume[i] for i in range(len(close))]  # precompute close[i] * volume[i]
+    cv_list = close*volume
     i = 0
     while i<len(close):
         cum_sum += cv_list[i]
@@ -224,8 +228,7 @@ def VWMA(close, volume, timeperiod):
         if i >= timeperiod:
             cum_sum -= cv_list[i - timeperiod]
             cum_vol -= volume[i - timeperiod]
-        vwma = cum_sum / cum_vol
-        vwmas.append(vwma)
+        vwmas.append(cum_sum / cum_vol)
         i += 1
     return vwmas
 
@@ -257,27 +260,29 @@ def LSMA(close, timeperiod):
 
 @jit(nopython=True)
 def LSMA(close, timeperiod):
-    n = len(close)
-    lsma = np.empty(n)
-    lsma[:timeperiod-1] = np.nan
-    # Przygotuj x raz i używaj w pętli
-    x = np.arange(0, timeperiod)
-    A = np.empty((timeperiod, 2))
-    A[:, 0] = x
-    A[:, 1] = 1
-    AT = A.T.copy()  # This creates a contiguous array
-    ATA_inv = np.linalg.inv(np.dot(AT, A))
-    for i in range(timeperiod - 1, n):
-        y = close[i - timeperiod + 1:i + 1].copy()
-        m, c = np.dot(ATA_inv, np.dot(AT, y))
-        lsma[i] = m * (timeperiod-1) + c
-    return lsma
+ close = np.ascontiguousarray(close)
+ #n = len(close)
+ lsma = np.empty_like(close)
+ lsma[:timeperiod-1] = np.nan
+ # Przygotuj x raz i używaj w pętli
+ x = np.arange(0, timeperiod)
+ A = np.empty((timeperiod, 2))
+ A[:, 0] = x
+ A[:, 1] = 1
+ AT = np.ascontiguousarray(A.T)
+ ATA_inv = np.linalg.inv(np.dot(AT, A))
+ for i in range(timeperiod - 1, len(close)):
+     y = close[i - timeperiod + 1:i + 1]
+     m, c = np.dot(ATA_inv, np.dot(AT, y))
+     lsma[i] = m * (timeperiod-1) + c
+ return lsma
 
 '''#@feature_timeit
 def NadarayWatsonMA(close, timeperiod, kernel=0):
     # Initialize the Nadaray-Watson moving average array with NaNs for the start period
     nwma = np.empty_like(close)
     nwma[:timeperiod-1] = np.nan
+    distances = np.abs(np.arange(timeperiod) - (timeperiod-1))
     # Define the Epanechnikov kernel function
     def gaussian_kernel(x):
       return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
@@ -291,11 +296,15 @@ def NadarayWatsonMA(close, timeperiod, kernel=0):
       return np.where(np.abs(x) <= 1, (15/16) * (1 - x**2)**2, 0)
     def cosine_kernel(x):
       return np.where(np.abs(x) <= 1, np.pi/4 * np.cos(np.pi/2 * x), 0)
-    kernel_func = {0:gaussian_kernel,1:epanechnikov_kernel,2:rectangular_kernel,3:triangular_kernel,4:biweight_kernel,5:cosine_kernel}
+    kernel_func = {0:gaussian_kernel,
+                   1:epanechnikov_kernel,
+                   2:rectangular_kernel,
+                   3:triangular_kernel,
+                   4:biweight_kernel,
+                   5:cosine_kernel}
+    weights = kernel_func[kernel](distances / timeperiod)
     for i in range(timeperiod-1, len(close)):
         window_prices = close[i-timeperiod+1:i+1]
-        distances = np.abs(np.arange(timeperiod) - (timeperiod-1))
-        weights = kernel_func[kernel](distances / timeperiod)
         nwma[i] = (weights @ window_prices) / weights.sum()
     return nwma'''
 
@@ -335,20 +344,24 @@ def NadarayWatsonMA(close, timeperiod, kernel=0):
     elif kernel == 5:
         weights = cosine_kernel(distances / timeperiod)
     weights = np.ascontiguousarray(weights)
-    '''for i in range(timeperiod-1, len(close)):
+    for i in range(timeperiod-1, len(close)):
         window_prices = np.ascontiguousarray(close[i-timeperiod+1:i+1])
-        nwma[i] = (weights @ window_prices) / weights.sum()'''
-    return nwma[:timeperiod]+[ (weights @ np.ascontiguousarray(close[i-timeperiod+1:i+1])) / weights.sum() for i in range(timeperiod-1, len(close)) ]
+        nwma[i] = (weights @ window_prices) / weights.sum()
+    #nwma = nwma[:timeperiod]+[ (weights @ np.ascontiguousarray(close[i-timeperiod+1:i+1])) / weights.sum() for i in range(timeperiod-1, len(close)) ]
+    return nwma
 
 #@feature_timeit
+@jit(nopython=True)
 def LWMA(close, period):
-    weights = np.arange(1, period + 1)
+    weights = np.arange(1, period + 1).astype(np.float64)
+    close = np.ascontiguousarray(close)
     lwma = np.zeros_like(close)
     for i in range(period - 1, len(close)):
         lwma[i] = np.dot(weights, close[i - period + 1 : i + 1]) / weights.sum()
     return lwma
 
 #@feature_timeit
+@jit(nopython=True)
 def MGD(close, period):
     md = np.zeros_like(close)
     md[0] = close[0]
@@ -357,10 +370,11 @@ def MGD(close, period):
     return md
 
 #@feature_timeit
-def VIDYA(close, period):
+@jit(nopython=True)
+def VIDYA(close, k, period):
     alpha = 2 / (period + 1)
     #k = talib.CMO(close, period)
-    k = np.abs(talib.CMO(close, period))/100
+    k = np.abs(k)/100
     VIDYA = np.zeros_like(close)
     VIDYA[period-1] = close[period-1]
     for i in range(period, len(close)):
@@ -419,12 +433,6 @@ def anyMA_sig(np_close, np_xMA, np_ATR, atr_multi=1.000):
 
 '''#@feature_timeit
 def get_MA(np_df, type, MA_period):
-  #ATR_multi=0.01
-  #print(type, MA_period, ATR_period, ATR_multi)
-  # Asumming np_df cols are following: O, H, L, C, Volume
-  # (Volume index = 5)
-  #np_df[:,1:5] = np_df[:,1:5].astype('float')
-  #print(np_df)
   if type==0: return np.around(RMA(np_df[:,3], timeperiod=MA_period), 2)
   elif type==1: return np.around(talib.SMA(np_df[:,3], timeperiod=MA_period), 2)
   elif type==2: return np.around(talib.EMA(np_df[:,3], timeperiod=MA_period), 2)
@@ -456,12 +464,9 @@ def get_MA(np_df, type, MA_period):
   elif type==28: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=3), 2)
   elif type==29: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=4), 2)
   elif type==30: return np.around(NadarayWatsonMA(np_df[:,3], MA_period, kernel=5), 2)
-  elif type==31: return np.around(VIDYA(np_df[:,3], MA_period), 2)
-  # testing
-  #elif type==-1: return np.around(HullMA(np_df[:,3], timeperiod=max(4,MA_period)), 2)
-  #elif type==-2: return np.around(finTA.FRAMA(pd.DataFrame(np_df, columns=['open', 'high', 'low', 'close', 'volume', 'X']), (lambda n: n + n % 2)(MA_period)).to_numpy(), 2)
-'''
-MA_TYPES = {0: lambda np_df,period: RMA(np_df[:,3], timeperiod=period),
+  elif type==31: return np.around(VIDYA(np_df[:,3], MA_period), 2)'''
+
+'''MA_TYPES = {0: lambda np_df,period: RMA(np_df[:,3], timeperiod=period),
             1: lambda np_df,period: talib.SMA(np_df[:,3], timeperiod=period),
             2: lambda np_df,period: talib.EMA(np_df[:,3], timeperiod=period),
             3: lambda np_df,period: talib.WMA(np_df[:,3], timeperiod=period),
@@ -493,14 +498,53 @@ MA_TYPES = {0: lambda np_df,period: RMA(np_df[:,3], timeperiod=period),
             29: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=4),
             30: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=5),
             31: lambda np_df,period: VIDYA(np_df[:,3], period)
-            }
+            }'''
 
 #@feature_timeit
 def get_MA(np_df, type, MA_period):
-   return np.around(MA_TYPES[type](np_df, MA_period),2)
+   ma_types = {0: lambda np_df,period: RMA(np_df[:,3], timeperiod=period),
+               1: lambda np_df,period: talib.SMA(np_df[:,3], timeperiod=period),
+               2: lambda np_df,period: talib.EMA(np_df[:,3], timeperiod=period),
+               3: lambda np_df,period: talib.WMA(np_df[:,3], timeperiod=period),
+               4: lambda np_df,period: VWMA(np_df[:,3], np_df[:,4], timeperiod=period),
+               5: lambda np_df,period: talib.KAMA(np_df[:,3], timeperiod=period),
+               6: lambda np_df,period: talib.TRIMA(np_df[:,3], timeperiod=period),
+               7: lambda np_df,period: talib.DEMA(np_df[:,3], timeperiod=period),
+               8: lambda np_df,period: talib.TEMA(np_df[:,3], timeperiod=period),
+               9: lambda np_df,period: talib.T3(np_df[:,3], timeperiod=period),
+               10: lambda np_df,period: finTA.SMM(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+               11: lambda np_df,period: finTA.SSMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+               12: lambda np_df,period: finTA.VAMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+               13: lambda np_df,period: finTA.ZLEMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), max(4,period)).to_numpy(),
+               14: lambda np_df,period: finTA.EVWMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+               15: lambda np_df,period: finTA.SMMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+               16: lambda np_df,period: finTA.HMA(pd.DataFrame(np_df, columns=['open','high','low','close','volume','X']), period).to_numpy(),
+               17: lambda np_df,period: ALMA(np_df[:,3], timeperiod=period),
+               18: lambda np_df,period: HammingMA(np_df[:,3], period),
+               19: lambda np_df,period: LSMA(np_df[:,3], max(3,period)),
+               20: lambda np_df,period: LWMA(np_df[:,3],  period),
+               21: lambda np_df,period: MGD(np_df[:,3], period),
+               22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
+               23: lambda np_df,period: GMA(np_df[:,3], period),
+               24: lambda np_df,period: FBA(np_df[:,3], period),
+               25: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=0),
+               26: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=1),
+               27: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=2),
+               28: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=3),
+               29: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=4),
+               30: lambda np_df,period: NadarayWatsonMA(np_df[:,3], period, kernel=5),
+               31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
+               }
+   return np.around(ma_types[type](np_df, MA_period),2)
 
 def get_MA_signal(np_df, type, MA_period, ATR_period, ATR_multi):
+  #print(hex(id(np_df)))
   atr = talib.ATR(np_df[:,1], np_df[:,2], np_df[:,3], ATR_period)
+  np_df[:,-1] = anyMA_sig(np_df[:,3],
+                   get_MA(np_df, type, MA_period),
+                   atr,
+                   atr_multi=ATR_multi)
+  return np_df
   return anyMA_sig(np_df[:,3],
                    get_MA(np_df, type, MA_period),
                    atr,

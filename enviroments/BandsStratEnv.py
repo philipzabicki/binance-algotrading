@@ -3,7 +3,7 @@ from numpy import array, float64, inf
 from gym import spaces, Env
 from enviroments.BacktestEnv import BacktestEnv, BacktestEnvFutures
 from TA_tools import get_MA_signal
-import cProfile
+#import cProfile
 
 class OneRunEnv(BacktestEnv):
   def __init__(self, df, dates_df=None, excluded_left=0, StopLoss=0.0, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1,
@@ -29,7 +29,7 @@ class OneRunEnv(BacktestEnv):
      self.MA_period = MA_period
      self.ATR_period = ATR_period
      self.ATR_multi = ATR_multi
-     self.df[:,-1] = get_MA_signal(self.df, self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
+     self.df = get_MA_signal(self.df, self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
      super().reset()
      #collect()
      return array([-1.0 for _ in range(7)], dtype="float32")
@@ -45,7 +45,7 @@ class OneRunEnv(BacktestEnv):
       action = 0
       while not self.done:
         obs,reward,done,info = self.step(action)
-        if self.visualize: self.render()
+        #if self.visualize: self.render()
         #print(f'SIGNAL: {obs[-1]:.2f}')
         signal = obs[-1]
         action = 0
@@ -58,10 +58,10 @@ class OneRunEnv(BacktestEnv):
          action = 1
         elif (self.qty>0) and (signal<=self.close_threshold):
          action = 2
-      if self.output:
-         print(f'postition_ratio={self.postition_ratio}, StopLoss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
-         print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
-         print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
+      #if self.output:
+         #print(f'postition_ratio={self.postition_ratio}, StopLoss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
+         #print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
+         #print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
       return obs,reward,done,info
 
 class BandsStratEnv(Env):

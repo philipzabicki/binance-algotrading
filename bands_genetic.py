@@ -1,5 +1,5 @@
 from os import getcwd
-from numpy import array, hstack, mean, zeros
+from numpy import array, hstack, mean, zeros, arange
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient
 from utility import minutes_since, get_slips_stats
@@ -16,11 +16,14 @@ from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.callback import Callback
 from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariableSampling, MixedVariableDuplicateElimination
 #from pymoo.algorithms.soo.nonconvex.optuna import Optuna
+#import cProfile
+from gc import collect
 
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 2048
-N_GEN = 50
+POP_SIZE = 64
+N_GEN = 5
+SLIPP = get_slips_stats()
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
@@ -37,8 +40,10 @@ class CustomProblem(ElementwiseProblem):
         out["F"] = array([-reward])
 
 class CustomMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, env, **kwargs):
-        self.env = env
+    def __init__(self, df, **kwargs):
+        self.df = df
+        #print(f'self.df {self.df}')
+        #self.env = env
         vars = {"SL": Real(bounds=(0.0001, 0.0150)),
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
@@ -50,8 +55,10 @@ class CustomMixedVariableProblem(ElementwiseProblem):
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
-        _, reward, _, info = self.env.step(action)
+        env = BandsStratEnv(df=self.df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+        _, reward, _, info = env.step(action)
         out["F"] = array([-reward])
+        #collect()
 
 class MyCallback(Callback):
     def __init__(self) -> None:
@@ -63,7 +70,7 @@ class MyCallback(Callback):
         self.n_evals.append(algorithm.evaluator.n_eval)
         self.opt.append(algorithm.opt[0].F)
 
-def display(result, problem, fname):
+def display_convergence(result, fname):
     n_evals = array([e.evaluator.n_eval for e in result.history])
     #opt = array([-e.opt[0].F for e in result.history])
     opt = [-mean(e.pop.get("F")) for e in result.history]
@@ -72,7 +79,21 @@ def display(result, problem, fname):
     plt.xlabel('n_evals')
     plt.plot(n_evals, opt, "--")
     plt.savefig(getcwd()+'/reports/Convergence_'+fname)
+    plt.show()
 
+'''def display_convergence(problem, fname):
+    #n_evals = array([e.evaluator.n_eval for e in result.history])
+    #opt = array([-e.opt[0].F for e in result.history])
+    #opt = [-mean(e.pop.get("F")) for e in result.history]
+    print(problem.results)
+    plt.title("Convergence")
+    plt.ylabel('Reward')
+    plt.xlabel('n_evals')
+    plt.plot(problem.results, arange(problem.results.shape[0]))
+    plt.savefig(getcwd()+'/reports/Convergence_'+fname)
+    plt.show()'''
+
+def display_result(result, problem, fname):
     #X_array = array([list(entry.values()) for entry in res.pop.get("X")])
     X_array = array([[entry['type'], entry['MAperiod'], entry['ATRperiod'], entry['ATRmulti'], entry['SL'], entry['enter_at'], entry['close_at']] for entry in result.pop.get("X")])
     pop_size = len(X_array)
@@ -97,14 +118,16 @@ def display(result, problem, fname):
     plot.add(X_array[:int(pop_size*.1)], linewidth=1.0, color='#004a73')
     plot.add(X_array[0], linewidth=1.5, color='red')
     plot.save(getcwd()+'/reports/'+fname)
-    plt.show()
     plot.show()
 
 def main():
     df = by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_600)
     df = df.drop(columns='Opened').to_numpy()
     df = hstack((df, zeros((df.shape[0], 1))))
-    env = BandsStratEnv(df=df[-minutes_since('23-03-2023'):,:].copy(), init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats())
+    df = df[-minutes_since('23-03-2023'):,:]
+    #print(df)
+    #global env
+    #env = BandsStratEnv(df=df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
 
     pool = Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)
@@ -114,7 +137,7 @@ def main():
     runner = StarmapParallelization(pool.starmap)
     '''
 
-    problem = CustomMixedVariableProblem(env, elementwise_runner=runner)
+    problem = CustomMixedVariableProblem(df, elementwise_runner=runner)
     #algorithm = NSGA2(pop_size=100)
     #algorithm = DNSGA2(pop_size=64)
     #algorithm = MixedVariableGA(pop=10)
@@ -126,9 +149,10 @@ def main():
 
     res = minimize(problem,
                    algorithm,
-                   save_history=True,
+                   save_history=False,
                    termination=('n_gen', N_GEN),
-                   verbose=True)
+                   verbose=True,
+                   seed=2137)
 
     print('Exec time:', res.exec_time)
     #print(f'res.pop.get(X) {res.pop.get("X")}')
@@ -145,7 +169,12 @@ def main():
             print(f"Reward:", front , "Variables:", round(var[0],4),int(var[1]),int(var[2]),int(var[3]),round(var[4],3))
             filename = 'Figure.png'
     
-    display(res, problem, filename)
+    display_result(res, problem, filename)
+    display_convergence(problem, filename)
 
 if __name__ == '__main__':
+    #profiler = cProfile.Profile() 
+    #profiler.enable()
     main()
+    #profiler.disable()  # Zakończ profilowanie
+    #profiler.print_stats(sort='tottime')

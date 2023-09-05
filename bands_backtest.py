@@ -7,7 +7,7 @@ from TA_tools import get_MA_signal
 from utility import minutes_since, get_slips_stats
 
 if __name__=="__main__":
-  SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0039, 0.744, 0.429, 19, 10, 38, 8.366
+  SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0038, 0.583, 0.598, 23, 98, 43, 8.109
 
   df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_000)
   dates_df = df['Opened'].to_numpy()

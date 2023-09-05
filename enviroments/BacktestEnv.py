@@ -12,6 +12,7 @@ from gym import spaces, Env
 class BacktestEnv(Env):
     def __init__(self, df, dates_df=None, excluded_left=0, init_balance=1_000, postition_ratio=1.0, StopLoss=0.0, fee=0.0002, coin_step=0.001,
                  slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=0, Render_range=120, visualize=False):
+        #print(hex(id(self)))
         self.start_t = time()
         if visualize:
           self.dates_df = dates_df
@@ -97,6 +98,7 @@ class BacktestEnv(Env):
           self.end_step = self.df_total_steps
         self.current_step = self.start_step
         ### Garbage collector call ;)
+        #collect()
         #print(get_attributes_and_deep_sizes(self))
         return self._next_observation()
         '''for i in reversed(range(self.lookback_window_size)):
@@ -135,7 +137,7 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        if gain>.5*self.init_balance:
+        if gain>.75*self.init_balance:
         #if True:
           self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
@@ -178,7 +180,7 @@ class BacktestEnv(Env):
       return round(price*random.choice(self.RND_SET[trade_type]), 2)'''
     
     def _random_factor(self, price, trade_type):
-      return round(price*normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1]), 2)
+      return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)
 
     def _buy(self, price):
       price = self._random_factor(price, 'market_buy')
@@ -487,43 +489,43 @@ class BacktestEnvFutures(BacktestEnv):
     
   # Execute one time step within the environment
   def step(self, action):
-      #print(f'current_step:{self.current_step} start_step:{self.start_step} end_step:{self.end_step} margin:{self.margin} balance:{self.balance}')
-      close = self.df[self.current_step, 3]
-      if self.current_step==self.end_step:
-        if self.in_position: self._close_position(close)
-        return self._finish_episode()
-      if not self.in_position:
-        if action == 0:
-          if ((self.current_step-self.start_step)>10_080) and (not self.episode_orders):
-            #print(f'(episode finished: {self.episode_orders} trades {self.current_step-self.start_step} steps)')
-            return self._finish_episode()
-        elif self.position_size<=((close*self.coin_step)/self.leverage)+((close*self.coin_step)*self.fee):
+    #print(f'current_step:{self.current_step} start_step:{self.start_step} end_step:{self.end_step} margin:{self.margin} balance:{self.balance}')
+    close = self.df[self.current_step, 3]
+    if self.current_step==self.end_step:
+      if self.in_position: self._close_position(close)
+      return self._finish_episode()
+    if not self.in_position:
+      if action == 0:
+        if ((self.current_step-self.start_step)>10_080) and (not self.episode_orders):
+          #print(f'(episode finished: {self.episode_orders} trades {self.current_step-self.start_step} steps)')
           return self._finish_episode()
-        elif action == 1:
-          self._open_position('long', close)
-        elif action == 2:
-          self._open_position('short', close)
-      elif self.in_position:
-        self.in_position_counter+=1
-        if self.in_position_counter%480==0:
-          self.margin -= (abs(self.qty)*close*self.funding_rate)
-        self._get_pnl(close, update=True)
-        if self.pnl<0: self.loss_hold_counter +=1
-        elif self.pnl>0: self.profit_hold_counter +=1
-        if (self.df[self.current_step, 2]<=self.stop_loss_price and self.qty>0) or (self.df[self.current_step, 1]>=self.stop_loss_price and self.qty<0):
-          self._close_position(self.stop_loss_price, SL=True)
-        elif self._check_margin():
-          self.liquidations += 1
-          self._close_position(close, liquidated=True)
-        else:
-          if action == 0:
-            pass
-          elif (action==1 and self.qty<0) or (action==2 and self.qty>0):
-            self._close_position(close)
-      info = {'action': action,
-              'reward': 0,
-              'step': self.current_step,
-              'exec_time':time()-self.start_t}
-      self.current_step += 1
-      #sleep(0.1)
-      return self._next_observation(), 0, self.done, info
+      elif self.position_size<=((close*self.coin_step)/self.leverage)+((close*self.coin_step)*self.fee):
+        return self._finish_episode()
+      elif action == 1:
+        self._open_position('long', close)
+      elif action == 2:
+        self._open_position('short', close)
+    elif self.in_position:
+      self.in_position_counter+=1
+      if self.in_position_counter%480==0:
+        self.margin -= (abs(self.qty)*close*self.funding_rate)
+      self._get_pnl(close, update=True)
+      if self.pnl<0: self.loss_hold_counter +=1
+      elif self.pnl>0: self.profit_hold_counter +=1
+      if (self.df[self.current_step, 2]<=self.stop_loss_price and self.qty>0) or (self.df[self.current_step, 1]>=self.stop_loss_price and self.qty<0):
+        self._close_position(self.stop_loss_price, SL=True)
+      elif self._check_margin():
+        self.liquidations += 1
+        self._close_position(close, liquidated=True)
+      else:
+        if action == 0:
+          pass
+        elif (action==1 and self.qty<0) or (action==2 and self.qty>0):
+          self._close_position(close)
+    info = {'action': action,
+            'reward': 0,
+            'step': self.current_step,
+            'exec_time':time()-self.start_t}
+    self.current_step += 1
+    #sleep(0.1)
+    return self._next_observation(), 0, self.done, info
