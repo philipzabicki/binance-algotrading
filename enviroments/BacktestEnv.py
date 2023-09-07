@@ -1,4 +1,3 @@
-#from gc import collect
 from numpy import array, inf, mean, std, random
 from random import normalvariate
 from math import copysign, sqrt, floor
@@ -6,13 +5,11 @@ from time import time, sleep
 from collections import deque
 from random import randint
 from gym import spaces, Env
-#from TA_tools import linear_slope_indicator
 #from visualize import TradingGraph
 
 class BacktestEnv(Env):
     def __init__(self, df, dates_df=None, excluded_left=0, init_balance=1_000, postition_ratio=1.0, StopLoss=0.0, fee=0.0002, coin_step=0.001,
                  slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=0, Render_range=120, visualize=False):
-        #print(hex(id(self)))
         self.start_t = time()
         if visualize:
           self.dates_df = dates_df
@@ -24,7 +21,7 @@ class BacktestEnv(Env):
           self.visualize = False
         self.df = df
         self.exclude_count = excluded_left
-        self.df_total_steps = len(self.df)-1
+        self.df_total_steps = len(self.df)
         self.coin_step = coin_step
         self.slippage = slippage
         self.fee = fee
@@ -34,22 +31,8 @@ class BacktestEnv(Env):
         self.postition_ratio = postition_ratio
         self.position_size = self.init_postition_size
         self.balance = self.init_balance
-        self.leverage = 1
         self.stop_loss = StopLoss
         self.lookback_window_size = lookback_window_size
-        '''rnd_size = int(sqrt(self.df_total_steps))
-        self.RND_SET = {'market_buy':random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], rnd_size),
-                        'market_sell':random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1], rnd_size),
-                        'stop_loss':random.normal(self.slippage['SL'][0], self.slippage['SL'][1], rnd_size)}'''
-        '''def _market_buy_rnd():
-          return normalvariate(self.slippage['market_buy'][0], self.slippage['market_buy'][1])
-        def _market_sell_rnd():
-          return normalvariate(self.slippage['market_sell'][0], self.slippage['market_sell'][1])
-        def _stop_loss_rnd():
-          return normalvariate(self.slippage['SL'][0], self.slippage['SL'][1])
-        self.RND_SET = {'market_buy':_market_buy_rnd,
-                        'market_sell':_market_sell_rnd,
-                        'stop_loss':_stop_loss_rnd}'''
         # Action space from 0 to 3, 0 is hold, 1 is buy, 2 is sell
         self.action_space = spaces.Discrete(3)
         #self.action_space_n = len(self.action_space)
@@ -66,7 +49,7 @@ class BacktestEnv(Env):
     # Reset the state of the environment to an initial state
     def reset(self):
         self.start_t = time()
-        self.df_total_steps = len(self.df)-1
+        self.df_total_steps = len(self.df)
         self.done = False
         self.reward = 0
         self.output = False
@@ -92,15 +75,13 @@ class BacktestEnv(Env):
         self.max_balance = self.min_balance = self.balance
         if self.max_steps>0:
           self.start_step = randint(self.lookback_window_size, self.df_total_steps - self.max_steps)
-          self.end_step = self.start_step + self.max_steps
+          self.end_step = self.start_step + self.max_steps -1
         else:
           self.start_step = self.lookback_window_size
-          self.end_step = self.df_total_steps
+          self.end_step = self.df_total_steps-1
         self.current_step = self.start_step
-        ### Garbage collector call ;)
-        #collect()
-        #print(get_attributes_and_deep_sizes(self))
-        return self._next_observation()
+        self.obs = iter(self.df[self.start_step:self.end_step,:])
+        return next(self.obs)
         '''for i in reversed(range(self.lookback_window_size)):
             current_step = self.current_step - i
             #self.orders_history.append([self.position_size, self.balance, self.in_position, copysign(1, self.qty), self.df[current_step, 4]-self.enter_price])
@@ -110,7 +91,10 @@ class BacktestEnv(Env):
         #return np.concatenate((self.market_history, self.orders_history), axis=1)'''
 
     def _finish_episode(self):
-      #print('_finish_episode')
+      #print('BacktestEnv._finish_episode()')
+      if self.in_position:
+          close = self.df[self.current_step, 3]
+          self._sell(close)
       self.done = True
       #if (self.current_step==self.end_step) and self.good_trades_count>1 and self.bad_trades_count>1:
       if self.good_trades_count>1 and self.bad_trades_count>1:
@@ -130,7 +114,8 @@ class BacktestEnv(Env):
         #PLratio_x_PLcount = self.PL_ratio*self.PL_count_mean
         self.sharpe_ratio = (PNL_mean-risk_free_return)/PNL_stdev if PNL_stdev!=0 else -1
         self.sortino_ratio = (total_return-risk_free_return)/losses_stdev if losses_stdev!=0 else -1
-        self.reward = copysign((gain**2)*(self.PL_ratio**(1/4))*self.PL_count_mean*self.episode_orders*sqrt(hold_ratio), gain)/self.df_total_steps
+        self.reward = copysign((gain**2)*(self.episode_orders**1.5)*(self.PL_ratio**(1/4))*self.PL_count_mean*sqrt(hold_ratio), gain)/self.df_total_steps
+        #print(self.reward)
         slope_indicator = 1.000
         '''slope_indicator = linear_slope_indicator(self.PL_count_ratios)
         if self.reward<0 and slope_indicator<0:
@@ -157,27 +142,21 @@ class BacktestEnv(Env):
                      'PL_count_mean':0, 'PNL_mean':0, 'slope_indicator':0,
                      'exec_time':time()-self.start_t}
         #print(f'EPISODE FAILED! (end_step not reached OR profit/loss trades less than 2)')
-      return self._next_observation(), self.reward, self.done, self.info
+      #return self.df[self.current_step, self.exclude_count:], self.reward, self.done, self.info
 
-    # Get the data points for the given current_step
     def _next_observation(self):
-      return self.df[self.current_step, self.exclude_count:]
-    
-    '''def _random_factor(self, price, trade_type):
-      if trade_type=='market_buy':
-        market_buy_rnd_factor = random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1])
-        return round(price*market_buy_rnd_factor, 2)
-      elif trade_type=='market_sell':
-        market_sell_rnd_factor = random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1])
-        return round(price*market_sell_rnd_factor, 2)
-      elif trade_type=='stop_loss':
-        SL_rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1])
-        while price*SL_rnd_factor>self.enter_price:
-          SL_rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1])
-        return round(price*SL_rnd_factor, 2)'''
-    
-    '''def _random_factor(self, price, trade_type):
-      return round(price*random.choice(self.RND_SET[trade_type]), 2)'''
+      try:
+        self.current_step += 1
+        return next(self.obs)
+      except StopIteration:
+        self.current_step -= 1
+        self._finish_episode()
+        return self.df[self.current_step, self.exclude_count:]
+    '''def _next_observation(self):
+      self.current_step += 1
+      if self.current_step==self.end_step-1:
+        self._finish_episode()
+      return next(self.obs)'''
     
     def _random_factor(self, price, trade_type):
       return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)
@@ -232,7 +211,7 @@ class BacktestEnv(Env):
       self.position_size = (self.balance*self.postition_ratio)
       ### If balance minus position_size and fee is less or eq 0
       if (self.position_size<(price*self.coin_step)):
-        return self._finish_episode()
+        self._finish_episode()
       self.qty = 0
       self.in_position = 0
       self.in_position_counter = 0
@@ -259,13 +238,12 @@ class BacktestEnv(Env):
         close = self.df[self.current_step, 3]
         self._buy(close)
       elif (not self.episode_orders) and ((self.current_step-self.start_step)>2_880):
-        return self._finish_episode()
-      self.current_step += 1
-      if self.current_step==self.end_step:
+        self._finish_episode()
+      '''if self.current_step==self.end_step:
         if self.in_position:
           close = self.df[self.current_step, 3]
           self._sell(close)
-        return self._finish_episode()
+        return self._finish_episode()'''
       '''info = {'action': action,
                 'in_position': self.in_position,
                 'position_size': self.position_size,
@@ -274,9 +252,8 @@ class BacktestEnv(Env):
                 'current_step': self.current_step,
                 'end_step': self.end_step}'''
       #print(info)
-      return self._next_observation(), 0, self.done, None
+      return self._next_observation(), self.reward, self.done, self.info
 
-    # Render environment
     def render(self, visualize=False, *args, **kwargs):
       if visualize or self.visualize:
         Date = self.dates_df[self.current_step]
@@ -286,14 +263,11 @@ class BacktestEnv(Env):
         Close = self.df[self.current_step, 3]
         #Volume = self.df[self.current_step, 4]
         Volume = self.df[self.current_step, -1]
-        # Render the environment to the screen
         if self.in_position:
           _pnl = self.enter_price/Close-1
           self.visualization.render(Date, Open, High, Low, Close, Volume, self.balance+(self.position_size+(self.position_size*_pnl)), self.trades)
         else:
           self.visualization.render(Date, Open, High, Low, Close, Volume, self.balance, self.trades)
-      else:
-        print('No dates df.')
 
 ######################################################################################################################
 ######################################################################################################################

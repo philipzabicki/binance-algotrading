@@ -22,7 +22,7 @@ from gc import collect
 
 CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 64
-N_GEN = 5
+N_GEN = 50
 SLIPP = get_slips_stats()
 #CPU_CORES_COUNT = 6
 
@@ -33,7 +33,7 @@ class CustomProblem(ElementwiseProblem):
                          n_obj=1,
                          n_constr=0,
                          xl=array([0.0001, 0.001, 0.001, 0, 2, 1, 1.000]),
-                         xu=array([0.0150, 1.000, 1.000, 32, 450, 500, 9.000]),
+                         xu=array([0.0150, 1.000, 1.000, 30, 450, 500, 9.000]),
                          **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
@@ -47,7 +47,7 @@ class CustomMixedVariableProblem(ElementwiseProblem):
         vars = {"SL": Real(bounds=(0.0001, 0.0150)),
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
-                "type": Integer(bounds=(0, 31)),
+                "type": Integer(bounds=(0, 30)),
                 "MAperiod": Integer(bounds=(2, 450)),
                 "ATRperiod": Integer(bounds=(1, 500)),
                 "ATRmulti": Real(bounds=(1.000, 9.000))}
@@ -55,7 +55,7 @@ class CustomMixedVariableProblem(ElementwiseProblem):
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
-        env = BandsStratEnv(df=self.df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+        env = BandsStratEnv(df=self.df, init_balance=1_000, fee=0.00075, coin_step=0.00001, slippage=SLIPP)
         _, reward, _, info = env.step(action)
         out["F"] = array([-reward])
         #collect()
@@ -63,49 +63,28 @@ class CustomMixedVariableProblem(ElementwiseProblem):
 class MyCallback(Callback):
     def __init__(self) -> None:
         super().__init__()
-        self.n_evals = []
-        self.opt = []
+        #self.n_evals = []
+        self.opt = zeros(N_GEN)
+        self.idx = 0
     def notify(self, algorithm):
-        #print(algorithm)
-        self.n_evals.append(algorithm.evaluator.n_eval)
-        self.opt.append(algorithm.opt[0].F)
+        self.opt[self.idx] = mean(algorithm.pop.get("F"))
+        self.idx += 1
 
-def display_convergence(result, fname):
-    n_evals = array([e.evaluator.n_eval for e in result.history])
-    #opt = array([-e.opt[0].F for e in result.history])
-    opt = [-mean(e.pop.get("F")) for e in result.history]
+def display_callback(callback, fname):
     plt.title("Convergence")
-    plt.ylabel('Reward')
-    plt.xlabel('n_evals')
-    plt.plot(n_evals, opt, "--")
+    plt.ylabel('Mean Reward')
+    plt.xlabel('Population')
+    plt.plot(-callback.opt, "--")
     plt.savefig(getcwd()+'/reports/Convergence_'+fname)
     plt.show()
 
-'''def display_convergence(problem, fname):
-    #n_evals = array([e.evaluator.n_eval for e in result.history])
-    #opt = array([-e.opt[0].F for e in result.history])
-    #opt = [-mean(e.pop.get("F")) for e in result.history]
-    print(problem.results)
-    plt.title("Convergence")
-    plt.ylabel('Reward')
-    plt.xlabel('n_evals')
-    plt.plot(problem.results, arange(problem.results.shape[0]))
-    plt.savefig(getcwd()+'/reports/Convergence_'+fname)
-    plt.show()'''
-
 def display_result(result, problem, fname):
-    #X_array = array([list(entry.values()) for entry in res.pop.get("X")])
     X_array = array([[entry['type'], entry['MAperiod'], entry['ATRperiod'], entry['ATRmulti'], entry['SL'], entry['enter_at'], entry['close_at']] for entry in result.pop.get("X")])
     pop_size = len(X_array)
-    #print(X_array)
-    #labels = list(res.X.keys())
     labels = ['type','MAperiod','ATRperiod','ATRmulti','SL','enter_at','close_at']
     bounds = array([problem.vars[name].bounds for name in labels]).T
-    #X = array([[sol.X[name] for name in labels] for sol in res.opt])
     plot = PCP(labels=labels, bounds=bounds, n_ticks=10)
     plot.set_axis_style(color="grey", alpha=1)
-    #plot.add(X_array[-1], color="black")
-    #plot.add(X_array, color='#c5f8ff')
     plot.add(X_array[int(pop_size*.9)+1:], linewidth=1.9, color='#a4f0ff')
     plot.add(X_array[int(pop_size*.8)+1:int(pop_size*.9)], linewidth=1.8, color='#88e7fa')
     plot.add(X_array[int(pop_size*.7)+1:int(pop_size*.8)], linewidth=1.7, color='#60d8f3')
@@ -125,8 +104,6 @@ def main():
     df = df.drop(columns='Opened').to_numpy()
     df = hstack((df, zeros((df.shape[0], 1))))
     df = df[-minutes_since('23-03-2023'):,:]
-    #print(df)
-    #global env
     #env = BandsStratEnv(df=df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
 
     pool = Pool(CPU_CORES_COUNT)
@@ -150,9 +127,9 @@ def main():
     res = minimize(problem,
                    algorithm,
                    save_history=False,
+                   callback=MyCallback(),
                    termination=('n_gen', N_GEN),
-                   verbose=True,
-                   seed=2137)
+                   verbose=True)
 
     print('Exec time:', res.exec_time)
     #print(f'res.pop.get(X) {res.pop.get("X")}')
@@ -170,7 +147,7 @@ def main():
             filename = 'Figure.png'
     
     display_result(res, problem, filename)
-    display_convergence(problem, filename)
+    display_callback(res.algorithm.callback, filename)
 
 if __name__ == '__main__':
     #profiler = cProfile.Profile() 

@@ -1,4 +1,3 @@
-#from gc import collect
 from numpy import array, float64, inf
 from gym import spaces, Env
 from enviroments.BacktestEnv import BacktestEnv, BacktestEnvFutures
@@ -31,21 +30,24 @@ class OneRunEnv(BacktestEnv):
      self.ATR_multi = ATR_multi
      self.df = get_MA_signal(self.df, self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
      super().reset()
-     #collect()
      return array([-1.0 for _ in range(7)], dtype="float32")
   def _finish_episode(self):
-     _, reward, done, info = super()._finish_episode()
-     obs =  array([self.episode_orders, self.cumulative_fees, self.sharpe_ratio, self.sortino_ratio, self.max_drawdown, self.PL_count_mean, self.PL_ratio])
+     #print('OneRunEnv._finish_episode()')
+     super()._finish_episode()
+     #obs =  array([self.episode_orders, self.cumulative_fees, self.sharpe_ratio, self.sortino_ratio, self.max_drawdown, self.PL_count_mean, self.PL_ratio])
+     if self.output:
+         print(f' postition_ratio={self.postition_ratio}, StopLoss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
+         print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
+         print(f' reward={self.reward:.2f} (exec_time={self.info["exec_time"]:.2f}s)')
      #self.profiler.disable()  # Zakończ profilowanie
      #self.profiler.print_stats(sort='cumtime')
-     return obs, reward, done, info
+     #return obs, reward, done, info
   def _execute(self):
       # The first action must be initiated, I used 0
       # obs[-1]  asummes that indicator vlaues are stored in last column
       action = 0
       while not self.done:
         obs,reward,done,info = self.step(action)
-        #if self.visualize: self.render()
         #print(f'SIGNAL: {obs[-1]:.2f}')
         signal = obs[-1]
         action = 0
@@ -58,10 +60,7 @@ class OneRunEnv(BacktestEnv):
          action = 1
         elif (self.qty>0) and (signal<=self.close_threshold):
          action = 2
-      #if self.output:
-         #print(f'postition_ratio={self.postition_ratio}, StopLoss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
-         #print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
-         #print(f' reward={self.reward:.2f} (exec_time={info["exec_time"]:.2f}s)')
+      #print(obs,reward,done,info)
       return obs,reward,done,info
 
 class BandsStratEnv(Env):
@@ -77,7 +76,7 @@ class BandsStratEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES
         action_lower = [0.0001, 0.001, 0.001, 0, 2, 1, 1.000]
-        action_upper = [0.0150, 1.000, 1.000, 32, 450, 500, 9.000]
+        action_upper = [0.0150, 1.000, 1.000, 31, 450, 500, 9.000]
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
     def reset(self, postition_ratio=1.0, StopLoss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.000):
         return self.exec_env.reset(postition_ratio, StopLoss, enter_at, close_at, typeMA, MA_period, ATR_period, ATR_multi)

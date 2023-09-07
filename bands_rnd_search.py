@@ -13,8 +13,8 @@ from enviroments.BandsStratEnv import BandsStratEnv
 from utility import minutes_since, get_slips_stats
 import cProfile
 
-#CPU_CORES_COUNT = cpu_count()//2
-CPU_CORES_COUNT = 6
+#CPU_CORES_COUNT = cpu_count()
+CPU_CORES_COUNT = 1
 EPISODES_PER_CORE = 100
 #CPU_CORES_COUNT = 6
 #REPORT_FULL_PATH = 'Z:/home/philipz_abicki/binance-algotrading/reports/BTCTUSD1m_since0322_ATR.csv'
@@ -23,10 +23,10 @@ REPORT_FULL_PATH = getcwd()+'/reports/BTCTUSD1m_since0322_ATR.csv'
 TICKER, ITV, FUTURES, START_DATE = 'BTCTUSD', '1m', False, '22-03-2023'
 
 def run_indefinitely(_, df):
-    #profiler = cProfile.Profile() 
-    #profiler.enable()
+    profiler = cProfile.Profile() 
+    profiler.enable()
     env = BandsStratEnv(df=df, 
-                        init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_slips_stats(),
+                        init_balance=1_000, fee=0.00075, coin_step=0.00001, slippage=get_slips_stats(),
                         visualize=False, Render_range=60)
     timers, results = [], []
     i, timer = 0, time()
@@ -34,6 +34,7 @@ def run_indefinitely(_, df):
         i+=1
         action = env.action_space.sample()
         _, reward, _, info = env.step(action)
+        #print(obs, reward, done, info)
         if reward!=0 and not isnan(reward):
             #print(f'usd_gains: {info["gain"]:.2f}, indicator: {indicator:.4f}, order_count: {info["episode_orders"]} PNL_ratio: {info["pnl_ratio"]:.3f}, StDev: {info["stdev_pnl"]:.5f}, pos_hold_ratio: {info["position_hold_sums_ratio"]:.3f}, reg_slope_avg: {slope_avg} ')
             results.append([round(info["gain"],2), round(reward,4), round(info["PL_ratio"],3), round(info["PL_count_mean"],3), round(info["hold_ratio"],3),
@@ -49,8 +50,8 @@ def run_indefinitely(_, df):
         _writer = writer(file)
         #writer.writerow(header)
         _writer.writerows(results)
-    #profiler.disable()  # Zakończ profilowanie
-    #profiler.print_stats(sort='tottime')
+    profiler.disable()  # Zakończ profilowanie
+    profiler.print_stats(sort='tottime')
 
 def main():
     # Infinite loop to run the processes
