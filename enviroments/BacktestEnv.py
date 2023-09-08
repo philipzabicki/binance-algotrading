@@ -122,8 +122,8 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        if gain>.75*self.init_balance:
-        #if True:
+        #if gain>.75*self.init_balance:
+        if True:
           self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
           print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
@@ -206,7 +206,7 @@ class BacktestEnv(Env):
         if self.max_drawdown==0 or percentage_profit<self.max_drawdown:
           self.max_drawdown = percentage_profit
         if SL:
-          self.SL_losses += (self.balance-self.prev_bal)
+          self.SL_losses += self.prev_bal-self.balance
       self.PL_ratios_and_PNLs.append((percentage_profit, self.good_trades_count/self.bad_trades_count))
       self.position_size = (self.balance*self.postition_ratio)
       ### If balance minus position_size and fee is less or eq 0

@@ -22,7 +22,7 @@ from gc import collect
 
 CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 64
-N_GEN = 50
+N_GEN = 150
 SLIPP = get_slips_stats()
 #CPU_CORES_COUNT = 6
 
