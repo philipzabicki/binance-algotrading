@@ -2,7 +2,7 @@ from os import getcwd
 from numpy import array, hstack, mean, zeros, arange
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient
-from utility import minutes_since, get_slips_stats
+from utility import minutes_since, get_limit_slips_stats
 from enviroments.BandsStratEnv import BandsStratEnv
 from matplotlib import pyplot as plt
 from pymoo.core.problem import StarmapParallelization
@@ -22,8 +22,9 @@ from gc import collect
 
 CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 64
-N_GEN = 150
-SLIPP = get_slips_stats()
+N_GEN = 10
+SLIPP = get_limit_slips_stats()
+print(SLIPP)
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
@@ -32,7 +33,7 @@ class CustomProblem(ElementwiseProblem):
         super().__init__(n_var=7,
                          n_obj=1,
                          n_constr=0,
-                         xl=array([0.0001, 0.001, 0.001, 0, 2, 1, 1.000]),
+                         xl=array([0.0001, 0.001, 0.001, 0, 2, 1, 0.001]),
                          xu=array([0.0150, 1.000, 1.000, 30, 450, 500, 9.000]),
                          **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
@@ -143,7 +144,7 @@ def main():
             filename = 'Pop'+str(POP_SIZE)+'Rew'+str(-res.f)+'Vars'+str(round(res.X[0],4))+str(res.X[1])+str(res.X[2])+str(res.X[3])+str(round(res.X[4],3))+'.png'
     else:
         for front, var in zip(res.F, res.X):
-            print(f"Reward:", front , "Variables:", round(var[0],4),int(var[1]),int(var[2]),int(var[3]),round(var[4],3))
+            print(f"Reward:", front , "Variables:", var)
             filename = 'Figure.png'
     
     display_result(res, problem, filename)

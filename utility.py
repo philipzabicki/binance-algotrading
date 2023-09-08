@@ -6,9 +6,15 @@ from dateutil.parser import parse
 from scipy.stats import skew, kurtosis
 from pympler import asizeof
 
-def get_slips_stats():
+def get_market_slips_stats():
     buy = pd.read_csv(getcwd()+'/settings/slippages_market_buy.csv')
     sell = pd.read_csv(getcwd()+'/settings/slippages_market_sell.csv')
+    SL = pd.read_csv(getcwd()+'/settings/slippages_StopLoss.csv')
+    return {'market_buy':(buy.values.mean(), buy.values.std()), 'market_sell':(sell.values.mean(), sell.values.std()), 'SL':(SL.values.mean(), SL.values.std())}
+
+def get_limit_slips_stats():
+    buy = pd.read_csv(getcwd()+'/settings/slippages_limit_buy.csv')
+    sell = pd.read_csv(getcwd()+'/settings/slippages_limit_sell.csv')
     SL = pd.read_csv(getcwd()+'/settings/slippages_StopLoss.csv')
     return {'market_buy':(buy.values.mean(), buy.values.std()), 'market_sell':(sell.values.mean(), sell.values.std()), 'SL':(SL.values.mean(), SL.values.std())}
 
