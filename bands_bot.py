@@ -12,12 +12,12 @@ from binance.enums import *
 
 class WebSocketClientBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
-        cwd = getcwd()
-        buy_slipp_file = '/settings/slippages_limit_buy.csv'
-        sell_slipp_file = '/settings/slippages_limit_sell.csv'
+        self.cwd = getcwd()
+        self.buy_slipp_file = '/settings/slippages_limit_buy.csv'
+        self.sell_slipp_file = '/settings/slippages_limit_sell.csv'
         #sl_slipp_file = '/settings/slippages_StopLoss.csv'
-        with open(cwd+buy_slipp_file, 'a', newline='') as file: self.buy_slipp_wr = writer(file)
-        with open(cwd+sell_slipp_file, 'a', newline='') as file: self.sell_slipp_wr = writer(file)
+        #with open(self.cwd+self.buy_slipp_file, 'a', newline='') as file: self.buy_slipp_wr = writer(file)
+        #with open(self.cwd+self.sell_slipp_file, 'a', newline='') as file: self.sell_slipp_wr = writer(file)
         #with open(cwd+sl_slipp_file, 'a', newline='') as file: self.sl_slipp_wr = writer(file)
 
         self.symbol = symbol
@@ -30,7 +30,7 @@ class WebSocketClientBot:
         self.client = Client(API_KEY, SECRET_KEY)
 
         self.settings = settings
-        prev_candles = self.client.get_historical_klines(symbol, itv, str(max(MA_period,ATR_period)*multi)+" minutes ago UTC")
+        prev_candles = self.client.get_historical_klines(symbol, itv, str(max(self.settings['MA_period'],self.settings['ATR_period'])*multi)+" minutes ago UTC")
         self.OHLCVX_data = deque([list(map(float,candle[1:6]+[0])) for candle in prev_candles[:-1]],
                                  maxlen=len(prev_candles[:-1]))
         self.init_balance = float(self.client.get_asset_balance(asset='TUSD')['free'])
@@ -55,8 +55,9 @@ class WebSocketClientBot:
             if self._check_order(self.open_order['orderId']):
                 self.order_placed = 'null'
                 self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
-                self._stop_loss(self.q, round(close*(1-self.settings['SL']),2))
-                self.buy_slipp_wr.writerow([float(self.open_order['price'])/self.req_p_buy])
+                self._stop_loss(self.q, round(self.req_p_buy*(1-self.settings['SL']),2))
+                with open(self.cwd+self.buy_slipp_file, 'a', newline='') as file:
+                    writer(file).writerow([float(self.open_order['price'])/self.req_p_buy])
                 self.balance = float(self.client.get_asset_balance(asset='TUSD')['free'])
             else:
                 print(f'RETRY BUY_LIMIT')
@@ -69,7 +70,8 @@ class WebSocketClientBot:
                 self.order_placed = 'null'
                 self.balance = float(self.client.get_asset_balance(asset='TUSD')['free'])
                 self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
-                self.sell_slipp_wr.writerow([float(self.close_order['price'])/self.req_p_sell])
+                with open(self.cwd+self.sell_slipp_file, 'a', newline='') as file:
+                    writer(file).writerow([float(self.close_order['price'])/self.req_p_sell])
             else:
                 print(f'RETRY SELL_LIMIT')
                 self._cancel_all_orders()
@@ -87,7 +89,7 @@ class WebSocketClientBot:
             self._limit_buy(q, adj_close)
             #print(f' PLACED: {self.open_order}')
             print(f'(msg_to_exec_time: {time()-self.start_t}s)')
-        elif (self.signal<=-close_at) and (self.balance<1.0):
+        elif (self.signal<=-self.settings['close_at']) and (self.balance<1.0):
             self.order_placed='sell'
             self._cancel_all_orders()
             self.req_p_sell = close

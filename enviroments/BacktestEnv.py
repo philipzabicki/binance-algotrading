@@ -162,7 +162,7 @@ class BacktestEnv(Env):
       return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)
 
     def _buy(self, price):
-      price = self._random_factor(price, 'market_buy')
+      #price = self._random_factor(price, 'market_buy')
       self.in_position = 1
       self.episode_orders += 1
       self.enter_price = price
@@ -182,12 +182,12 @@ class BacktestEnv(Env):
         self.trades.append({'Date':self.dates_df[self.current_step], 'High':self.df[self.current_step,1], 'Low':self.df[self.current_step,2], 'total':self.qty, 'type':"open_long"})
 
     def _sell(self, price, SL=False):
-      if SL:
+      '''if SL:
         price = self._random_factor(price, 'SL')
         order_type = 'open_short'
       else:
         price = self._random_factor(price, 'market_sell')
-        order_type = 'close_long'
+        order_type = 'close_long'''
       self.balance += round(self.qty*price, 2)
       fee = abs(price*self.qty*self.fee)
       self.balance -= fee

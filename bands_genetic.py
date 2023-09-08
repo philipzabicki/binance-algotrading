@@ -55,7 +55,7 @@ class CustomMixedVariableProblem(ElementwiseProblem):
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
-        env = BandsStratEnv(df=self.df, init_balance=1_000, fee=0.00075, coin_step=0.00001, slippage=SLIPP)
+        env = BandsStratEnv(df=self.df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
         _, reward, _, info = env.step(action)
         out["F"] = array([-reward])
         #collect()
