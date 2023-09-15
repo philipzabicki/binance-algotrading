@@ -122,8 +122,8 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        #if gain>self.init_balance:
-        if True:
+        if gain>self.init_balance:
+        #if True:
           self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
           print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
@@ -162,7 +162,7 @@ class BacktestEnv(Env):
       return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)
 
     def _buy(self, price):
-      #price = self._random_factor(price, 'market_buy')
+      price = self._random_factor(price, 'market_buy')
       self.in_position = 1
       self.episode_orders += 1
       self.enter_price = price
@@ -182,12 +182,12 @@ class BacktestEnv(Env):
         self.trades.append({'Date':self.dates_df[self.current_step], 'High':self.df[self.current_step,1], 'Low':self.df[self.current_step,2], 'total':self.qty, 'type':"open_long"})
 
     def _sell(self, price, SL=False):
-      '''if SL:
+      if SL:
         price = self._random_factor(price, 'SL')
         order_type = 'open_short'
       else:
         price = self._random_factor(price, 'market_sell')
-        order_type = 'close_long'''
+        order_type = 'close_long'
       self.balance += round(self.qty*price, 2)
       fee = abs(price*self.qty*self.fee)
       self.balance -= fee

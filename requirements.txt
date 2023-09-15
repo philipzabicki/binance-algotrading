@@ -1,4 +1,4 @@
-numpy==1.24.4
+numba
 pandas
 matplotlib
 opencv-python
@@ -12,4 +12,3 @@ ta
 websocket-client
 pympler
 pymoo
-numba

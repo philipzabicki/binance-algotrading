@@ -1,4 +1,4 @@
-from bands_bot import WebSocketClientBot
+from bands_bot import MarketBotWebSocket
 from credentials import binance_API_KEY,binance_SECRET_KEY
 
 stop_loss,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0015,0.5,0.5,1,5,5,0.500
@@ -15,7 +15,7 @@ SETTINGS = {'SL': stop_loss,
 
 if __name__=='__main__':
     socket_url = f'wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@kline_{INTERVAL}'
-    bot = WebSocketClientBot(   SYMBOL,
+    bot = MarketBotWebSocket(   SYMBOL,
                                 INTERVAL,
                                 SETTINGS,
                                 binance_API_KEY,
