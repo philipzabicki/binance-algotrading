@@ -10,7 +10,7 @@ from TA_tools import get_MA
 from talib import ATR
 from binance.enums import *
 
-class MarketBotWebSocket:
+class BinanceTakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
         self.cwd = getcwd()
         self.buy_slipp_file = '/settings/slippages_market_buy.csv'
@@ -38,10 +38,13 @@ class MarketBotWebSocket:
         self.balance = self.init_balance
         self.signal = 0.0
         self.buy_order, self.sell_order, self.SL_order = None, None, None
-        self.order_placed = 'null'
-        self.retry_price = 0
-        #print(self.OHLCVX_data)
 
+    def on_error(self, ws, error):
+        print(f"Error occurred: {error}")
+    def on_close(self, ws, close_status_code, close_msg):
+        print("### WebSocket closed ###")
+    def on_open(self, ws):
+        print("### WebSocket opened ###")
     def on_message(self, ws, message):
         self.start_t = time()
         data = loads(message)
@@ -50,10 +53,10 @@ class MarketBotWebSocket:
         if data_k['x']:
             self.OHLCVX_data.append(list( map(float, [data_k['o'],data_k['h'],data_k['l'],data_k['c'],data_k['v'],0]) ))
             self._analyze()
+            print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
+            print(f'init_balance:{self.init_balance:.2f}')
         self.balance = float(self.client.get_asset_balance(asset='TUSD')['free'])
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
-        print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
-        print(f'init_balance:{self.init_balance:.2f}')
 
     def _analyze(self):
         self.signal, close = self._get_signal()
@@ -63,12 +66,12 @@ class MarketBotWebSocket:
             q = str(self.balance/adj_close)[:7]
             self._market_buy(q)
             print(f'(msg_to_exec_time: {time()-self.start_t}s)')
-            self._report_buy_slipp(self.buy_order, close, 'buy')
+            self._report_slipp(self.buy_order, close, 'buy')
             self._stop_loss(q, round(adj_close*(1-self.settings['SL']),2))
         elif (self.signal<=-self.settings['close_at']) and (self.balance<1.0):
             self._cancel_all_orders()
             self._market_sell(self.q)
-            self._report_buy_slipp(self.sell_order, close, 'sell')
+            self._report_slipp(self.sell_order, close, 'sell')
 
     def _get_signal(self):
         OHLCV0_np = array(self.OHLCVX_data)
@@ -77,7 +80,7 @@ class MarketBotWebSocket:
         close = OHLCV0_np[-1,3]
         return (ma[-1]-close)/(atr[-1]*self.settings['ATR_multi']), close
     
-    def _report_buy_slipp(self, order, req_price, order_type):
+    def _report_slipp(self, order, req_price, order_type):
         file = self.buy_slipp_file
         if order_type=='buy':
             file = self.buy_slipp_file
@@ -94,13 +97,12 @@ class MarketBotWebSocket:
             value += float(element['price'])*float(qty)
             quantity += float(qty)
         return value/quantity
-    
+
     def _cancel_all_orders(self):
         try:
             self.client._delete('openOrders', True, data={'symbol': self.symbol})
             print(f'DELETED ALL ORDERS')
         except Exception as e:  print(f'exception(_cancel_all_orders): {e}')
-    
     def _stop_loss(self, q, price):
         print(f'StopLoss_LIMIT q:{q} price:{price}')
         try:
@@ -111,9 +113,7 @@ class MarketBotWebSocket:
                                                      quantity=q, 
                                                      stopPrice=price, 
                                                      price=price)
-            #self.order_placed = 'sl'
         except Exception as e:  print(f'exception(_stop_loss): {e}')
-    
     def _market_buy(self, q):
         print(f'BUY_MARKET q:{q}')
         self.buy_order = self.client.order_market_buy(symbol=self.symbol,
@@ -125,14 +125,6 @@ class MarketBotWebSocket:
                                                         quantity=q)
         print(self.sell_order)
 
-    def on_error(self, ws, error):
-        print(f"Error occurred: {error}")
-    def on_close(self, ws, close_status_code, close_msg):
-        print("### WebSocket closed ###")
-    def on_open(self, ws):
-        print("### WebSocket opened ###")
-        # For example, you can send a message immediately after it opens
-        #ws.send("Hello there!")
     def run(self):
         self.ws.run_forever()
 
@@ -140,7 +132,7 @@ class MarketBotWebSocket:
 ######################################################################################################################
 ######################################################################################################################
 
-class LimitBotWebSocket:
+class BinanceMakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
         self.cwd = getcwd()
         self.buy_slipp_file = '/settings/slippages_limit_buy.csv'

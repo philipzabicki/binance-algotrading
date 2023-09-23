@@ -1,8 +1,8 @@
 from bands_bot import MarketBotWebSocket
 from credentials import binance_API_KEY,binance_SECRET_KEY
 
-stop_loss,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0015,0.5,0.5,1,5,5,0.500
-SYMBOL = 'BTCTUSD'
+
+SYMBOL = 'BTCTUSD'stop_loss,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0015,0.5,0.5,1,5,5,0.500
 INTERVAL = '1m'
 BACK_DATA_MULTIPLER = 25
 SETTINGS = {'SL': stop_loss,

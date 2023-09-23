@@ -77,7 +77,8 @@ def display_callback(callback, fname):
     plt.xlabel('Population')
     plt.plot(-callback.opt, "--")
     plt.savefig(getcwd()+'/reports/Convergence_'+fname)
-    plt.show()
+    return plt
+    #plt.show()
 
 def display_result(result, problem, fname):
     X_array = array([[entry['type'], entry['MAperiod'], entry['ATRperiod'], entry['ATRmulti'], entry['SL'], entry['enter_at'], entry['close_at']] for entry in result.pop.get("X")])
@@ -98,7 +99,8 @@ def display_result(result, problem, fname):
     plot.add(X_array[:int(pop_size*.1)], linewidth=1.0, color='#004a73')
     plot.add(X_array[0], linewidth=1.5, color='red')
     plot.save(getcwd()+'/reports/'+fname)
-    plot.show()
+    return plot
+    #plot.show()
 
 def main():
     df = by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_600)
@@ -147,8 +149,10 @@ def main():
             print(f"Reward:", front , "Variables:", var)
             filename = 'Figure.png'
     
-    display_result(res, problem, filename)
-    display_callback(res.algorithm.callback, filename)
+    plt1 = display_result(res, problem, filename)
+    plt2 = display_callback(res.algorithm.callback, filename)
+    plt1.show()
+    plt2.show()
 
 if __name__ == '__main__':
     #profiler = cProfile.Profile() 
