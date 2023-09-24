@@ -5,7 +5,7 @@ from time import time, sleep
 from collections import deque
 from random import randint
 from gym import spaces, Env
-#from visualize import TradingGraph
+from visualize import TradingGraph
 
 class BacktestEnv(Env):
     def __init__(self, df, dates_df=None, excluded_left=0, init_balance=1_000, postition_ratio=1.0, StopLoss=0.0, fee=0.0002, coin_step=0.001,
@@ -114,7 +114,7 @@ class BacktestEnv(Env):
         #PLratio_x_PLcount = self.PL_ratio*self.PL_count_mean
         self.sharpe_ratio = (PNL_mean-risk_free_return)/PNL_stdev if PNL_stdev!=0 else -1
         self.sortino_ratio = (total_return-risk_free_return)/losses_stdev if losses_stdev!=0 else -1
-        self.reward = copysign((gain**1.5)*self.episode_orders*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio), gain)/self.df_total_steps
+        self.reward = copysign((abs(gain)**1.5)*self.episode_orders*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio), gain)/self.df_total_steps
         #print(self.reward)
         slope_indicator = 1.000
         '''slope_indicator = linear_slope_indicator(self.PL_count_ratios)
@@ -122,8 +122,8 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        #if gain>self.init_balance*.5:
-        if True:
+        if gain>self.init_balance*.5:
+        #if True:
           self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
           print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
@@ -136,7 +136,7 @@ class BacktestEnv(Env):
                      'exec_time':time()-self.start_t}
       else:
         self.output = False
-        self.reward = -1
+        self.reward = 0.0
         self.sharpe_ratio,self.sortino_ratio,self.PL_count_mean,self.PL_ratio = -1,-1,-1,-1
         self.info = {'gain':0, 'PL_ratio':0, 'hold_ratio':0,
                      'PL_count_mean':0, 'PNL_mean':0, 'slope_indicator':0,

@@ -10,7 +10,7 @@ from TA_tools import get_MA
 from talib import ATR
 from binance.enums import *
 
-class BinanceTakerBot:
+class TakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
         self.cwd = getcwd()
         self.buy_slipp_file = '/settings/slippages_market_buy.csv'
@@ -30,10 +30,10 @@ class BinanceTakerBot:
         self.client = Client(API_KEY, SECRET_KEY)
 
         self.settings = settings
-        prev_candles = self.client.get_historical_klines(symbol, itv, str(max(self.settings['MA_period'],self.settings['ATR_period'])*multi)+" minutes ago UTC")
+        prev_candles = self.client.get_historical_klines(symbol, itv, str(max(self.settings['MA_period'],self.settings['ATR_period'])*multi)+" seconds ago UTC")
         self.OHLCVX_data = deque([list(map(float,candle[1:6]+[0])) for candle in prev_candles[:-1]],
                                  maxlen=len(prev_candles[:-1]))
-        self.init_balance = float(self.client.get_asset_balance(asset='TUSD')['free'])
+        self.init_balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         self.balance = self.init_balance
         self.signal = 0.0
@@ -55,7 +55,7 @@ class BinanceTakerBot:
             self._analyze()
             print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
             print(f'init_balance:{self.init_balance:.2f}')
-        self.balance = float(self.client.get_asset_balance(asset='TUSD')['free'])
+        self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
 
     def _analyze(self):
@@ -132,7 +132,7 @@ class BinanceTakerBot:
 ######################################################################################################################
 ######################################################################################################################
 
-class BinanceMakerBot:
+class MakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
         self.cwd = getcwd()
         self.buy_slipp_file = '/settings/slippages_limit_buy.csv'

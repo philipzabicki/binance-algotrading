@@ -1,8 +1,8 @@
 from os import getcwd
 from numpy import array, hstack, mean, zeros, arange
 from multiprocessing import Pool, cpu_count
-from get_data import by_DataClient
-from utility import minutes_since, get_limit_slips_stats
+from get_data import by_DataClient, by_BinanceVision
+from utility import minutes_since, get_limit_slips_stats, get_market_slips_stats
 from enviroments.BandsStratEnv import BandsStratEnv
 from matplotlib import pyplot as plt
 from pymoo.core.problem import StarmapParallelization
@@ -20,11 +20,11 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 from gc import collect
 
 
-CPU_CORES_COUNT = cpu_count()
+CPU_CORES_COUNT = cpu_count()-1
 POP_SIZE = 64
-N_GEN = 10
-SLIPP = get_limit_slips_stats()
-print(SLIPP)
+N_GEN = 25
+SLIPP = get_market_slips_stats()
+#print(SLIPP)
 #CPU_CORES_COUNT = 6
 
 class CustomProblem(ElementwiseProblem):
@@ -48,7 +48,7 @@ class CustomMixedVariableProblem(ElementwiseProblem):
         vars = {"SL": Real(bounds=(0.0001, 0.0150)),
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
-                "type": Integer(bounds=(0, 30)),
+                "type": Integer(bounds=(0, 26)),
                 "MAperiod": Integer(bounds=(2, 450)),
                 "ATRperiod": Integer(bounds=(1, 500)),
                 "ATRmulti": Real(bounds=(1.000, 9.000))}
@@ -103,10 +103,12 @@ def display_result(result, problem, fname):
     #plot.show()
 
 def main():
-    df = by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_600)
+    #df = by_DataClient(ticker='BTCFDUSD', interval='1s', futures=False, statements=True, delay=3_600)
+    df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=3_600)
     df = df.drop(columns='Opened').to_numpy()
     df = hstack((df, zeros((df.shape[0], 1))))
-    df = df[-minutes_since('23-03-2023'):,:]
+    df = df[-1_209_600:,:]
+    print(df)
     #env = BandsStratEnv(df=df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
 
     pool = Pool(CPU_CORES_COUNT)
@@ -150,8 +152,8 @@ def main():
             filename = 'Figure.png'
     
     plt1 = display_result(res, problem, filename)
-    plt2 = display_callback(res.algorithm.callback, filename)
     plt1.show()
+    plt2 = display_callback(res.algorithm.callback, filename)
     plt2.show()
 
 if __name__ == '__main__':

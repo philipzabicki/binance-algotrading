@@ -77,6 +77,7 @@ def by_BinanceVision(ticker='BTCBUSD', interval='1m', type='um', data='klines', 
   ### example url #1 https://data.binance.vision/data/spot/daily/klines/BTCTUSD/1m/BTCTUSD-1m-2023-08-09.zip
   ### example url #2 https://data.binance.vision/data/futures/um/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2023-08-09.zip
   ### https://data.binance.vision/data/futures/um/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2023-07.zip
+  ### https://data.binance.vision/data/spot/daily/klines/BTCFDUSD/1s/BTCFDUSD-1s-2023-09-23.zip
   if type=='um' or type=='cm':
     url = f'https://data.binance.vision/data/futures/{type}/monthly/{data}/{ticker}/{interval}/{ticker}-{interval}-'
     output_folder = os.getcwd()+f'/data/binance_vision/futures_{type}/{data}/{ticker}{interval}'

@@ -48,6 +48,7 @@ class OneRunEnv(BacktestEnv):
       action = 0
       while not self.done:
         obs,reward,done,info = self.step(action)
+        #if self.visualize: self.render()
         #print(f'SIGNAL: {obs[-1]:.2f}')
         signal = obs[-1]
         action = 0

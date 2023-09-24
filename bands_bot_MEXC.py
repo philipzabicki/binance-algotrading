@@ -7,16 +7,23 @@ from binance.client import Client
 from TA_tools import get_MA
 from talib import ATR
 from credentials import *
-from mexc_sdk import Spot
+import ccxt
+#from mexc_sdk import Spot
+
+import cProfile
 ITV_ALIAS = {'Min1':'1m'}
 
 class MEXCTakerBot:
     def __init__(self, symbol, interval, settings, API_KEYbinance, SECRET_KEYbinance,  API_KEYmexc, SECRET_KEYmexc, multi=25) -> None:
+        self.profiler = cProfile.Profile() 
+        self.profiler.enable()
         self.symbol = symbol
         self.interval = interval
         self.settings = settings
         self.clientBinance = Client(API_KEYbinance, SECRET_KEYbinance)
-        self.clientMEXC = Spot(API_KEYmexc, SECRET_KEYmexc)
+        #self.clientMEXC = Spot(API_KEYmexc, SECRET_KEYmexc)
+        self.ccxtMEXC = ccxt.mexc({'apiKey': API_KEYmexc,
+                                   'secret': SECRET_KEYmexc})
         url = 'wss://wbs.mexc.com/ws'
         self.ws = WebSocketApp( url,
                                 on_message=self.on_msg,
@@ -24,8 +31,8 @@ class MEXCTakerBot:
                                 on_close=self.on_close,
                                 on_open=self.on_open    )
         prev_candles = self.clientBinance.get_historical_klines(symbol,
-                                                         ITV_ALIAS[interval],
-                                                         str(max(self.settings['MA_period'],self.settings['ATR_period'])*multi)+" minutes ago UTC")
+                                                                ITV_ALIAS[interval],
+                                                                str(max(self.settings['MA_period'],self.settings['ATR_period'])*multi)+" minutes ago UTC")
         self.OHLCVX_data = deque([list(map(float,candle[1:6]+[0])) for candle in prev_candles[:-1]],
                                  maxlen=len(prev_candles[:-1]))
         self.msg_buffer = deque(maxlen=5)
@@ -37,6 +44,8 @@ class MEXCTakerBot:
         print(f"Error occurred: {error}")
 
     def on_close(self, ws, close_status_code, close_msg):
+        self.profiler.disable()  # Zakończ profilowanie
+        self.profiler.print_stats(sort='cumtime')
         print("### WebSocket closed ###")
 
     def on_open(self, ws):
@@ -60,8 +69,6 @@ class MEXCTakerBot:
             print(self.OHLCVX_data[-1])
             self._analyze()
         self._get_balances()
-        print(f' INFO close:{data["d"]["k"]["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
-        print(f'init_balance:{self.init_balance:.2f}')
     
     def _analyze(self):
         print('ANALYZING DATA')
@@ -70,17 +77,20 @@ class MEXCTakerBot:
         if (self.signal >= self.settings['enter_at']):
             self.req_p_buy = close
             adj_close = round(close+.01, 2)
-            q = str(self.balance/adj_close)[:7]
-            self._market_buy(q)
+            q = str(self.balance/adj_close)[:8]
+            self._market_buy(q, adj_close)
             print(f'(delay(msg to buy order): {time()-self.start_t}s)')
             #self._report_slipp(self.buy_order, close, 'buy')
             self._stoploss(q, round(adj_close*(1-self.settings['SL']),2))
         #elif (self.signal<=-self.settings['close_at']) and (self.balance<1.0):
         elif (self.signal<=-self.settings['close_at']):
             self._cancel_all_orders()
-            self._market_sell(self.q)
+            adj_close = round(close-.01, 2)
+            self._market_sell(self.q, adj_close)
             print(f'(delay(msg to  sell order): {time()-self.start_t}s)')
             #self._report_slipp(self.sell_order, close, 'sell')
+        print(f' INFO close:{close} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
+        print(f'init_balance:{self.init_balance:.2f}')
     
     def _get_signal(self):
         print('CHECKING SIGNAL')
@@ -91,6 +101,42 @@ class MEXCTakerBot:
         return (ma[-1]-close)/(atr[-1]*self.settings['ATR_multi']), close
 
     def _get_balances(self):
+        #print('UPDATING BALANCES')
+        try: self.balance = self.ccxtMEXC.fetch_balance()['USDT']['free']
+        except KeyError: self.balance = 0.0
+        try: self.q = self.ccxtMEXC.fetch_balance()['BTC']['free']
+        except KeyError: self.q = 0.0
+
+    def _cancel_all_orders(self):
+        try:
+            self.ccxtMEXC.cancel_all_orders(self.symbol)
+        except Exception as e: print(f'exception(_cancel_all_orders): {e}')
+    
+    def _market_buy(self, q, price):
+        print(f'BUY_MARKET q:{q}')
+        try:
+            self.buy_order = self.ccxtMEXC.create_order('BTC/USDT', 'market', 'buy', q, price)
+            print(self.buy_order)
+        except Exception as e: print(f'ERROR(market_buy) {e}')
+
+    def _market_sell(self, q, price):
+        print(f'SELL_MARKET q:{q}')
+        try:
+            self.sell_order = self.ccxtMEXC.create_order('BTC/USDT', 'market', 'sell', q, price)
+            print(self.sell_order)
+        except Exception as e: print(f'ERROR(market_sell) {e}')
+    
+    def _stoploss(self, q, price):
+        print(f'StopLoss_LIMIT q:{q} price:{price}')
+        self.stoploss_order = self.ccxtMEXC.create_order('BTC/USDT',
+                                                        'limit',
+                                                        'sell',
+                                                        q,
+                                                        price,
+                                                        {'stopLossPrice': price})
+        print(self.stoploss_order)
+
+    '''def _get_balances(self):
         #print('UPDATING BALANCES')
         for element in self.clientMEXC.account_info()['balances']:
             if element['asset'] == 'USDT':
@@ -126,7 +172,7 @@ class MEXCTakerBot:
                                                     'SELL',
                                                     'STOP_LOSS_LIMIT',
                                                     options={"price":price, "quantity":q})
-        print(self.stoploss_orders)
+        print(self.stoploss_order)'''
 
     def run(self):
         self.ws.run_forever()
