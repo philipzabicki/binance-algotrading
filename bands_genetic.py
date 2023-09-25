@@ -21,8 +21,8 @@ from gc import collect
 
 
 CPU_CORES_COUNT = cpu_count()-1
-POP_SIZE = 258
-N_GEN = 75
+POP_SIZE = 256
+N_GEN = 25
 SLIPP = get_market_slips_stats()
 #print(SLIPP)
 #CPU_CORES_COUNT = 6

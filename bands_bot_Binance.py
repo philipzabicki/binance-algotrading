@@ -15,6 +15,7 @@ class TakerBot:
         self.cwd = getcwd()
         self.buy_slipp_file = '/settings/slippages_market_buy.csv'
         self.sell_slipp_file = '/settings/slippages_market_sell.csv'
+        self.stoploss_slipp_file = '/settings/slippages_StopLoss.csv'
         #sl_slipp_file = '/settings/slippages_StopLoss.csv'
         #with open(self.cwd+self.buy_slipp_file, 'a', newline='') as file: self.buy_slipp_wr = writer(file)
         #with open(self.cwd+self.sell_slipp_file, 'a', newline='') as file: self.sell_slipp_wr = writer(file)
@@ -37,6 +38,7 @@ class TakerBot:
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         self.balance = self.init_balance
         self.signal = 0.0
+        self.SL_placed = False
         self.buy_order, self.sell_order, self.SL_order = None, None, None
 
     def on_error(self, ws, error):
@@ -55,19 +57,26 @@ class TakerBot:
             self._analyze()
             print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
             print(f'init_balance:{self.init_balance:.2f}')
+        if self.SL_placed:
+            _order = self.client.get_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
+            if not (_order['status']=='FILLED'):
+                if float(data_k['c'])<=self.stoploss_price:
+                    self._partialy_filled_problem()
+            else:
+                self.SL_placed = False
+                self._report_slipp(_order, self.stoploss_price, 'stoploss')
         self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
-        self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
+        self.q = str(self.client.get_asset_balance(asset='BTC')['locked'])[:7]
 
     def _analyze(self):
         self.signal, close = self._get_signal()
         if (self.signal >= self.settings['enter_at']) and (self.balance>1.0):
-            self.req_p_buy = close
-            adj_close = round(close+.01, 2)
-            q = str(self.balance/adj_close)[:7]
+            q = str((self.balance/close)-.00001)[:7]
             self._market_buy(q)
             print(f'(msg_to_exec_time: {time()-self.start_t}s)')
             self._report_slipp(self.buy_order, close, 'buy')
-            self._stop_loss(q, round(adj_close*(1-self.settings['SL']),2))
+            self.stoploss_price = round(close*(1-self.settings['SL']),2)
+            self._stop_loss(q, self.stoploss_price)
         elif (self.signal<=-self.settings['close_at']) and (self.balance<1.0):
             self._cancel_all_orders()
             self._market_sell(self.q)
@@ -86,6 +95,12 @@ class TakerBot:
             file = self.buy_slipp_file
         elif order_type=='sell':
             file = self.sell_slipp_file
+        elif order_type=='stoploss':
+            file = self.stoploss_slipp_file
+            with open(self.cwd+file, 'a', newline='') as file:
+                writer(file).writerow([float(order['price'])/req_price])
+            return
+        print(f'REPORTING {order_type} SLIPP FROM: {order}')
         filled_price = self._get_filled_price(order)
         with open(self.cwd+file, 'a', newline='') as file:
             writer(file).writerow([filled_price/req_price])
@@ -98,13 +113,23 @@ class TakerBot:
             quantity += float(qty)
         return value/quantity
 
+    def _partialy_filled_problem(self):
+        self.q = str(self.client.get_asset_balance(asset='BTC')['locked'])[:7]
+        self._cancel_all_orders()
+        _order = self._market_sell(self.q)
+        self.SL_placed = False
+        print(f'REPORTING stoploss(missed) SLIPP FROM: {_order}')
+        file = self.stoploss_slipp_file
+        with open(self.cwd+file, 'a', newline='') as file:
+            writer(file).writerow([self._get_filled_price(_order)/self.stoploss_price])
+
     def _cancel_all_orders(self):
         try:
             self.client._delete('openOrders', True, data={'symbol': self.symbol})
             print(f'DELETED ALL ORDERS')
         except Exception as e:  print(f'exception(_cancel_all_orders): {e}')
     def _stop_loss(self, q, price):
-        print(f'StopLoss_LIMIT q:{q} price:{price}')
+        print(f'STOPLOSS_LIMIT q:{q} price:{price}')
         try:
             self.SL_order = self.client.create_order(symbol=self.symbol,
                                                      side=SIDE_SELL,
@@ -113,17 +138,21 @@ class TakerBot:
                                                      quantity=q, 
                                                      stopPrice=price, 
                                                      price=price)
+            self.SL_placed = True
+            #print(self.SL_order)
         except Exception as e:  print(f'exception(_stop_loss): {e}')
     def _market_buy(self, q):
         print(f'BUY_MARKET q:{q}')
         self.buy_order = self.client.order_market_buy(symbol=self.symbol,
                                                       quantity=q)
-        print(self.buy_order)
+        return self.buy_order
+        #print(self.buy_order)
     def _market_sell(self, q):
         print(f'SELL_MARKET q:{q}')
         self.sell_order = self.client.order_market_sell(symbol=self.symbol,
                                                         quantity=q)
-        print(self.sell_order)
+        #print(self.sell_order)
+        return self.sell_order
 
     def run(self):
         self.ws.run_forever()

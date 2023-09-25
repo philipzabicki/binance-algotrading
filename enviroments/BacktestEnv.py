@@ -122,8 +122,8 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        #if gain>self.init_balance*.5:
-        if True:
+        if gain>self.init_balance*.5:
+        #if True:
           self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
           print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
@@ -162,11 +162,11 @@ class BacktestEnv(Env):
       return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)
 
     def _buy(self, price):
+      self.stop_loss_price = round((1-self.stop_loss)*price,2)
       price = self._random_factor(price, 'market_buy')
       self.in_position = 1
       self.episode_orders += 1
       self.enter_price = price
-      self.stop_loss_price = round((1-self.stop_loss)*price,2)
       ### When there is no fee, substract 1 just to be sure balance can buy this amount
       step_adj_qty = floor((self.position_size*(1-2*self.fee))/(price*self.coin_step))
       if step_adj_qty==0:
@@ -184,6 +184,8 @@ class BacktestEnv(Env):
     def _sell(self, price, SL=False):
       if SL:
         price = self._random_factor(price, 'SL')
+        while price>self.enter_price:
+          price = self._random_factor(price, 'SL')
         order_type = 'open_short'
       else:
         price = self._random_factor(price, 'market_sell')
