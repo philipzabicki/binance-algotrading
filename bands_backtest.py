@@ -7,10 +7,10 @@ from TA_tools import get_MA_signal
 from utility import minutes_since, get_limit_slips_stats, get_market_slips_stats
 
 if __name__=="__main__":
-  SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0121, 0.71, 0.639, 4, 6, 381, 7.976
+  SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0001, 0.181, 0.45, 23, 2, 492, 3.894
 
   #df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_000)
-  df = get_data.by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=93_600)
+  df = get_data.by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=172800)
   dates_df = df['Opened'].to_numpy()
   df = df.drop(columns='Opened').to_numpy()[-1_209_600:,:]
   df = np.hstack((df, np.zeros((df.shape[0], 1))))

@@ -21,8 +21,8 @@ from gc import collect
 
 
 CPU_CORES_COUNT = cpu_count()-1
-POP_SIZE = 64
-N_GEN = 25
+POP_SIZE = 258
+N_GEN = 75
 SLIPP = get_market_slips_stats()
 #print(SLIPP)
 #CPU_CORES_COUNT = 6
@@ -68,7 +68,8 @@ class MyCallback(Callback):
         self.opt = zeros(N_GEN)
         self.idx = 0
     def notify(self, algorithm):
-        self.opt[self.idx] = mean(algorithm.pop.get("F"))
+        avg_rew = mean(algorithm.pop.get("F"))
+        self.opt[self.idx] = avg_rew if avg_rew<0 else 0.0
         self.idx += 1
 
 def display_callback(callback, fname):
