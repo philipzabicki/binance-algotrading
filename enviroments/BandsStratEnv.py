@@ -76,8 +76,8 @@ class BandsStratEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES
-        action_lower = [0.0001, 0.001, 0.001, 0, 2, 1, 1.000]
-        action_upper = [0.0150, 1.000, 1.000, 31, 450, 500, 9.000]
+        action_lower = [0.0001, 0.001, 0.001, 0, 2, 1, 0.001]
+        action_upper = [0.0150, 1.000, 1.000, 31, 750, 750, 10.000]
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
     def reset(self, postition_ratio=1.0, StopLoss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.000):
         return self.exec_env.reset(postition_ratio, StopLoss, enter_at, close_at, typeMA, MA_period, ATR_period, ATR_multi)

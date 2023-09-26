@@ -48,10 +48,10 @@ class CustomMixedVariableProblem(ElementwiseProblem):
         vars = {"SL": Real(bounds=(0.0001, 0.0150)),
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
-                "type": Integer(bounds=(0, 26)),
-                "MAperiod": Integer(bounds=(2, 450)),
-                "ATRperiod": Integer(bounds=(1, 500)),
-                "ATRmulti": Real(bounds=(1.000, 9.000))}
+                "type": Integer(bounds=(0, 30)),
+                "MAperiod": Integer(bounds=(2, 750)),
+                "ATRperiod": Integer(bounds=(1, 750)),
+                "ATRmulti": Real(bounds=(0.001, 20.000))}
         super().__init__(vars=vars, n_obj=1, **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]

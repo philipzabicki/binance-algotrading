@@ -26,6 +26,8 @@ def fix_and_fill_df(df, itv):
   df['Opened'] = pd.to_datetime(df['Opened'],  format='%Y-%m-%d %H:%M:%S')
   df = fixed_dates_df.merge(df, on='Opened', how='left')
   df.fillna(method='ffill', inplace=True)
+  ### Replacing 0 volume with really small one to make some TAcalculations possible
+  df.iloc[:,-1] = df.iloc[:,-1].replace(0.0, .00000001)
   return df
 
 def download_and_unzip(url, output_path):

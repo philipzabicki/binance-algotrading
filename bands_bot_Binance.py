@@ -1,7 +1,7 @@
 from websocket import WebSocketApp
 from binance.client import Client
 from json import loads
-from numpy import array
+from numpy import array, where
 from os import getcwd
 from csv import writer
 from collections import deque
@@ -31,7 +31,9 @@ class TakerBot:
 
         self.settings = settings
         prev_candles = self.client.get_historical_klines(symbol, itv, str(max(self.settings['MA_period'],self.settings['ATR_period'])*multi)+" seconds ago UTC")
-        self.OHLCVX_data = deque([list(map(float,candle[1:6]+[0])) for candle in prev_candles[:-1]],
+        prev_data = array([list(map(float,candle[1:6]+[0])) for candle in prev_candles[:-1]])
+        prev_data[where(prev_data[:,-2]==0.0), -2] = 0.00000001
+        self.OHLCVX_data = deque(prev_data,
                                  maxlen=len(prev_candles[:-1]))
         self.init_balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
@@ -53,7 +55,8 @@ class TakerBot:
         #print(f"Received: {data}")
         data_k = data['k']
         if data_k['x']:
-            self.OHLCVX_data.append(list( map(float, [data_k['o'],data_k['h'],data_k['l'],data_k['c'],data_k['v'],0]) ))
+            _volume = '0.00000001' if float(data_k['v'])<=0.0 else data_k['v']
+            self.OHLCVX_data.append(list( map(float, [data_k['o'],data_k['h'],data_k['l'],data_k['c'],_volume,0]) ))
             self._analyze()
             print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
             print(f'init_balance:{self.init_balance:.2f}')
@@ -70,6 +73,7 @@ class TakerBot:
 
     def _analyze(self):
         self._check_signal()
+        close = self.OHLCV0_np[-1,3]
         if (self.signal >= self.settings['enter_at']) and (self.balance>1.0):
             q = str((self.balance/close)-.00001)[:7]
             self._market_buy(q)
