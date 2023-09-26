@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from enviroments.BandsStratEnv import BandsStratEnv
 import get_data
 from TA_tools import get_MA_signal
-from utility import minutes_since, get_limit_slips_stats, get_market_slips_stats
+from utility import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
 
 if __name__=="__main__":
   SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0001, 0.181, 0.45, 23, 2, 492, 3.894
@@ -12,7 +12,7 @@ if __name__=="__main__":
   #df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_000)
   df = get_data.by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=172800)
   dates_df = df['Opened'].to_numpy()
-  df = df.drop(columns='Opened').to_numpy()[-1_209_600:,:]
+  df = df.drop(columns='Opened').to_numpy()[-seconds_since('09-01-2023'):,:]
   df = np.hstack((df, np.zeros((df.shape[0], 1))))
 
   signal = get_MA_signal(df,typeMA,MA_period,ATR_period,ATR_multi)[:,-1]

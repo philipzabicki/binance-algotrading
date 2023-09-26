@@ -81,6 +81,11 @@ def minutes_since(data_string):
     minutes = diff.total_seconds() / 60
     return int(minutes)
 
+def seconds_since(data_string):
+    diff = dt.datetime.now() - parse(data_string)
+    minutes = diff.total_seconds()
+    return int(minutes)
+
 def get_attributes_and_deep_sizes(obj):
     attributes_and_sizes = {}
     for attribute_name in dir(obj):

@@ -12,10 +12,9 @@ from binance.enums import *
 
 class TakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
-        self.cwd = getcwd()
-        self.buy_slipp_file = '/settings/slippages_market_buy.csv'
-        self.sell_slipp_file = '/settings/slippages_market_sell.csv'
-        self.stoploss_slipp_file = '/settings/slippages_StopLoss.csv'
+        self.buy_slipp_file = getcwd()+'/settings/slippages_market_buy.csv'
+        self.sell_slipp_file = getcwd()+'/settings/slippages_market_sell.csv'
+        self.stoploss_slipp_file = getcwd()+'/settings/slippages_StopLoss.csv'
         #sl_slipp_file = '/settings/slippages_StopLoss.csv'
         #with open(self.cwd+self.buy_slipp_file, 'a', newline='') as file: self.buy_slipp_wr = writer(file)
         #with open(self.cwd+self.sell_slipp_file, 'a', newline='') as file: self.sell_slipp_wr = writer(file)
@@ -39,6 +38,7 @@ class TakerBot:
         self.balance = self.init_balance
         self.signal = 0.0
         self.SL_placed = False
+        self.stoploss_price = 0.0
         self.buy_order, self.sell_order, self.SL_order = None, None, None
 
     def on_error(self, ws, error):
@@ -57,37 +57,37 @@ class TakerBot:
             self._analyze()
             print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
             print(f'init_balance:{self.init_balance:.2f}')
-        if self.SL_placed:
+        if float(data_k['l'])<=self.stoploss_price:
             _order = self.client.get_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
-            if not (_order['status']=='FILLED'):
-                if float(data_k['c'])<=self.stoploss_price:
-                    self._partialy_filled_problem()
-            else:
+            if _order['status']=='FILLED':
                 self.SL_placed = False
+                self.stoploss_price = 0.0
+                self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
+                self.q = '0.00000'
                 self._report_slipp(_order, self.stoploss_price, 'stoploss')
-        self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
-        self.q = str(self.client.get_asset_balance(asset='BTC')['locked'])[:7]
+            else:
+                self._partialy_filled_problem()
 
     def _analyze(self):
-        self.signal, close = self._get_signal()
+        self._check_signal()
         if (self.signal >= self.settings['enter_at']) and (self.balance>1.0):
             q = str((self.balance/close)-.00001)[:7]
             self._market_buy(q)
-            print(f'(msg_to_exec_time: {time()-self.start_t}s)')
             self._report_slipp(self.buy_order, close, 'buy')
             self.stoploss_price = round(close*(1-self.settings['SL']),2)
             self._stop_loss(q, self.stoploss_price)
         elif (self.signal<=-self.settings['close_at']) and (self.balance<1.0):
             self._cancel_all_orders()
             self._market_sell(self.q)
+            self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self._report_slipp(self.sell_order, close, 'sell')
 
-    def _get_signal(self):
-        OHLCV0_np = array(self.OHLCVX_data)
-        ma = get_MA(array(self.OHLCVX_data), self.settings['typeMA'], self.settings['MA_period'])
-        atr = ATR(OHLCV0_np[:,1], OHLCV0_np[:,2], OHLCV0_np[:,3], timeperiod=self.settings['ATR_period'])
-        close = OHLCV0_np[-1,3]
-        return (ma[-1]-close)/(atr[-1]*self.settings['ATR_multi']), close
+    def _check_signal(self):
+        self.OHLCV0_np = array(self.OHLCVX_data)
+        ma = get_MA(self.OHLCV0_np, self.settings['typeMA'], self.settings['MA_period'])
+        atr = ATR(self.OHLCV0_np[:,1], self.OHLCV0_np[:,2], self.OHLCV0_np[:,3], timeperiod=self.settings['ATR_period'])
+        close = self.OHLCV0_np[-1,3]
+        self.signal = (ma[-1]-close)/(atr[-1]*self.settings['ATR_multi'])
     
     def _report_slipp(self, order, req_price, order_type):
         file = self.buy_slipp_file
@@ -97,12 +97,12 @@ class TakerBot:
             file = self.sell_slipp_file
         elif order_type=='stoploss':
             file = self.stoploss_slipp_file
-            with open(self.cwd+file, 'a', newline='') as file:
+            with open(file, 'a', newline='') as file:
                 writer(file).writerow([float(order['price'])/req_price])
             return
         print(f'REPORTING {order_type} SLIPP FROM: {order}')
         filled_price = self._get_filled_price(order)
-        with open(self.cwd+file, 'a', newline='') as file:
+        with open(file, 'a', newline='') as file:
             writer(file).writerow([filled_price/req_price])
 
     def _get_filled_price(self, order):
@@ -120,7 +120,7 @@ class TakerBot:
         self.SL_placed = False
         print(f'REPORTING stoploss(missed) SLIPP FROM: {_order}')
         file = self.stoploss_slipp_file
-        with open(self.cwd+file, 'a', newline='') as file:
+        with open(file, 'a', newline='') as file:
             writer(file).writerow([self._get_filled_price(_order)/self.stoploss_price])
 
     def _cancel_all_orders(self):
@@ -143,16 +143,25 @@ class TakerBot:
         except Exception as e:  print(f'exception(_stop_loss): {e}')
     def _market_buy(self, q):
         print(f'BUY_MARKET q:{q}')
-        self.buy_order = self.client.order_market_buy(symbol=self.symbol,
-                                                      quantity=q)
-        return self.buy_order
+        try:
+            self.buy_order = self.client.order_market_buy(  symbol=self.symbol,
+                                                            quantity=q  )
+            print(f'(msg_to_exec_time: {time()-self.start_t}s)')
+            self.q = q
+            self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
+            return self.buy_order
+        except Exception as e: print(f'exception(_market_buy): {e}')
         #print(self.buy_order)
     def _market_sell(self, q):
         print(f'SELL_MARKET q:{q}')
-        self.sell_order = self.client.order_market_sell(symbol=self.symbol,
-                                                        quantity=q)
-        #print(self.sell_order)
-        return self.sell_order
+        try:
+            self.sell_order = self.client.order_market_sell(symbol=self.symbol,
+                                                            quantity=q)
+            #print(self.sell_order)
+            self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
+            self.q = '0.00000'
+            return self.sell_order
+        except Exception as e: print(f'exception(_market_sell): {e}')
 
     def run(self):
         self.ws.run_forever()
@@ -265,7 +274,7 @@ class MakerBot:
         ma = get_MA(array(self.OHLCVX_data), self.settings['typeMA'], self.settings['MA_period'])
         atr = ATR(OHLCV0_np[:,1], OHLCV0_np[:,2], OHLCV0_np[:,3], timeperiod=self.settings['ATR_period'])
         close = OHLCV0_np[-1,3]
-        return (ma[-1]-close)/(atr[-1]*self.settings['ATR_multi']), close
+        return (ma[-1]-close)/(atr[-1]*self.settings['ATR_multi'])
 
     def _check_order(self, ID):
         _order = self.client.get_order(symbol=self.symbol, orderId=ID)
