@@ -8,25 +8,25 @@ from csv import writer
 from time import time, sleep
 from statistics import mean
 from multiprocessing import Pool, cpu_count
-from get_data import by_DataClient
+from get_data import by_DataClient, by_BinanceVision
 from enviroments.BandsStratEnv import BandsStratEnv
-from utility import minutes_since, get_market_slips_stats
+from utility import minutes_since, seconds_since, get_market_slips_stats
 import cProfile
 
 #CPU_CORES_COUNT = cpu_count()
-CPU_CORES_COUNT = 4
+CPU_CORES_COUNT = 1
 EPISODES_PER_CORE = 100
 #CPU_CORES_COUNT = 6
 #REPORT_FULL_PATH = 'Z:/home/philipz_abicki/binance-algotrading/reports/BTCTUSD1m_since0322_ATR.csv'
 REPORT_FULL_PATH = getcwd()+'/reports/BTCTUSD1m_since0322_ATR.csv'
 #EPISODES = randint(10, 250)
-TICKER, ITV, FUTURES, START_DATE = 'BTCTUSD', '1m', False, '22-03-2023'
+TICKER, ITV, FUTURES, START_DATE = 'BTCUSDT', '1s', False, '09-01-2023'
 
 def run_indefinitely(_, df):
     #profiler = cProfile.Profile() 
     #profiler.enable()
-    env = BandsStratEnv(df=df, 
-                        init_balance=1_000, fee=0.00075, coin_step=0.00001, slippage=get_market_slips_stats(),
+    env = BandsStratEnv(df=df, max_steps=259_200,
+                        init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_market_slips_stats(),
                         visualize=False, Render_range=60)
     timers, results = [], []
     i, timer = 0, time()
@@ -35,12 +35,12 @@ def run_indefinitely(_, df):
         action = env.action_space.sample()
         _, reward, _, info = env.step(action)
         #print(obs, reward, done, info)
-        if reward!=0 and not isnan(reward):
+        if not isnan(reward):
             #print(f'usd_gains: {info["gain"]:.2f}, indicator: {indicator:.4f}, order_count: {info["episode_orders"]} PNL_ratio: {info["pnl_ratio"]:.3f}, StDev: {info["stdev_pnl"]:.5f}, pos_hold_ratio: {info["position_hold_sums_ratio"]:.3f}, reg_slope_avg: {slope_avg} ')
             results.append([round(info["gain"],2), round(reward,4), round(info["PL_ratio"],3), round(info["PL_count_mean"],3), round(info["hold_ratio"],3),
                             round(info['slope_indicator'],4), round(action[0],4), round(action[1],3), round(action[2],3), int(action[3]), int(action[4]), int(action[5]), round(action[6],3)])
         _t = time()-timer
-        #print(f'[{i}/{episodes}] {_t}')
+        #print(f'[{i}/{EPISODES_PER_CORE}] {_t}')
         timers.append(_t)
         timer = time()
     print(f'MEAN EP TIME {mean(timers)}')
@@ -57,10 +57,12 @@ def main():
     # Infinite loop to run the processes
     while 1:
         start_t = time()
-        df = by_DataClient(ticker=TICKER, interval=ITV, futures=FUTURES, statements=True, delay=3_600)
+        #df = by_DataClient(ticker=TICKER, interval=ITV, futures=FUTURES, statements=True, delay=3_600)
+        df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=129_600)
         df = df.drop(columns='Opened').to_numpy()
         df = hstack((df, zeros((df.shape[0], 1))))
-        df = df[-minutes_since(START_DATE):,:]
+        df = df[-seconds_since(START_DATE):,:]
+        #df = df[-265_000:,:]
         with Pool(processes=CPU_CORES_COUNT) as pool:
             # Each process will call 'run_indefinitely_process'
             # The list(range(num_processes)) is just to provide a different argument to each process (even though it's not used in the function)

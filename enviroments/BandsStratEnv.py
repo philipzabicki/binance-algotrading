@@ -1,7 +1,11 @@
+#from os import environ
+#environ['NUMPY_EXPERIMENTAL_ARRAY_FUNCTION'] = '0'
+
 from numpy import array, float64, inf
 from gym import spaces, Env
 from enviroments.BacktestEnv import BacktestEnv, BacktestEnvFutures
 from TA_tools import get_MA_signal
+#from matplotlib import pyplot as plt
 #import cProfile
 
 class OneRunEnv(BacktestEnv):
@@ -20,17 +24,19 @@ class OneRunEnv(BacktestEnv):
      self.ATR_period = ATR_period
      self.ATR_multi = ATR_multi
   def reset(self, postition_ratio=1.0, StopLoss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=1, ATR_period=1, ATR_multi=1.000):
-     self.stop_loss = StopLoss
-     self.enter_threshold = enter_at
-     self.close_threshold = close_at
-     self.postition_ratio = postition_ratio
-     self.typeMA = typeMA
-     self.MA_period = MA_period
-     self.ATR_period = ATR_period
-     self.ATR_multi = ATR_multi
-     self.df = get_MA_signal(self.df, self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
-     super().reset()
-     return array([-1.0 for _ in range(7)], dtype="float32")
+    self.stop_loss = StopLoss
+    self.enter_threshold = enter_at
+    self.close_threshold = close_at
+    self.postition_ratio = postition_ratio
+    self.typeMA = typeMA
+    self.MA_period = MA_period
+    self.ATR_period = ATR_period
+    self.ATR_multi = ATR_multi
+    #print(f'OneRunEnv.reset {self.postition_ratio} {self.stop_loss} {self.enter_threshold} {self.close_threshold} {self.typeMA} {self.MA_period} {self.ATR_period} {self.ATR_multi}')
+    super().reset()
+    self.df[self.start_step:self.end_step,-1] = get_MA_signal(self.df[self.start_step:self.end_step,:], self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
+    self.obs = iter(self.df[self.start_step:self.end_step,:])
+    return array([-1.0 for _ in range(7)], dtype="float32")
   def _finish_episode(self):
      #print('OneRunEnv._finish_episode()')
      super()._finish_episode()
@@ -54,13 +60,13 @@ class OneRunEnv(BacktestEnv):
         action = 0
         if self.qty == 0:
            if signal >= self.enter_threshold:
-            action = 1
+              action = 1
            elif signal <= -self.enter_threshold:
-            action = 2
+              action = 2
         elif (self.qty<0) and (signal>=-self.close_threshold):
-         action = 1
+           action = 1
         elif (self.qty>0) and (signal<=self.close_threshold):
-         action = 2
+           action = 2
       #print(obs,reward,done,info)
       return obs,reward,done,info
 
@@ -80,10 +86,14 @@ class BandsStratEnv(Env):
         action_upper = [0.0150, 1.000, 1.000, 31, 750, 750, 10.000]
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
     def reset(self, postition_ratio=1.0, StopLoss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.000):
+        #print(f'BandsStratEnv.reset {postition_ratio} {StopLoss} {enter_at} {close_at} {typeMA} {MA_period} {ATR_period} {ATR_multi}')
         return self.exec_env.reset(postition_ratio, StopLoss, enter_at, close_at, typeMA, MA_period, ATR_period, ATR_multi)
     def step(self, action):
-      self.reset(postition_ratio=1.0, StopLoss=round(action[0],4), enter_at=round(action[1],3), close_at=-round(action[2],3),
-                 typeMA=int(action[3]), MA_period=int(action[4]), ATR_period=int(action[5]), ATR_multi=round(action[6],3))
+      #print(f'action: {action}')
+      self.reset(   postition_ratio=1.0, StopLoss=round(action[0],4),
+                    enter_at=round(action[1],3), close_at=-round(action[2],3),
+                    typeMA=int(action[3]), MA_period=int(action[4]),
+                    ATR_period=int(action[5]), ATR_multi=round(action[6],3)   )
       return self.exec_env._execute()
     
 class OneRunEnvFutures(BacktestEnvFutures):

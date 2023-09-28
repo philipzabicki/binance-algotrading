@@ -1,5 +1,8 @@
+#from os import environ
+#environ['NUMPY_EXPERIMENTAL_ARRAY_FUNCTION'] = '0'
+
 from numpy import array, inf, mean, std, random
-from random import normalvariate
+#from random import normalvariate
 from math import copysign, sqrt, floor
 from time import time, sleep
 from collections import deque
@@ -24,6 +27,10 @@ class BacktestEnv(Env):
         self.df_total_steps = len(self.df)
         self.coin_step = coin_step
         self.slippage = slippage
+        self.buy_factor = slippage['market_buy'][0]
+        self.sell_factor = slippage['market_sell'][0]
+        self.stoploss_factor = slippage['SL'][0]
+        #print(f'Worst case scenario factors BUY:{self.buy_factor} SELL:{self.sell_factor} SL_SELL:{self.stoploss_factor}')
         self.fee = fee
         self.max_steps = max_steps
         self.init_balance = init_balance
@@ -81,6 +88,7 @@ class BacktestEnv(Env):
           self.end_step = self.df_total_steps-1
         self.current_step = self.start_step
         self.obs = iter(self.df[self.start_step:self.end_step,:])
+        #print(self.obs)
         return next(self.obs)
         '''for i in reversed(range(self.lookback_window_size)):
             current_step = self.current_step - i
@@ -114,7 +122,8 @@ class BacktestEnv(Env):
         #PLratio_x_PLcount = self.PL_ratio*self.PL_count_mean
         self.sharpe_ratio = (PNL_mean-risk_free_return)/PNL_stdev if PNL_stdev!=0 else -1
         self.sortino_ratio = (total_return-risk_free_return)/losses_stdev if losses_stdev!=0 else -1
-        self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.df_total_steps
+        #self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.df_total_steps
+        self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.df_total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
         #print(self.reward)
         slope_indicator = 1.000
         '''slope_indicator = linear_slope_indicator(self.PL_count_ratios)
@@ -122,13 +131,13 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        if gain>self.init_balance*.5:
-        #if True:
+        #if gain>self.init_balance*.1:
+        if True:
           self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
           print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')
           print(f'max(profit/drawdown):{self.max_profit*100:.2f}%/{self.max_drawdown*100:.2f}%')
-          print(f' reward:{self.reward:.3f}, PL_ratio:{self.PL_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, hold_ratio:{hold_ratio:.3f}, PNL_mean:{PNL_mean*100:.2f}%')
+          print(f' reward:{self.reward:.8f}, PL_ratio:{self.PL_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, hold_ratio:{hold_ratio:.3f}, PNL_mean:{PNL_mean*100:.2f}%')
           print(f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
         else: self.output = False
         self.info = {'gain':gain, 'PL_ratio':self.PL_ratio, 'PL_count_mean':self.PL_count_mean,'hold_ratio':hold_ratio,
@@ -136,7 +145,7 @@ class BacktestEnv(Env):
                      'exec_time':time()-self.start_t}
       else:
         self.output = False
-        self.reward = 0.0
+        self.reward = -inf
         self.sharpe_ratio,self.sortino_ratio,self.PL_count_mean,self.PL_ratio = -1,-1,-1,-1
         self.info = {'gain':0, 'PL_ratio':0, 'hold_ratio':0,
                      'PL_count_mean':0, 'PNL_mean':0, 'slope_indicator':0,
@@ -147,6 +156,8 @@ class BacktestEnv(Env):
     def _next_observation(self):
       try:
         self.current_step += 1
+        #_obs = next(self.obs)
+        #print(_obs)
         return next(self.obs)
       except StopIteration:
         self.current_step -= 1
@@ -158,12 +169,14 @@ class BacktestEnv(Env):
         self._finish_episode()
       return next(self.obs)'''
     
-    def _random_factor(self, price, trade_type):
-      return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)
+    '''def _random_factor(self, price, trade_type):
+      return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)'''
 
     def _buy(self, price):
       self.stop_loss_price = round((1-self.stop_loss)*price,2)
-      price = self._random_factor(price, 'market_buy')
+      ### Considering random factor as in real world scenario
+      #price = self._random_factor(price, 'market_buy')
+      price = price*self.buy_factor
       self.in_position = 1
       self.episode_orders += 1
       self.enter_price = price
@@ -178,17 +191,21 @@ class BacktestEnv(Env):
       fee = (self.position_size*self.fee)
       self.position_size -= fee
       self.cumulative_fees += fee
+      #print(f'BOUGHT {self.qty} at {price}')
       if self.visualize:
         self.trades.append({'Date':self.dates_df[self.current_step], 'High':self.df[self.current_step,1], 'Low':self.df[self.current_step,2], 'total':self.qty, 'type':"open_long"})
 
     def _sell(self, price, SL=False):
+      #print(f'SOLD {self.qty} at {price}')
       if SL:
-        price = self._random_factor(price, 'SL')
+        '''price = self._random_factor(price, 'SL')
         while price>self.enter_price:
-          price = self._random_factor(price, 'SL')
+          price = self._random_factor(price, 'SL')'''
+        price = price*self.stoploss_factor
         order_type = 'open_short'
       else:
-        price = self._random_factor(price, 'market_sell')
+        '''price = self._random_factor(price, 'market_sell')'''
+        price = price*self.sell_factor
         order_type = 'close_long'
       self.balance += round(self.qty*price, 2)
       fee = abs(price*self.qty*self.fee)

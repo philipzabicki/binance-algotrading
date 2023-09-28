@@ -1,6 +1,9 @@
-import pandas as pd
+#from os import environ
+#environ['NUMPY_EXPERIMENTAL_ARRAY_FUNCTION'] = '0'
+
 import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
+import pandas as pd
 from time import time
 from statistics import mean, stdev
 from math import sqrt, copysign
@@ -471,15 +474,15 @@ def get_MA(np_df, type, MA_period):
 def get_MA_signal(np_df, type, MA_period, ATR_period, ATR_multi):
   #print(hex(id(np_df)))
   atr = talib.ATR(np_df[:,1], np_df[:,2], np_df[:,3], ATR_period)
-  np_df[:,-1] = anyMA_sig(np_df[:,3],
-                   get_MA(np_df, type, MA_period),
-                   atr,
-                   atr_multi=ATR_multi)
-  return np_df
-  return anyMA_sig(np_df[:,3],
-                   get_MA(np_df, type, MA_period),
-                   atr,
-                   atr_multi=ATR_multi)
+  '''np_df[:,-1] = anyMA_sig(np_df[:,3],
+                          get_MA(np_df, type, MA_period),
+                          atr,
+                          atr_multi=ATR_multi)'''
+  #return np_df
+  return anyMA_sig( np_df[:,3],
+                    get_MA(np_df, type, MA_period),
+                    atr,
+                    atr_multi=ATR_multi )
 
 #@feature_timeit
 def other_features(df: pd.DataFrame, suffix=''):

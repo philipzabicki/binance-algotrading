@@ -21,8 +21,8 @@ from gc import collect
 
 
 CPU_CORES_COUNT = cpu_count()-1
-POP_SIZE = 256
-N_GEN = 25
+POP_SIZE = 1024
+N_GEN = 50
 SLIPP = get_market_slips_stats()
 #print(SLIPP)
 #CPU_CORES_COUNT = 6
@@ -51,12 +51,12 @@ class CustomMixedVariableProblem(ElementwiseProblem):
                 "type": Integer(bounds=(0, 30)),
                 "MAperiod": Integer(bounds=(2, 750)),
                 "ATRperiod": Integer(bounds=(1, 750)),
-                "ATRmulti": Real(bounds=(0.001, 20.000))}
+                "ATRmulti": Real(bounds=(0.001, 10.000))}
         super().__init__(vars=vars, n_obj=1, **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
-        env = BandsStratEnv(df=self.df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+        env = BandsStratEnv(df=self.df, max_steps=259_200, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
         _, reward, _, info = env.step(action)
         out["F"] = array([-reward])
         #collect()
@@ -69,7 +69,8 @@ class MyCallback(Callback):
         self.idx = 0
     def notify(self, algorithm):
         avg_rew = mean(algorithm.pop.get("F"))
-        self.opt[self.idx] = avg_rew if avg_rew<0 else 0.0
+        #self.opt[self.idx] = avg_rew if avg_rew<0 else 0.0
+        self.opt[self.idx] = avg_rew
         self.idx += 1
 
 def display_callback(callback, fname):
@@ -110,7 +111,7 @@ def main():
     df = hstack((df, zeros((df.shape[0], 1))))
     df = df[-seconds_since('09-01-2023'):,:]
     print(df)
-    #env = BandsStratEnv(df=df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+    #env = BandsStratEnv(df=df, max_steps=259_200, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
 
     pool = Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)
