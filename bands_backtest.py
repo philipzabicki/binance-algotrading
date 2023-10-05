@@ -7,8 +7,7 @@ from TA_tools import get_MA_signal
 from utility import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
 
 if __name__=="__main__":
-  SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0002, 0.195, 0.82, 6, 2, 6, 9.118
-
+  SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi = 0.0001, 0.043, 0.996, 7, 4, 185, 11.589
   #df = get_data.by_DataClient(ticker='BTCTUSD', interval='1m', futures=False, statements=True, delay=3_000)
   df = get_data.by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=172_800)
   dates_df = df['Opened'].to_numpy()
@@ -22,8 +21,8 @@ if __name__=="__main__":
   plt.plot(signal)
   plt.show()
   # df=df[-minutes_since('23-03-2023'):,:].copy()
-  strat_env = BandsStratEnv(df=df.copy(), max_steps=259_200, dates_df=dates_df,
-                                init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_market_slips_stats(),
+  strat_env = BandsStratEnv(df=df.copy(), dates_df=dates_df, slippage=get_market_slips_stats(),
+                                init_balance=1_000, fee=0.0, coin_step=0.00001,
                                 Render_range=120, visualize=False)
   _,_,_,_ = strat_env.step([SL,enter_at,close_at,typeMA,MA_period,ATR_period,ATR_multi])
   plt.plot(strat_env.exec_env.PNLarrs[:,0])

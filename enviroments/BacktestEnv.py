@@ -123,7 +123,8 @@ class BacktestEnv(Env):
         self.sharpe_ratio = (PNL_mean-risk_free_return)/PNL_stdev if PNL_stdev!=0 else -1
         self.sortino_ratio = (total_return-risk_free_return)/losses_stdev if losses_stdev!=0 else -1
         #self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.df_total_steps
-        self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.df_total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
+        #self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.df_total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
+        self.reward = (copysign(abs(gain)**1.5, gain)*self.episode_orders*(self.PL_count_mean**2)*sqrt(hold_ratio)*sqrt(self.PL_ratio))/self.df_total_steps
         #print(self.reward)
         slope_indicator = 1.000
         '''slope_indicator = linear_slope_indicator(self.PL_count_ratios)
@@ -131,8 +132,9 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        #if gain>self.init_balance*.1:
-        if True:
+        #if gain>0:
+        if gain>self.init_balance*.05:
+        #if True:
           self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
           print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean*100:.2f}%/{losses_mean*100:.2f}%, ', end='')

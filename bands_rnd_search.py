@@ -14,7 +14,7 @@ from utility import minutes_since, seconds_since, get_market_slips_stats
 import cProfile
 
 #CPU_CORES_COUNT = cpu_count()
-CPU_CORES_COUNT = 1
+CPU_CORES_COUNT = 4
 EPISODES_PER_CORE = 100
 #CPU_CORES_COUNT = 6
 #REPORT_FULL_PATH = 'Z:/home/philipz_abicki/binance-algotrading/reports/BTCTUSD1m_since0322_ATR.csv'

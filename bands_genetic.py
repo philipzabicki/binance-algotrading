@@ -1,5 +1,5 @@
 from os import getcwd
-from numpy import array, hstack, mean, zeros, arange
+from numpy import array, hstack, mean, zeros, arange, inf
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient, by_BinanceVision
 from utility import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
@@ -15,13 +15,16 @@ from pymoo.algorithms.moo.dnsga2 import DNSGA2
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.callback import Callback
 from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariableSampling, MixedVariableDuplicateElimination
-#from pymoo.algorithms.soo.nonconvex.optuna import Optuna
+from pymoo.algorithms.soo.nonconvex.optuna import Optuna
+from datetime import datetime as dt
+from time import time
+from os import getcwd
 #import cProfile
 from gc import collect
 
 
-CPU_CORES_COUNT = cpu_count()-1
-POP_SIZE = 1024
+CPU_CORES_COUNT = cpu_count()
+POP_SIZE = 64
 N_GEN = 50
 SLIPP = get_market_slips_stats()
 #print(SLIPP)
@@ -49,14 +52,15 @@ class CustomMixedVariableProblem(ElementwiseProblem):
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
                 "type": Integer(bounds=(0, 30)),
-                "MAperiod": Integer(bounds=(2, 750)),
-                "ATRperiod": Integer(bounds=(1, 750)),
-                "ATRmulti": Real(bounds=(0.001, 10.000))}
+                "MAperiod": Integer(bounds=(2, 1_000)),
+                "ATRperiod": Integer(bounds=(1, 1_000)),
+                "ATRmulti": Real(bounds=(0.001, 15.000))}
         super().__init__(vars=vars, n_obj=1, **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
-        env = BandsStratEnv(df=self.df, max_steps=259_200, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+        env = BandsStratEnv(df=self.df, max_steps=86_400, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+        #env = BandsStratEnv(df=self.df, max_steps=604_800, init_balance=1_000, fee=0.0, coin_step=0.00001)
         _, reward, _, info = env.step(action)
         out["F"] = array([-reward])
         #collect()
@@ -64,20 +68,24 @@ class CustomMixedVariableProblem(ElementwiseProblem):
 class MyCallback(Callback):
     def __init__(self) -> None:
         super().__init__()
-        #self.n_evals = []
-        self.opt = zeros(N_GEN)
-        self.idx = 0
+        #self.opt = zeros(N_GEN)
+        #self.idx = 0
+        self.opt = []
     def notify(self, algorithm):
         avg_rew = mean(algorithm.pop.get("F"))
+        if avg_rew!=inf and avg_rew!=-inf:
+            self.opt.append(avg_rew)
+        #print(f'avg_rew {avg_rew}')
+        #print(f'self.opt {self.opt}')
         #self.opt[self.idx] = avg_rew if avg_rew<0 else 0.0
-        self.opt[self.idx] = avg_rew
-        self.idx += 1
+        #self.opt[self.idx] = avg_rew
+        #self.idx += 1
 
 def display_callback(callback, fname):
     plt.title("Convergence")
     plt.ylabel('Mean Reward')
     plt.xlabel('Population')
-    plt.plot(-callback.opt, "--")
+    plt.plot(-1*array(callback.opt), "--")
     plt.savefig(getcwd()+'/reports/Convergence_'+fname)
     return plt
     #plt.show()
@@ -125,10 +133,10 @@ def main():
     #algorithm = NSGA2(pop_size=100)
     #algorithm = DNSGA2(pop_size=64)
     #algorithm = MixedVariableGA(pop=10)
-    algorithm = NSGA2(pop_size=POP_SIZE,
-                      sampling=MixedVariableSampling(),
-                      mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
-                      eliminate_duplicates=MixedVariableDuplicateElimination())
+    algorithm = MixedVariableGA(pop_size=POP_SIZE,
+                                sampling=MixedVariableSampling(),
+                                mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
+                                eliminate_duplicates=MixedVariableDuplicateElimination())
     #algorithm = Optuna() 
 
     res = minimize(problem,
@@ -136,9 +144,17 @@ def main():
                    save_history=False,
                    callback=MyCallback(),
                    termination=('n_gen', N_GEN),
+                   #termination=("time", "09:00:00"),
                    verbose=True)
 
     print('Exec time:', res.exec_time)
+    print('FINAL POPULATION')
+    with open(getcwd()+'/reports/pop'+str(POP_SIZE)+str(dt.today()).replace(':','-')[:-7]+'.txt', 'w') as file:
+        for f,x in zip(res.pop.get("F"), res.pop.get("X")):
+            vars = round(x['SL'],4), round(x['enter_at'],3), round(x['close_at'],3), x['type'], x['MAperiod'], x['ATRperiod'], round(x['ATRmulti'],3)
+            file.write('F '+str(f)+' X '+str(vars)+'\n')
+            print(f'F {f} X {vars}')
+    #print(f'res.pop {res.pop}')
     #print(f'res.pop.get(X) {res.pop.get("X")}')
     #print(f'res.pop.get(F) {res.pop.get("F")}')
     if len(res.F)==1:
@@ -153,10 +169,15 @@ def main():
             print(f"Reward:", front , "Variables:", var)
             filename = 'Figure.png'
     
-    plt1 = display_result(res, problem, filename)
+    plt1 = display_callback(res.algorithm.callback, filename)
+    plt2 = display_result(res, problem, filename)
+    #plt.subplot(plt1)
+    #plt1.show()
     plt1.show()
-    plt2 = display_callback(res.algorithm.callback, filename)
-    plt2.show()
+    #plt1.clf()
+    #plt2.show()
+    #time(1)
+    #plt2.show()
 
 if __name__ == '__main__':
     #profiler = cProfile.Profile() 

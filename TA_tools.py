@@ -30,15 +30,23 @@ def feature_timeit(feature_func):
   return wrapper
 
 @feature_timeit
-def scaleColumns(df, scaler):
+def scaleColumns(df: pd.DataFrame, scaler: callable) -> pd.DataFrame:
+    """_summary_
+    Args:
+        df (pd.DataFrame): _description_
+        scaler (callable): _description_
+
+    Returns:
+        pd.DataFrame: _description_
+    """
     for col in df.columns:
-      if col not in ['Open time', 'Opened', 'Close time', 'Open', 'High', 'Low', 'Close']:
-        #print(col)
-        #caler.fit(df[[col]])
-        df[col] = scaler.fit_transform(df[[col]])
+        if col not in ['Open time', 'Opened', 'Close time', 'Open', 'High', 'Low', 'Close']:
+            #print(col)
+            #caler.fit(df[[col]])
+            df[col] = scaler.fit_transform(df[[col]])
     return df
 
-def linear_slope_indicator(self, values: list):
+def linear_slope_indicator(self, values: np.ndarray | list) -> float:
       _5 = len(values)//20
       percentile25 = linear_reg_slope(values[-_5*5:])
       #percentile50 = linear_reg_slope(values[-_5*10:])
@@ -52,16 +60,16 @@ def linear_slope_indicator(self, values: list):
 ############################# SIGNAL GENERATORS ######################################
 ######################################################################################
 @feature_timeit
-def ULT_RSI_signal(column, timeperiod):
-  return [None] * timeperiod + [  -1 if cur >= 65.0 else
-                                  1 if cur <= 35.0 else
-                                  -2 if prev>65.0 and cur <= 65.0 else
-                                  2 if prev<35.0 and cur >= 35.0 else
+def ULT_RSI_signal(column: np.ndarray | list, timeperiod: int) -> list[float]:
+  return [None] * timeperiod + [  -.5 if cur >= 65.0 else
+                                  .5 if cur <= 35.0 else
+                                  -1 if prev>65.0 and cur <= 65.0 else
+                                  1 if prev<35.0 and cur >= 35.0 else
                                   0
                                   for cur, prev in zip(column[timeperiod:], column[timeperiod-1:-1])  ]
 
 @feature_timeit
-def ADX_signal(adx_col, minus_DI, plus_DI):
+def ADX_signal(adx_col: np.ndarray | list, minus_DI: np.ndarray | list, plus_DI: np.ndarray | list) -> list[float]:
   return [0] + [  1 if cur_pDI>cur_mDI and prev_pDI<prev_mDI and adx>25.0 else
                   .75 if cur_pDI>cur_mDI and prev_pDI<prev_mDI and adx>20.0 else
                   -1 if cur_pDI<cur_mDI and prev_pDI>prev_mDI and adx>25.0 else
@@ -74,11 +82,11 @@ def ADX_signal(adx_col, minus_DI, plus_DI):
                   for cur_pDI, cur_mDI, adx, prev_pDI, prev_mDI in zip(plus_DI[1:], minus_DI[1:], adx_col[1:], plus_DI[:-1], minus_DI[:-1]) ]
 
 @feature_timeit
-def ADX_trend(column):
-  return [ 1 if val>25.0 else -1 if val<20.0 else 0 for val in column ]
+def ADX_trend(adx_col: np.ndarray | list) -> list[float | int]:
+  return [ 1 if val>25.0 else -1 if val<20.0 else 0 for val in adx_col ]
 
 @feature_timeit
-def MFI_signal(mfi_col):
+def MFI_signal(mfi_col: np.ndarray | list) -> list[float]:
   def _sig(val):
     if val>90: return 1
     elif val<10: return -1
@@ -88,28 +96,28 @@ def MFI_signal(mfi_col):
   return [0] + [ _sig(mfi) for mfi in mfi_col[1:] ]
 
 @feature_timeit
-def MFI_divergence(mfi_col, close_col):
+def MFI_divergence(mfi_col: np.ndarray | list, close_col: np.ndarray | list) -> list[float | int]:
   return [0] + [ 1 if (prev_mfi<20 and cur_mfi>20) and (cur_close<prev_close) else 
                  -1 if (prev_mfi>80 and cur_mfi<80) and (cur_close>prev_close) else 
                  0 
                  for cur_mfi, cur_close, prev_mfi, prev_close in zip(mfi_col[1:], close_col[1:], mfi_col[:-1], close_col[:-1]) ]
 
 @feature_timeit
-def MACD_cross(macd_col, signal_col):
+def MACD_cross(macd_col: np.ndarray | list, signal_col: np.ndarray | list) -> list[float | int]:
   return [0] + [  1 if cur_macd>cur_sig and prev_macd<prev_sig else
                   -1 if cur_macd<cur_sig and prev_macd>prev_sig else
                   0
                   for cur_sig, cur_macd, prev_sig, prev_macd in zip(signal_col[1:], macd_col[1:], signal_col[:-1], macd_col[:-1]) ]
 
 @feature_timeit
-def MACDhist_reversal(macdhist_col):
+def MACDhist_reversal(macdhist_col: np.ndarray | list) -> list[float | int]:
   return [None] * 3 + [ 1 if cur_macd>prev_macd and prev_macd<preprev_macd<prepreprev_macd else
                         -1 if cur_macd<prev_macd and prev_macd>preprev_macd>prepreprev_macd else
                         0
                         for cur_macd, prev_macd, preprev_macd, prepreprev_macd in zip(macdhist_col[3:], macdhist_col[2:-1], macdhist_col[1:-2], macdhist_col[:-3]) ]
 
 @feature_timeit
-def MACD_zerocross(macd_col, signal_col):
+def MACD_zerocross(macd_col: np.ndarray | list, signal_col: np.ndarray | list) -> list[float | int]:
   return [None] + [ .5 if cur_macd>0 and prev_macd<0 else
                     1 if cur_sig>0 and prev_sig<0 else
                     -.5 if cur_macd<0 and prev_macd>0 else
@@ -118,7 +126,14 @@ def MACD_zerocross(macd_col, signal_col):
                     for cur_macd, cur_sig, prev_macd, prev_sig in zip(macd_col[1:], signal_col[1:], macd_col[:-1], signal_col[:-1]) ]
 
 @feature_timeit
-def BB_sig(mid, up_x1, low_x1, up_x2, low_x2, up_x3, low_x3, close):
+def BB_sig(mid: np.ndarray | list,
+           up_x1: np.ndarray | list,
+           low_x1: np.ndarray | list, 
+           up_x2: np.ndarray | list,
+           low_x2: np.ndarray | list, 
+           up_x3: np.ndarray | list,
+           low_x3: np.ndarray | list,
+           close: np.ndarray | list) -> list[int]:
   return [  -1 if close[i]>up_x3[i] else
             1 if close[i]<low_x3[i] else
             -.75 if up_x2[i]<close[i]<up_x3[i] else
@@ -131,7 +146,7 @@ def BB_sig(mid, up_x1, low_x1, up_x2, low_x2, up_x3, low_x3, close):
             for i in range(len(close))  ]
 
 @feature_timeit
-def Price_levels(Open, Close, decimals=0, sort=False):
+def Price_levels(Open: np.ndarray | list, Close: np.ndarray | list, decimals: int=0, sort: bool=False) -> list[int]:
   def get_levels(open, close, decimals=0, sort=False):
     tckr_lvls={}
     for open, close, close_next in zip(open[:-1], close[:-1], close[1:]):
@@ -147,7 +162,7 @@ def Price_levels(Open, Close, decimals=0, sort=False):
   return [ lvls[round(c, decimals)] if round(c, decimals) in lvls.keys() else 0 for c in Close ]
 
 @feature_timeit
-def Move_probablity(Open, Close):
+def Move_probablity(Open: np.ndarray | list, Close: np.ndarray | list) -> list[float]:
   def get_avg_changes(open, close):
     gain = [ (close/open-1)*100 for open,close in zip(open,close) if close>open ]
     loss = [ (open/close-1)*100 for open,close in zip(open,close) if close<open ]
@@ -156,38 +171,38 @@ def Move_probablity(Open, Close):
   return [ (((close/open-1)*100)-avg_gain)/gain_stdev if close>open else (((open/close-1)*100)-avg_loss)/loss_stdev for open,close in zip(Open,Close) ]
 
 @feature_timeit
-def Volume_probablity(Volume):
+def Volume_probablity(Volume: np.ndarray | list) -> np.ndarray:
   return (Volume-np.mean(Volume))/np.std(Volume)
 
 @feature_timeit
-def Hourly_seasonality_from_other(ticker, Opened_hour, type='um', data='klines'):
+def Hourly_seasonality_by_ticker(ticker: str, Opened_dt_hour: pd.Series[pd.Int64Dtype], type: str='um', data: str='klines') -> list[float]:
   def get_hour_changes(ticker='BTCUSDT', type='um', data='klines'):
     tckr_df = get_data.by_BinanceVision(ticker, '1h', type=type, data=data)
     hour = tckr_df['Opened'].dt.hour.to_numpy()
     CO_chng = ((tckr_df['Close'].to_numpy()/tckr_df['Open'].to_numpy())-1)*100
     return { i:np.mean([chng for chng, h in zip(CO_chng, hour) if h==i]) for i in range(0,24) }
   h_dict = get_hour_changes(ticker=ticker, type=type, data=data)
-  return [h_dict[h] for h in Opened_hour]
+  return [h_dict[h] for h in Opened_dt_hour]
 
 @feature_timeit
-def Hourly_seasonality(df):
+def Hourly_seasonality(df: pd.DataFrame) -> list[float]:
   hour = df['Opened'].dt.hour
   CO_chng = ((df['Close']/df['Open'])-1)*100
   h_dict = { i:np.mean([chng for chng, h in zip(CO_chng, hour) if h==i]) for i in range(0,24) }
   return [ h_dict[h] for h in hour ]
 
 @feature_timeit
-def Daily_seasonality_from_other(ticker, Opened_weekday, type='um', data='klines'):
+def Daily_seasonality_by_ticker(ticker: str, Opened_dt_weekday: pd.Series[pd.Int64Dtype], type='um', data='klines') -> list[float]:
   def get_weekday_changes(ticker='BTCUSDT', type='um', data='klines'):
     tckr_df = get_data.by_BinanceVision(ticker, '1d', type=type, data=data)
     weekday = tckr_df['Opened'].dt.dayofweek.to_numpy()
     CO_chng=((tckr_df['Close'].to_numpy()/tckr_df['Open'].to_numpy())-1)*100
     return { i:np.mean([chng for chng, day in zip(CO_chng, weekday) if day==i]) for i in range(0,7) }
   wd_dict = get_weekday_changes(ticker=ticker, type=type, data=data)
-  return [ wd_dict[w] for w in Opened_weekday ]
+  return [ wd_dict[w] for w in Opened_dt_weekday ]
 
 @feature_timeit
-def Daily_seasonality(df):
+def Daily_seasonality(df: pd.DataFrame) -> list[float]:
   weekday = df['Opened'].dt.dayofweek
   CO_chng=((df['Close']/df['Open'])-1)*100
   wd_dict = { i:np.mean([chng for chng, day in zip(CO_chng, weekday) if day==i]) for i in range(0,7) }
@@ -199,55 +214,14 @@ def Daily_seasonality(df):
 ######################################################################################
 ############################# Nontypical MA functions ################################
 ######################################################################################
-'''#@feature_timeit
-def NadarayWatsonMA(close, timeperiod, kernel=0):
-    # Initialize the Nadaray-Watson moving average array with NaNs for the start period
-    nwma = np.empty_like(close)
-    nwma[:timeperiod-1] = np.nan
-    distances = np.abs(np.arange(timeperiod) - (timeperiod-1))
-    # Define the Epanechnikov kernel function
-    def gaussian_kernel(x):
-      return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
-    def epanechnikov_kernel(x):
-      return np.where(np.abs(x) <= 1, 3/4 * (1 - x**2), 0)
-    def rectangular_kernel(x):
-      return np.where(np.abs(x) <= 1, 0.5, 0)
-    def triangular_kernel(x):
-      return np.where(np.abs(x) <= 1, 1 - np.abs(x), 0)
-    def biweight_kernel(x):
-      return np.where(np.abs(x) <= 1, (15/16) * (1 - x**2)**2, 0)
-    def cosine_kernel(x):
-      return np.where(np.abs(x) <= 1, np.pi/4 * np.cos(np.pi/2 * x), 0)
-    kernel_func = {0:gaussian_kernel,
-                   1:epanechnikov_kernel,
-                   2:rectangular_kernel,
-                   3:triangular_kernel,
-                   4:biweight_kernel,
-                   5:cosine_kernel}
-    weights = kernel_func[kernel](distances / timeperiod)
-    for i in range(timeperiod-1, len(close)):
-        window_prices = close[i-timeperiod+1:i+1]
-        nwma[i] = (weights @ window_prices) / weights.sum()
-    return nwma'''
-
-'''#@feature_timeit
-def LSMA(close, timeperiod):
-    lsma = []
-    for i in range(timeperiod - 1, len(close)):
-        x = np.arange(0, timeperiod)  # zawsze generuj x jako zakres od 0 do timeperiod-1
-        y = close[i - timeperiod + 1:i + 1]
-        A = np.vstack([x, np.ones(len(x))]).T
-        m, c = np.linalg.lstsq(A, y, rcond=None)[0]
-        lsma.append(m * (timeperiod-1) + c)  # wykorzystaj timeperiod-1 zamiast i do obliczenia prognozy
-    return np.array([np.nan for _ in range(timeperiod-1)]+lsma)'''
 
 #@feature_timeit
-def HullMA(close, timeperiod):
+def HullMA(close: np.ndarray | list, timeperiod: int) -> pd.Series[pd.Float64Dtype]:
   return talib.WMA( (talib.WMA(close, timeperiod//2 )*2)-(talib.WMA(close, timeperiod)), int(np.sqrt(timeperiod)) )
 
 #@feature_timeit
 @jit(nopython=True)
-def RMA(close, timeperiod):
+def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
   alpha = 1.0 / timeperiod
   #rma = [0.0] * len(close)
   rma = np.zeros_like(close)
@@ -261,7 +235,7 @@ def RMA(close, timeperiod):
 
 #@feature_timeit
 @jit(nopython=True)
-def VWMA(close, volume, timeperiod):
+def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int) -> list[float]:
     cum_sum = 0
     cum_vol = 0
     vwmas = []
@@ -278,7 +252,7 @@ def VWMA(close, volume, timeperiod):
     return vwmas
 
 #@feature_timeit
-def ALMA(close, timeperiod, offset=0.85, sigma=6):
+def ALMA(close: np.ndarray, timeperiod: int, offset: float=0.85, sigma: int=6) -> np.ndarray[np.float64]:
     m = offset * (timeperiod - 1)
     s = timeperiod / sigma
     wtd = np.array([np.exp(-((i - m) ** 2) / (2 * s ** 2)) for i in range(timeperiod)])
@@ -287,13 +261,13 @@ def ALMA(close, timeperiod, offset=0.85, sigma=6):
     return np.insert(alma, 0, [np.nan]*(timeperiod-1))
 
 #@feature_timeit
-def HammingMA(close, timeperiod):
+def HammingMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
     w = np.hamming(timeperiod)
     hma = np.convolve(close, w, mode='valid') / w.sum()
     return np.insert(hma, 0, [np.nan]*(timeperiod-1))
 
 @jit(nopython=True)
-def LSMA(close, timeperiod):
+def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
  close = np.ascontiguousarray(close)
  #n = len(close)
  lsma = np.empty_like(close)
@@ -312,25 +286,25 @@ def LSMA(close, timeperiod):
  return lsma
 
 @jit(nopython=True)
-def gaussian_kernel(x):
+def gaussian_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
     return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
 @jit(nopython=True)
-def epanechnikov_kernel(x):
+def epanechnikov_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
     return np.where(np.abs(x) <= 1, 3/4 * (1 - x**2), 0)
 @jit(nopython=True)
-def rectangular_kernel(x):
+def rectangular_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
     return np.where(np.abs(x) <= 1, 0.5, 0)
 @jit(nopython=True)
-def triangular_kernel(x):
+def triangular_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
     return np.where(np.abs(x) <= 1, 1 - np.abs(x), 0)
 @jit(nopython=True)
-def biweight_kernel(x):
+def biweight_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
     return np.where(np.abs(x) <= 1, (15/16) * (1 - x**2)**2, 0)
 @jit(nopython=True)
-def cosine_kernel(x):
+def cosine_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
     return np.where(np.abs(x) <= 1, np.pi/4 * np.cos(np.pi/2 * x), 0)
 @jit(nopython=True)
-def NadarayWatsonMA(close, timeperiod, kernel=0):
+def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int=0) -> np.ndarray[np.float64]:
     nwma = np.empty_like(close)
     nwma[:timeperiod-1] = np.nan
     distances = np.abs(np.arange(timeperiod) - (timeperiod-1))
@@ -355,7 +329,7 @@ def NadarayWatsonMA(close, timeperiod, kernel=0):
 
 #@feature_timeit
 @jit(nopython=True)
-def LWMA(close, period):
+def LWMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     weights = np.arange(1, period + 1).astype(np.float64)
     close = np.ascontiguousarray(close)
     lwma = np.zeros_like(close)
@@ -365,7 +339,7 @@ def LWMA(close, period):
 
 #@feature_timeit
 @jit(nopython=True)
-def MGD(close, period):
+def MGD(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     md = np.zeros_like(close)
     md[0] = close[0]
     for i in range(1, len(close)):
@@ -375,7 +349,7 @@ def MGD(close, period):
 ### It behaves differently depending on close len
 #@feature_timeit
 @jit(nopython=True)
-def VIDYA(close, k, period):
+def VIDYA(close: np.ndarray, k: np.ndarray, period: int) -> np.ndarray[np.float64]:
     alpha = 2 / (period + 1)
     #k = talib.CMO(close, period)
     k = np.abs(k)/100
@@ -387,7 +361,7 @@ def VIDYA(close, k, period):
 
 #@feature_timeit
 @jit(nopython=True)
-def GMA(close, period):
+def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     """Compute Geometric Moving Average using logarithms for efficiency."""
     gma = np.zeros(len(close))
     log_close = np.log(close)
@@ -397,22 +371,21 @@ def GMA(close, period):
 
 #@feature_timeit
 def FBA(close, period):
-    def fibonacci_sequence(n):
-      n = max(4,int(sqrt(n)))
-      fib_sequence = [0, 1]
-      while len(fib_sequence)<n:
-          fib_sequence.append(fib_sequence[-1] + fib_sequence[-2])
-      return fib_sequence[2:]
-    fib_seq = fibonacci_sequence(period)
-    #print(f'fib_seq {fib_seq}')
+    fibs = []
+    a,b = 0,1
+    while b<=period:
+       a,b = b,a+b
+       fibs.append(b)
+    #print(f'fibs {fibs}')
     moving_averages = []
-    for i in fib_seq:
+    for i in fibs:
         # Use np.convolve to calculate the moving average
         moving_avg = np.convolve(close, np.ones(i), 'valid') / i
         # Append zeros at the beginning to match the original array's size
         moving_avg = np.concatenate((np.zeros(i-1), moving_avg))
         moving_averages.append(moving_avg)
     # Calculate the average of the moving averages
+    #print(len(moving_averages))
     moving_averages = np.array(moving_averages)
     fma = np.mean(moving_averages, axis=0)
     return fma
