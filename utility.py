@@ -10,13 +10,17 @@ def get_market_slips_stats():
     buy = pd.read_csv(getcwd()+'/settings/slippages_market_buy.csv')
     sell = pd.read_csv(getcwd()+'/settings/slippages_market_sell.csv')
     SL = pd.read_csv(getcwd()+'/settings/slippages_StopLoss.csv')
-    return {'market_buy':(buy.values.mean(), buy.values.std()), 'market_sell':(sell.values.mean(), sell.values.std()), 'SL':(SL.values.mean(), SL.values.std())}
+    slipps = {'market_buy':(buy.values.mean(), buy.values.std()), 'market_sell':(sell.values.mean(), sell.values.std()), 'SL':(SL.values.mean(), SL.values.std())}
+    print(slipps)
+    return slipps
 
 def get_limit_slips_stats():
     buy = pd.read_csv(getcwd()+'/settings/slippages_limit_buy.csv')
     sell = pd.read_csv(getcwd()+'/settings/slippages_limit_sell.csv')
     SL = pd.read_csv(getcwd()+'/settings/slippages_StopLoss.csv')
-    return {'market_buy':(buy.values.mean(), buy.values.std()), 'market_sell':(sell.values.mean(), sell.values.std()), 'SL':(SL.values.mean(), SL.values.std())}
+    slipps = {'market_buy':(buy.values.mean(), buy.values.std()), 'market_sell':(sell.values.mean(), sell.values.std()), 'SL':(SL.values.mean(), SL.values.std())}
+    print(slipps)
+    return slipps
 
 '''def get_stats_for_file(file_path):
     df = pd.read_csv(file_path, header=0)

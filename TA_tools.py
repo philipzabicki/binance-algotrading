@@ -175,7 +175,7 @@ def Volume_probablity(Volume: np.ndarray | list) -> np.ndarray:
   return (Volume-np.mean(Volume))/np.std(Volume)
 
 @feature_timeit
-def Hourly_seasonality_by_ticker(ticker: str, Opened_dt_hour: pd.Series[pd.Int64Dtype], type: str='um', data: str='klines') -> list[float]:
+def Hourly_seasonality_by_ticker(ticker: str, Opened_dt_hour: pd.Series, type: str='um', data: str='klines') -> list[float]:
   def get_hour_changes(ticker='BTCUSDT', type='um', data='klines'):
     tckr_df = get_data.by_BinanceVision(ticker, '1h', type=type, data=data)
     hour = tckr_df['Opened'].dt.hour.to_numpy()
@@ -192,7 +192,7 @@ def Hourly_seasonality(df: pd.DataFrame) -> list[float]:
   return [ h_dict[h] for h in hour ]
 
 @feature_timeit
-def Daily_seasonality_by_ticker(ticker: str, Opened_dt_weekday: pd.Series[pd.Int64Dtype], type='um', data='klines') -> list[float]:
+def Daily_seasonality_by_ticker(ticker: str, Opened_dt_weekday: pd.Series, type='um', data='klines') -> list[float]:
   def get_weekday_changes(ticker='BTCUSDT', type='um', data='klines'):
     tckr_df = get_data.by_BinanceVision(ticker, '1d', type=type, data=data)
     weekday = tckr_df['Opened'].dt.dayofweek.to_numpy()
@@ -216,7 +216,7 @@ def Daily_seasonality(df: pd.DataFrame) -> list[float]:
 ######################################################################################
 
 #@feature_timeit
-def HullMA(close: np.ndarray | list, timeperiod: int) -> pd.Series[pd.Float64Dtype]:
+def HullMA(close: np.ndarray | list, timeperiod: int) -> pd.Series:
   return talib.WMA( (talib.WMA(close, timeperiod//2 )*2)-(talib.WMA(close, timeperiod)), int(np.sqrt(timeperiod)) )
 
 #@feature_timeit
@@ -370,7 +370,7 @@ def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     return gma
 
 #@feature_timeit
-def FBA(close, period):
+def FBA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     fibs = []
     a,b = 0,1
     while b<=period:
@@ -392,7 +392,7 @@ def FBA(close, period):
 
 #@feature_timeit
 #@jit
-def VAMA(close, volume, period):
+def VAMA(close: np.ndarray, volume: np.ndarray, period: int) -> np.ndarray[np.float64]:
     volume_weights = close * volume
     volume_weights_sum = np.convolve(volume_weights, np.ones(period), 'valid')
     volume_sum = np.convolve(volume, np.ones(period), 'valid')
@@ -400,7 +400,7 @@ def VAMA(close, volume, period):
     return np.concatenate((np.full(period - 1, np.nan), vama_values))
 
 #@feature_timeit
-def anyMA_sig(np_close, np_xMA, np_ATR, atr_multi=1.000):
+def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_multi: float=1.000) -> np.ndarray:
   #print(np_ATR)
   return ((np_xMA-np_close)/np_ATR)/atr_multi
 
@@ -409,7 +409,7 @@ def anyMA_sig(np_close, np_xMA, np_ATR, atr_multi=1.000):
 ######################################################################################
 
 #@feature_timeit
-def get_MA(np_df, type, MA_period):
+def get_MA(np_df: np.ndarray, type: int, MA_period: int) -> np.ndarray:
    ma_types = {0: lambda np_df,period: RMA(np_df[:,3], timeperiod=period),
                1: lambda np_df,period: talib.SMA(np_df[:,3], timeperiod=period),
                2: lambda np_df,period: talib.EMA(np_df[:,3], timeperiod=period),
@@ -444,7 +444,7 @@ def get_MA(np_df, type, MA_period):
               #31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
    return np.around(ma_types[type](np_df, MA_period),2)
 
-def get_MA_signal(np_df, type, MA_period, ATR_period, ATR_multi):
+def get_MA_signal(np_df: np.ndarray, type: int, MA_period: int, ATR_period: int, ATR_multi: float):
   #print(hex(id(np_df)))
   atr = talib.ATR(np_df[:,1], np_df[:,2], np_df[:,3], ATR_period)
   '''np_df[:,-1] = anyMA_sig(np_df[:,3],
