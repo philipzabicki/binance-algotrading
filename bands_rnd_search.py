@@ -14,8 +14,8 @@ from utility import minutes_since, seconds_since, get_market_slips_stats
 import cProfile
 
 #CPU_CORES_COUNT = cpu_count()
-CPU_CORES_COUNT = 4
-EPISODES_PER_CORE = 100
+CPU_CORES_COUNT = 1
+EPISODES_PER_CORE = 256
 #CPU_CORES_COUNT = 6
 #REPORT_FULL_PATH = 'Z:/home/philipz_abicki/binance-algotrading/reports/BTCTUSD1m_since0322_ATR.csv'
 REPORT_FULL_PATH = getcwd()+'/reports/BTCTUSD1m_since0322_ATR.csv'
@@ -23,9 +23,9 @@ REPORT_FULL_PATH = getcwd()+'/reports/BTCTUSD1m_since0322_ATR.csv'
 TICKER, ITV, FUTURES, START_DATE = 'BTCUSDT', '1s', False, '09-01-2023'
 
 def run_indefinitely(_, df):
-    #profiler = cProfile.Profile() 
-    #profiler.enable()
-    env = BandsStratEnv(df=df, max_steps=259_200,
+    profiler = cProfile.Profile() 
+    profiler.enable()
+    env = BandsStratEnv(df=df, max_steps=86_400,
                         init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=get_market_slips_stats(),
                         visualize=False, Render_range=60)
     timers, results = [], []
@@ -50,8 +50,8 @@ def run_indefinitely(_, df):
         _writer = writer(file)
         #writer.writerow(header)
         _writer.writerows(results)
-    #profiler.disable()  # Zakończ profilowanie
-    #profiler.print_stats(sort='tottime')
+    profiler.disable()  # Zakończ profilowanie
+    profiler.print_stats(sort='tottime')
 
 def main():
     # Infinite loop to run the processes

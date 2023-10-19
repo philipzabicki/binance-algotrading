@@ -24,8 +24,8 @@ from gc import collect
 
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 512
-N_GEN = 1500
+POP_SIZE = 32
+N_GEN = 50
 SLIPP = get_market_slips_stats()
 #print(SLIPP)
 #CPU_CORES_COUNT = 6
@@ -37,7 +37,7 @@ class CustomProblem(ElementwiseProblem):
                          n_obj=1,
                          n_constr=0,
                          xl=array([0.0001, 0.001, 0.001, 0, 2, 1, 0.001]),
-                         xu=array([0.0150, 1.000, 1.000, 30, 450, 500, 9.000]),
+                         xu=array([0.0150, 1.000, 1.000, 35, 450, 500, 9.000]),
                          **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
@@ -51,7 +51,7 @@ class CustomMixedVariableProblem(ElementwiseProblem):
         vars = {"SL": Real(bounds=(0.0001, 0.0150)),
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
-                "type": Integer(bounds=(0, 30)),
+                "type": Integer(bounds=(0, 35)),
                 "MAperiod": Integer(bounds=(2, 1_000)),
                 "ATRperiod": Integer(bounds=(1, 1_000)),
                 "ATRmulti": Real(bounds=(0.001, 15.000))}
@@ -59,7 +59,7 @@ class CustomMixedVariableProblem(ElementwiseProblem):
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
-        env = BandsStratEnv(df=self.df, max_steps=86_400, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+        env = BandsStratEnv(df=self.df, max_steps=86_400, init_balance=1_000, fee=0.0, coin_step=0.00001)
         #env = BandsStratEnv(df=self.df, max_steps=604_800, init_balance=1_000, fee=0.0, coin_step=0.00001)
         _, reward, _, info = env.step(action)
         out["F"] = array([-reward])
@@ -133,10 +133,10 @@ def main():
     #algorithm = NSGA2(pop_size=100)
     #algorithm = DNSGA2(pop_size=64)
     #algorithm = MixedVariableGA(pop=10)
-    algorithm = MixedVariableGA(pop_size=POP_SIZE,
-                                sampling=MixedVariableSampling(),
-                                mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
-                                eliminate_duplicates=MixedVariableDuplicateElimination())
+    algorithm = NSGA2(  pop_size=POP_SIZE,
+                        sampling=MixedVariableSampling(),
+                        mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
+                        eliminate_duplicates=MixedVariableDuplicateElimination()    )
     #algorithm = Optuna() 
 
     res = minimize(problem,

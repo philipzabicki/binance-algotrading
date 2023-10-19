@@ -13,6 +13,9 @@ from visualize import TradingGraph
 class BacktestEnv(Env):
     def __init__(self, df, dates_df=None, excluded_left=0, init_balance=1_000, postition_ratio=1.0, StopLoss=0.0, fee=0.0002, coin_step=0.001,
                  slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)}, max_steps=0, lookback_window_size=0, Render_range=120, visualize=False):
+        print(f'Enviroment created. Fee: {fee} Coin step: {coin_step}')
+        print(f'  Obs sample: {df[-1,]}')
+        print(f'  Slippage stats: {slippage}')
         self.start_t = time()
         if visualize:
           self.dates_df = dates_df
@@ -132,8 +135,8 @@ class BacktestEnv(Env):
           self.reward = self.reward*slope_indicator*-1
         else:
           self.reward = self.reward*slope_indicator'''
-        if gain>0:
-        #if gain>self.init_balance*.05:
+        #if gain>0:
+        if gain>self.init_balance*.05:
         #if True:
           self.output = True
           print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')

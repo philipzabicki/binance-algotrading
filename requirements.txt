@@ -7,6 +7,7 @@ ta-lib
 binance_data
 gym
 mplfinance
+tindicators
 finta
 ta
 websocket-client

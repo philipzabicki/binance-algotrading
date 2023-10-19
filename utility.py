@@ -11,7 +11,7 @@ def get_market_slips_stats():
     sell = pd.read_csv(getcwd()+'/settings/slippages_market_sell.csv')
     SL = pd.read_csv(getcwd()+'/settings/slippages_StopLoss.csv')
     slipps = {'market_buy':(buy.values.mean(), buy.values.std()), 'market_sell':(sell.values.mean(), sell.values.std()), 'SL':(SL.values.mean(), SL.values.std())}
-    print(slipps)
+    #print(slipps)
     return slipps
 
 def get_limit_slips_stats():
@@ -19,7 +19,7 @@ def get_limit_slips_stats():
     sell = pd.read_csv(getcwd()+'/settings/slippages_limit_sell.csv')
     SL = pd.read_csv(getcwd()+'/settings/slippages_StopLoss.csv')
     slipps = {'market_buy':(buy.values.mean(), buy.values.std()), 'market_sell':(sell.values.mean(), sell.values.std()), 'SL':(SL.values.mean(), SL.values.std())}
-    print(slipps)
+    #print(slipps)
     return slipps
 
 '''def get_stats_for_file(file_path):

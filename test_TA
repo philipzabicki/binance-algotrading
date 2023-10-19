@@ -1,6 +1,0 @@
-import TA_tools
-import get_data
-
-if __name__=='__main__':
-    df = get_data.by_BinanceVision('BTCUSDT', '1h', 'um', 'klines')
-    #TA_tools.

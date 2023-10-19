@@ -30,6 +30,7 @@ class TakerBot:
         self.client = Client(API_KEY, SECRET_KEY)
 
         self.settings = settings
+        print(f'SETTINGS: {self.settings}')
         prev_candles = self.client.get_historical_klines(symbol, itv, str(max(self.settings['MA_period'],self.settings['ATR_period'])*multi)+" seconds ago UTC")
         prev_data = array([list(map(float,candle[1:6]+[0])) for candle in prev_candles[:-1]])
         prev_data[where(prev_data[:,-2]==0.0), -2] = 0.00000001
@@ -38,6 +39,7 @@ class TakerBot:
         self.init_balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         self.balance = self.init_balance
+        print(f'q={self.q} balance={self.balance}')
         self.signal = 0.0
         self.SL_placed = False
         self.stoploss_price = 0.0
@@ -50,14 +52,14 @@ class TakerBot:
     def on_open(self, ws):
         print("### WebSocket opened ###")
     def on_message(self, ws, message):
-        self.start_t = time()
+        self.start_t1 = time()
         data = loads(message)
         #print(f"Received: {data}")
         data_k = data['k']
         if data_k['x']:
             _volume = '0.00000001' if float(data_k['v'])<=0.0 else data_k['v']
             self.OHLCVX_data.append(list( map(float, [data_k['o'],data_k['h'],data_k['l'],data_k['c'],_volume,0]) ))
-            self._analyze()
+            self._analyze(float(data_k['c']))
             print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
             print(f'init_balance:{self.init_balance:.2f}')
         if float(data_k['l'])<=self.stoploss_price:
@@ -71,9 +73,10 @@ class TakerBot:
             else:
                 self._partialy_filled_problem()
 
-    def _analyze(self):
-        self._check_signal()
-        close = self.OHLCV0_np[-1,3]
+    def _analyze(self, close):
+        #print(f'(on_message to _analyze: {time()-self.start_t1}s)')
+        self.start_t2 = time()
+        self._check_signal(close)
         if (self.signal >= self.settings['enter_at']) and (self.balance>1.0):
             q = str((self.balance/close)-.00001)[:7]
             self._market_buy(q)
@@ -86,12 +89,12 @@ class TakerBot:
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self._report_slipp(self.sell_order, close, 'sell')
 
-    def _check_signal(self):
+    def _check_signal(self, close):
         self.OHLCV0_np = array(self.OHLCVX_data)
         ma = get_MA(self.OHLCV0_np, self.settings['typeMA'], self.settings['MA_period'])
         atr = ATR(self.OHLCV0_np[:,1], self.OHLCV0_np[:,2], self.OHLCV0_np[:,3], timeperiod=self.settings['ATR_period'])
-        close = self.OHLCV0_np[-1,3]
         self.signal = (ma[-1]-close)/(atr[-1]*self.settings['ATR_multi'])
+        #print(f'(_analyze to _check_signal: {time()-self.start_t2}s)')
     
     def _report_slipp(self, order, req_price, order_type):
         file = self.buy_slipp_file
@@ -104,7 +107,8 @@ class TakerBot:
             with open(file, 'a', newline='') as file:
                 writer(file).writerow([float(order['price'])/req_price])
             return
-        print(f'REPORTING {order_type} SLIPP FROM: {order}')
+        #print(f'REPORTING {order_type} SLIPP FROM: {order}')
+        print(f'REPORTING {order_type} SLIPP')
         filled_price = self._get_filled_price(order)
         with open(file, 'a', newline='') as file:
             writer(file).writerow([filled_price/req_price])
@@ -122,6 +126,7 @@ class TakerBot:
         self._cancel_all_orders()
         _order = self._market_sell(self.q)
         self.SL_placed = False
+        self.stoploss_price = 0.0
         print(f'REPORTING stoploss(missed) SLIPP FROM: {_order}')
         file = self.stoploss_slipp_file
         with open(file, 'a', newline='') as file:
@@ -150,7 +155,7 @@ class TakerBot:
         try:
             self.buy_order = self.client.order_market_buy(  symbol=self.symbol,
                                                             quantity=q  )
-            print(f'(msg_to_exec_time: {time()-self.start_t}s)')
+            print(f'(_analyze to _market_buy: {time()-self.start_t2}s)')
             self.q = q
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             return self.buy_order
@@ -162,6 +167,7 @@ class TakerBot:
             self.sell_order = self.client.order_market_sell(symbol=self.symbol,
                                                             quantity=q)
             #print(self.sell_order)
+            print(f'(_analyze to _market_sell: {time()-self.start_t2}s)')
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self.q = '0.00000'
             return self.sell_order
