@@ -9,7 +9,7 @@ from time import time, sleep
 from statistics import mean
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient, by_BinanceVision
-from enviroments.BandsStratEnv import BandsStratEnv
+from enviroments.bands import BandsStratEnv
 from utility import minutes_since, seconds_since, get_market_slips_stats
 import cProfile
 
@@ -52,6 +52,7 @@ def run_indefinitely(_, df):
         _writer.writerows(results)
     profiler.disable()  # Zakończ profilowanie
     profiler.print_stats(sort='tottime')
+
 
 def main():
     # Infinite loop to run the processes

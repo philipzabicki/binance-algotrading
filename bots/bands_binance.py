@@ -6,6 +6,7 @@ from os import getcwd
 from csv import writer
 from collections import deque
 from time import time
+from datetime import datetime as dt
 from TA_tools import get_MA
 from talib import ATR
 from binance.enums import *
@@ -22,18 +23,21 @@ class TakerBot:
 
         self.symbol = symbol
         url = f'wss://stream.binance.com:9443/ws/{symbol.lower()}@kline_{itv}'
-        self.ws = WebSocketApp( url,
-                                on_message=self.on_message,
-                                on_error=self.on_error,
-                                on_close=self.on_close,
-                                on_open = self.on_open  )
+        self.ws = WebSocketApp(url,
+                               on_message=self.on_message,
+                               on_error=self.on_error,
+                               on_close=self.on_close,
+                               on_open=self.on_open)
         self.client = Client(API_KEY, SECRET_KEY)
 
         self.settings = settings
         print(f'SETTINGS: {self.settings}')
-        prev_candles = self.client.get_historical_klines(symbol, itv, str(max(self.settings['MA_period'],self.settings['ATR_period'])*multi)+" seconds ago UTC")
-        prev_data = array([list(map(float,candle[1:6]+[0])) for candle in prev_candles[:-1]])
-        prev_data[where(prev_data[:,-2]==0.0), -2] = 0.00000001
+        prev_candles = self.client.get_historical_klines(symbol,
+                                                         itv,
+                                                         str(max(self.settings['MA_period'],
+                                                                 self.settings['ATR_period']) * multi)+" seconds ago UTC")
+        prev_data = array([list(map(float, candle[1:6]+[0])) for candle in prev_candles[:-1]])
+        prev_data[where(prev_data[:, -2] == 0.0), -2] = 0.00000001
         self.OHLCVX_data = deque(prev_data,
                                  maxlen=len(prev_candles[:-1]))
         self.init_balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
@@ -60,8 +64,8 @@ class TakerBot:
             _volume = '0.00000001' if float(data_k['v'])<=0.0 else data_k['v']
             self.OHLCVX_data.append(list( map(float, [data_k['o'],data_k['h'],data_k['l'],data_k['c'],_volume,0]) ))
             self._analyze(float(data_k['c']))
-            print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
-            print(f'init_balance:{self.init_balance:.2f}')
+            #print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
+            #print(f'init_balance:{self.init_balance:.2f}')
         if float(data_k['l'])<=self.stoploss_price:
             _order = self.client.get_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
             if _order['status']=='FILLED':
@@ -108,7 +112,7 @@ class TakerBot:
                 writer(file).writerow([float(order['price'])/req_price])
             return
         #print(f'REPORTING {order_type} SLIPP FROM: {order}')
-        print(f'REPORTING {order_type} SLIPP')
+        print(f'{dt.today()} REPORTING {order_type} SLIPP')
         filled_price = self._get_filled_price(order)
         with open(file, 'a', newline='') as file:
             writer(file).writerow([filled_price/req_price])
@@ -127,7 +131,7 @@ class TakerBot:
         _order = self._market_sell(self.q)
         self.SL_placed = False
         self.stoploss_price = 0.0
-        print(f'REPORTING stoploss(missed) SLIPP FROM: {_order}')
+        print(f'{dt.today()} REPORTING stoploss(missed) SLIPP FROM: {_order}')
         file = self.stoploss_slipp_file
         with open(file, 'a', newline='') as file:
             writer(file).writerow([self._get_filled_price(_order)/self.stoploss_price])
@@ -135,10 +139,10 @@ class TakerBot:
     def _cancel_all_orders(self):
         try:
             self.client._delete('openOrders', True, data={'symbol': self.symbol})
-            print(f'DELETED ALL ORDERS')
+            print(f'{dt.today()} DELETED ALL ORDERS')
         except Exception as e:  print(f'exception(_cancel_all_orders): {e}')
     def _stop_loss(self, q, price):
-        print(f'STOPLOSS_LIMIT q:{q} price:{price}')
+        print(f'{dt.today()} STOPLOSS_LIMIT q:{q} price:{price}')
         try:
             self.SL_order = self.client.create_order(symbol=self.symbol,
                                                      side=SIDE_SELL,
@@ -151,7 +155,7 @@ class TakerBot:
             #print(self.SL_order)
         except Exception as e:  print(f'exception(_stop_loss): {e}')
     def _market_buy(self, q):
-        print(f'BUY_MARKET q:{q}')
+        print(f'{dt.today()} BUY_MARKET q:{q}')
         try:
             self.buy_order = self.client.order_market_buy(  symbol=self.symbol,
                                                             quantity=q  )
@@ -162,7 +166,7 @@ class TakerBot:
         except Exception as e: print(f'exception(_market_buy): {e}')
         #print(self.buy_order)
     def _market_sell(self, q):
-        print(f'SELL_MARKET q:{q}')
+        print(f'{dt.today()} SELL_MARKET q:{q}')
         try:
             self.sell_order = self.client.order_market_sell(symbol=self.symbol,
                                                             quantity=q)
@@ -183,8 +187,8 @@ class TakerBot:
 class MakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
         self.cwd = getcwd()
-        self.buy_slipp_file = '/settings/slippages_limit_buy.csv'
-        self.sell_slipp_file = '/settings/slippages_limit_sell.csv'
+        self.buy_slipp_file = '../settings/slippages_limit_buy.csv'
+        self.sell_slipp_file = '../settings/slippages_limit_sell.csv'
         #sl_slipp_file = '/settings/slippages_StopLoss.csv'
         #with open(self.cwd+self.buy_slipp_file, 'a', newline='') as file: self.buy_slipp_wr = writer(file)
         #with open(self.cwd+self.sell_slipp_file, 'a', newline='') as file: self.sell_slipp_wr = writer(file)

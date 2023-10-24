@@ -1,5 +1,6 @@
-import os
-import pandas as pd
+# import pandas as pd
+from os import path, listdir
+from definitions import DATA_DIR
 import requests
 from io import BytesIO
 from zipfile import ZipFile
@@ -25,7 +26,7 @@ def fix_and_fill_df(df, itv):
   #print(f'fixed_dates_df {fixed_dates_df}')
   df['Opened'] = pd.to_datetime(df['Opened'],  format='%Y-%m-%d %H:%M:%S')
   df = fixed_dates_df.merge(df, on='Opened', how='left')
-  df.fillna(method='ffill', inplace=True)
+  df.ffill(inplace=True)
   ### Replacing 0 volume with really small one to make some TAcalculations possible
   df.iloc[:,-1] = df.iloc[:,-1].replace(0.0, .00000001)
   return df
@@ -40,8 +41,8 @@ def download_and_unzip(url, output_path):
       print(e)
       return False
 
-def read_partial_df(path):
-  file_path = os.path.join(path, os.listdir(path)[0])
+def read_partial_df(_path):
+  file_path = path.join(_path, listdir(_path)[0])
   #print(f'file_path {file_path}')
   df_temp = pd.read_csv(file_path, sep=",", usecols=[0,1,2,3,4,5])
   df_temp.columns = ['Opened','Open','High','Low','Close','Volume']  # Nadajemy nazwy kolumn
@@ -59,9 +60,9 @@ def collect_monthly(url, output_folder):
   data_frames = []
   while start_date <= end_date:
     _url = url+f'{str(start_date)[:-3]}.zip'
-    output_path = os.path.join(output_folder, f'{str(start_date)[:-3]}')
+    output_path = path.join(output_folder, f'{str(start_date)[:-3]}')
     #print(f'output_path {output_path}')
-    if os.path.exists(output_path) and os.listdir(output_path)[0].endswith('.csv'):
+    if path.exists(output_path) and listdir(output_path)[0].endswith('.csv'):
       #print(f'os.listdir(output_path)[0] {os.listdir(output_path)[0]}')
       data_frames.append(read_partial_df(output_path))
     else:
@@ -80,17 +81,21 @@ def by_BinanceVision(ticker='BTCBUSD', interval='1m', type='um', data='klines', 
   ### example url #2 https://data.binance.vision/data/futures/um/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2023-08-09.zip
   ### https://data.binance.vision/data/futures/um/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2023-07.zip
   ### https://data.binance.vision/data/spot/daily/klines/BTCFDUSD/1s/BTCFDUSD-1s-2023-09-23.zip
-  if type=='um' or type=='cm':
+  if type == 'um' or type == 'cm':
     url = f'https://data.binance.vision/data/futures/{type}/monthly/{data}/{ticker}/{interval}/{ticker}-{interval}-'
-    output_folder = os.getcwd()+f'/data/binance_vision/futures_{type}/{data}/{ticker}{interval}'
-  elif type=='spot':
+    output_folder = DATA_DIR+f'binance_vision/futures_{type}/{data}/{ticker}{interval}'
+  elif type == 'spot':
     url = f'https://data.binance.vision/data/{type}/monthly/{data}/{ticker}/{interval}/{ticker}-{interval}-'
-    output_folder = os.getcwd()+f'/data/binance_vision/{type}/{data}/{ticker}{interval}'
-  if os.path.isfile(output_folder+'.csv'):
+    output_folder = DATA_DIR+f'binance_vision/{type}/{data}/{ticker}{interval}'
+  else:
+    raise ValueError("type argument must be one of { um, cm, spot }")
+  print(f'output_folder: {output_folder}')
+
+  if path.isfile(output_folder+'.csv'):
     df = pd.read_csv(output_folder+'.csv')
     df['Opened'] = pd.to_datetime(df['Opened'])
     last_timestamp = (df.iloc[-1]['Opened']).value // 10 ** 9
-    if time()-last_timestamp>delay:
+    if time()-last_timestamp > delay:
       start_date = pd.to_datetime(last_timestamp, unit='s').date()
       #print(f'start_date {start_date}')
       end_date = date.today()
@@ -106,8 +111,8 @@ def by_BinanceVision(ticker='BTCBUSD', interval='1m', type='um', data='klines', 
   ### binance vision does not store current day data so we substract 1 day
   while start_date <= end_date:
       _url = url+f'{start_date}.zip'
-      output_path = os.path.join(output_folder, f'{start_date}')
-      if os.path.exists(output_path) and os.listdir(output_path)[0].endswith('.csv'):
+      output_path = path.join(output_folder, f'{start_date}')
+      if path.exists(output_path) and listdir(output_path)[0].endswith('.csv'):
          data_frames.append(read_partial_df(output_path))
       else:
         print(f'downloading... {_url}')
@@ -123,20 +128,20 @@ def by_BinanceVision(ticker='BTCBUSD', interval='1m', type='um', data='klines', 
   return fixed_df
 
 def by_DataClient(ticker='BTCUSDT', interval='1m', futures=True, statements=True, delay=LAST_DATA_POINT_DELAY):
-  directory = '/data/binance_data_futures/' if futures else '/data/binance_data_spot/'
-  file = os.getcwd()+directory+interval+'_data/'+ticker+'/'+ticker+'.csv'
+  directory = 'binance_data_futures/' if futures else 'binance_data_spot/'
+  file = DATA_DIR+directory+interval+'_data/'+ticker+'/'+ticker+'.csv'
   ### example file path os.getcwd()+ /data/binance_data_spot/1m_data/BTCTUSD/BTCTUSD.csv
-  if os.path.isfile(file):
+  if path.isfile(file):
       df = pd.read_csv(file, header=0)
       df['Opened'] = pd.to_datetime(df['Opened'])
       last_timestamp = (df.iloc[-1]['Opened']).value // 10 ** 9
       if time()-last_timestamp>delay:
         print(f'\n updating data... ({futures} {ticker} {interval} )')
-        DataClient(futures=futures).kline_data([ticker.upper()], interval, storage=['csv', os.getcwd()+directory], progress_statements=statements)
+        DataClient(futures=futures).kline_data([ticker.upper()], interval, storage=['csv', DATA_DIR+directory], progress_statements=statements)
       else:
         return df
   else:
     print(f'\n downloading data... (futures={futures} {ticker} {interval})')
-    DataClient(futures=futures).kline_data([ticker.upper()], interval, storage=['csv', os.getcwd()+directory], progress_statements=statements)
+    DataClient(futures=futures).kline_data([ticker.upper()], interval, storage=['csv', DATA_DIR+directory], progress_statements=statements)
   df = pd.read_csv(file, header=0)
   return fix_and_fill_df(df, interval)

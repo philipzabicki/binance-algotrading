@@ -3,7 +3,7 @@ from numpy import array, hstack, mean, zeros, arange, inf
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient, by_BinanceVision
 from utility import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
-from enviroments.BandsStratEnv import BandsStratEnv
+from enviroments.bands import BandsStratEnv
 from matplotlib import pyplot as plt
 from pymoo.core.problem import StarmapParallelization
 from pymoo.core.problem import ElementwiseProblem
@@ -15,17 +15,17 @@ from pymoo.algorithms.moo.dnsga2 import DNSGA2
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.callback import Callback
 from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariableSampling, MixedVariableDuplicateElimination
-from pymoo.algorithms.soo.nonconvex.optuna import Optuna
+#from pymoo.algorithms.soo.nonconvex.optuna import Optuna
 from datetime import datetime as dt
-from time import time
+#from time import time
 from os import getcwd
 #import cProfile
-from gc import collect
+#from gc import collect
 
 
 CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 32
-N_GEN = 50
+N_GEN = 500
 SLIPP = get_market_slips_stats()
 #print(SLIPP)
 #CPU_CORES_COUNT = 6
@@ -44,10 +44,10 @@ class CustomProblem(ElementwiseProblem):
         out["F"] = array([-reward])
 
 class CustomMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, **kwargs):
-        self.df = df
+    def __init__(self, env, **kwargs):
+        #self.df = df
         #print(f'self.df {self.df}')
-        #self.env = env
+        self.env = env
         vars = {"SL": Real(bounds=(0.0001, 0.0150)),
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
@@ -59,9 +59,9 @@ class CustomMixedVariableProblem(ElementwiseProblem):
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['SL'], X['enter_at'], X['close_at'], X['type'], X['MAperiod'], X['ATRperiod'], X['ATRmulti']]
         #print(action)
-        env = BandsStratEnv(df=self.df, max_steps=86_400, init_balance=1_000, fee=0.0, coin_step=0.00001)
+        #env = BandsStratEnv(df=self.df, max_steps=86_400, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
         #env = BandsStratEnv(df=self.df, max_steps=604_800, init_balance=1_000, fee=0.0, coin_step=0.00001)
-        _, reward, _, info = env.step(action)
+        _, reward, _, info = self.env.step(action)
         out["F"] = array([-reward])
         #collect()
 
@@ -119,7 +119,7 @@ def main():
     df = hstack((df, zeros((df.shape[0], 1))))
     df = df[-seconds_since('09-01-2023'):,:]
     print(df)
-    #env = BandsStratEnv(df=df, max_steps=259_200, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+    env = BandsStratEnv(df=df, max_steps=86_400, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
 
     pool = Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)
@@ -129,7 +129,7 @@ def main():
     runner = StarmapParallelization(pool.starmap)
     '''
 
-    problem = CustomMixedVariableProblem(df, elementwise_runner=runner)
+    problem = CustomMixedVariableProblem(env, elementwise_runner=runner)
     #algorithm = NSGA2(pop_size=100)
     #algorithm = DNSGA2(pop_size=64)
     #algorithm = MixedVariableGA(pop=10)

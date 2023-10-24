@@ -3,28 +3,28 @@
 
 from numpy import array, float64, inf
 from gym import spaces, Env
-from enviroments.BacktestEnv import BacktestEnv, BacktestEnvFutures
+from enviroments.backtest import SpotBacktest, FuturesBacktest
 from TA_tools import get_MA_signal
 #from matplotlib import pyplot as plt
 #import cProfile
 
-class OneRunEnv(BacktestEnv):
-  def __init__(self, df, dates_df=None, excluded_left=0, StopLoss=0.0, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1,
-               init_balance=100_000, postition_ratio=1.0, fee=0.0002, coin_step=0.00001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)},
-               max_steps=0, Render_range=120, visualize=False):
+class OneRunEnv(SpotBacktest):
+  def __init__(self, df, dates_df=None, exclude_cols_left=0, stop_loss=0.0, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1,
+               init_balance=100_000, position_ratio=1.0, fee=0.0002, coin_step=0.00001, slippage=None,
+               max_steps=0, render_range=120, visualize=False):
      #self.profiler = cProfile.Profile() 
      #self.profiler.enable()
-     super().__init__(df=df, dates_df=dates_df, excluded_left=excluded_left, init_balance=init_balance, postition_ratio=postition_ratio,
-                      StopLoss=StopLoss, fee=fee, coin_step=coin_step, slippage=slippage, max_steps=max_steps,
-                      Render_range=Render_range, visualize=visualize)
+     super().__init__(df=df, dates_df=dates_df, exclude_cols_left=exclude_cols_left, init_balance=init_balance, position_ratio=position_ratio,
+                      stop_loss=stop_loss, fee=fee, coin_step=coin_step, slippage=slippage, max_steps=max_steps,
+                      render_range=render_range, visualize=visualize)
      self.enter_threshold = enter_at
      self.close_threshold = close_at
      self.typeMA = typeMA
      self.MA_period = MA_period
      self.ATR_period = ATR_period
      self.ATR_multi = ATR_multi
-  def reset(self, postition_ratio=1.0, StopLoss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=1, ATR_period=1, ATR_multi=1.000):
-    self.stop_loss = StopLoss
+  def reset(self, postition_ratio=1.0, stop_loss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=1, ATR_period=1, ATR_multi=1.000):
+    self.stop_loss = stop_loss
     self.enter_threshold = enter_at
     self.close_threshold = close_at
     self.postition_ratio = postition_ratio
@@ -42,7 +42,7 @@ class OneRunEnv(BacktestEnv):
      super()._finish_episode()
      #obs =  array([self.episode_orders, self.cumulative_fees, self.sharpe_ratio, self.sortino_ratio, self.max_drawdown, self.PL_count_mean, self.PL_ratio])
      if self.output:
-         print(f' postition_ratio={self.postition_ratio}, StopLoss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
+         print(f' postition_ratio={self.postition_ratio}, stop_loss={self.stop_loss:.4f}, enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}', end='')
          print(f' typeMA={self.typeMA}, MA_period={self.MA_period}, ATR_period={self.ATR_period}, ATR_multi={self.ATR_multi:.3f}', end='')
          print(f' reward={self.reward:.2f} (exec_time={self.info["exec_time"]:.2f}s)')
      #self.profiler.disable()  # Zakończ profilowanie
@@ -71,13 +71,13 @@ class OneRunEnv(BacktestEnv):
       return obs,reward,done,info
 
 class BandsStratEnv(Env):
-    def __init__(self, df, dates_df=None, excluded_left=0, init_balance=100_000, postition_ratio=1.0,
-                 fee=0.0002, coin_step=0.00001, slippage={'market_buy':(1.0,0.0),'market_sell':(1.0,0.0),'SL':(1.0,0.0)},
-                 max_steps=0, Render_range=120, visualize=False):
-        self.exec_env = OneRunEnv(df, dates_df=dates_df, StopLoss=0.01, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.000,
-                                  excluded_left=excluded_left, init_balance=init_balance, postition_ratio=postition_ratio,
+    def __init__(self, df, dates_df=None, excluded_left=0, init_balance=100_000, position_ratio=1.0,
+                 fee=0.0002, coin_step=0.00001, slippage=None,
+                 max_steps=0, render_range=120, visualize=False, exclude_cols_left=None):
+        self.exec_env = OneRunEnv(df, dates_df=dates_df, stop_loss=0.01, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.000,
+                                  exclude_cols_left=exclude_cols_left, init_balance=init_balance, position_ratio=position_ratio,
                                   fee=fee, coin_step=coin_step, slippage=slippage, max_steps=max_steps,
-                                  Render_range=Render_range, visualize=visualize)
+                                  render_range=render_range, visualize=visualize)
         obs_lower_bounds = array([-inf for _ in range(8)])
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
@@ -86,18 +86,18 @@ class BandsStratEnv(Env):
         action_upper = [0.0150, 1.000, 1.000, 36, 1_000, 1_000, 15.000]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
-    def reset(self, postition_ratio=1.0, StopLoss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.000):
-        #print(f'BandsStratEnv.reset {postition_ratio} {StopLoss} {enter_at} {close_at} {typeMA} {MA_period} {ATR_period} {ATR_multi}')
-        return self.exec_env.reset(postition_ratio, StopLoss, enter_at, close_at, typeMA, MA_period, ATR_period, ATR_multi)
+    def reset(self, postition_ratio=1.0, stop_loss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.000):
+        #print(f'BandsStratEnv.reset {postition_ratio} {stop_loss} {enter_at} {close_at} {typeMA} {MA_period} {ATR_period} {ATR_multi}')
+        return self.exec_env.reset(postition_ratio, stop_loss, enter_at, close_at, typeMA, MA_period, ATR_period, ATR_multi)
     def step(self, action):
       #print(f'action: {action}')
-      self.reset(   postition_ratio=1.0, StopLoss=round(action[0],4),
+      self.reset(   postition_ratio=1.0, stop_loss=round(action[0],4),
                     enter_at=round(action[1],3), close_at=-round(action[2],3),
                     typeMA=int(action[3]), MA_period=int(action[4]),
                     ATR_period=int(action[5]), ATR_multi=round(action[6],3)   )
       return self.exec_env._execute()
     
-class OneRunEnvFutures(BacktestEnvFutures):
+class OneRunEnvFutures(FuturesBacktest):
    def __init__(self, *args, **kwargs):
       super.__init__(*args, **kwargs)
       self.typeMA = kwargs['typeMA']
