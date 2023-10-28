@@ -34,7 +34,7 @@ class OneRunEnv(SpotBacktest):
     self.ATR_multi = ATR_multi
     #print(f'OneRunEnv.reset {self.postition_ratio} {self.stop_loss} {self.enter_threshold} {self.close_threshold} {self.typeMA} {self.MA_period} {self.ATR_period} {self.ATR_multi}')
     super().reset()
-    self.df[self.start_step:self.end_step,-1] = get_MA_signal(self.df[self.start_step:self.end_step,:], self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
+    self.df[self.start_step:self.end_step, -1] = get_MA_signal(self.df[self.start_step:self.end_step, :], self.typeMA, self.MA_period, self.ATR_period, self.ATR_multi)
     self.obs = iter(self.df[self.start_step:self.end_step,:])
     return array([-1.0 for _ in range(7)], dtype="float32")
   def _finish_episode(self):
@@ -54,7 +54,7 @@ class OneRunEnv(SpotBacktest):
       action = 0
       while not self.done:
         obs,reward,done,info = self.step(action)
-        #if self.visualize: self.render()
+        if self.visualize: self.render()
         #print(f'SIGNAL: {obs[-1]:.2f}')
         signal = obs[-1]
         action = 0
@@ -68,7 +68,7 @@ class OneRunEnv(SpotBacktest):
         elif (self.qty>0) and (signal<=self.close_threshold):
            action = 2
       #print(obs,reward,done,info)
-      return obs,reward,done,info
+      return obs, reward, done, info
 
 class BandsStratEnv(Env):
     def __init__(self, df, dates_df=None, excluded_left=0, init_balance=100_000, position_ratio=1.0,
@@ -83,7 +83,7 @@ class BandsStratEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.001, 0.001, 0, 2, 1, 0.001]
-        action_upper = [0.0150, 1.000, 1.000, 36, 1_000, 1_000, 15.000]
+        action_upper = [0.0150, 1.000, 1.000, 35, 1_000, 1_000, 15.000]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
     def reset(self, postition_ratio=1.0, stop_loss=0.01, enter_at=1.000, close_at=-1.000, typeMA=0, MA_period=2, ATR_period=2, ATR_multi=1.000):

@@ -1,31 +1,31 @@
-from os import getcwd
 from numpy import array, hstack, mean, zeros, arange, inf
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient, by_BinanceVision
 from utility import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
 from enviroments.bands import BandsStratEnv
+from definitions import ROOT_DIR
 from matplotlib import pyplot as plt
 from pymoo.core.problem import StarmapParallelization
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
-#from pymoo.factory import get_sampling, get_crossover, get_mutation
+# from pymoo.factory import get_sampling, get_crossover, get_mutation
 from pymoo.optimize import minimize
 from pymoo.visualization.pcp import PCP
-from pymoo.algorithms.moo.dnsga2 import DNSGA2
+# from pymoo.algorithms.moo.dnsga2 import DNSGA2
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.callback import Callback
 from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariableSampling, MixedVariableDuplicateElimination
-#from pymoo.algorithms.soo.nonconvex.optuna import Optuna
+# from pymoo.algorithms.soo.nonconvex.optuna import Optuna
 from datetime import datetime as dt
-#from time import time
-from os import getcwd
-#import cProfile
-#from gc import collect
+from csv import writer
+# from time import time
+# import cProfile
+# from gc import collect
 
 
 CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 32
-N_GEN = 500
+N_GEN = 10
 SLIPP = get_market_slips_stats()
 #print(SLIPP)
 #CPU_CORES_COUNT = 6
@@ -37,7 +37,7 @@ class CustomProblem(ElementwiseProblem):
                          n_obj=1,
                          n_constr=0,
                          xl=array([0.0001, 0.001, 0.001, 0, 2, 1, 0.001]),
-                         xu=array([0.0150, 1.000, 1.000, 35, 450, 500, 9.000]),
+                         xu=array([0.0150, 1.000, 1.000, 34, 450, 500, 9.000]),
                          **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         _, reward, _, _ = self.env.step(X)
@@ -51,7 +51,7 @@ class CustomMixedVariableProblem(ElementwiseProblem):
         vars = {"SL": Real(bounds=(0.0001, 0.0150)),
                 "enter_at": Real(bounds=(0.001, 1.000)),
                 "close_at": Real(bounds=(0.001, 1.000)),
-                "type": Integer(bounds=(0, 35)),
+                "type": Integer(bounds=(0, 34)),
                 "MAperiod": Integer(bounds=(2, 1_000)),
                 "ATRperiod": Integer(bounds=(1, 1_000)),
                 "ATRmulti": Real(bounds=(0.001, 15.000))}
@@ -86,7 +86,7 @@ def display_callback(callback, fname):
     plt.ylabel('Mean Reward')
     plt.xlabel('Population')
     plt.plot(-1*array(callback.opt), "--")
-    plt.savefig(getcwd()+'/reports/Convergence_'+fname)
+    plt.savefig(ROOT_DIR+'/reports/Convergence_'+fname)
     return plt
     #plt.show()
 
@@ -108,9 +108,10 @@ def display_result(result, problem, fname):
     plot.add(X_array[int(pop_size*.1)+1:int(pop_size*.2)], linewidth=1.1, color='#005d89')
     plot.add(X_array[:int(pop_size*.1)], linewidth=1.0, color='#004a73')
     plot.add(X_array[0], linewidth=1.5, color='red')
-    plot.save(getcwd()+'/reports/'+fname)
+    plot.save(ROOT_DIR+'/reports/'+fname)
     return plot
     #plot.show()
+
 
 def main():
     #df = by_DataClient(ticker='BTCFDUSD', interval='1s', futures=False, statements=True, delay=3_600)
@@ -149,25 +150,26 @@ def main():
 
     print('Exec time:', res.exec_time)
     print('FINAL POPULATION')
-    with open(getcwd()+'/reports/pop'+str(POP_SIZE)+str(dt.today()).replace(':','-')[:-7]+'.txt', 'w') as file:
-        for f,x in zip(res.pop.get("F"), res.pop.get("X")):
-            vars = round(x['SL'],4), round(x['enter_at'],3), round(x['close_at'],3), x['type'], x['MAperiod'], x['ATRperiod'], round(x['ATRmulti'],3)
-            file.write('F '+str(f)+' X '+str(vars)+'\n')
-            print(f'F {f} X {vars}')
+    with open(ROOT_DIR+'/reports/pop'+str(POP_SIZE)+str(dt.today()).replace(':', '-')[:-7]+'.csv', 'w', newline='') as file:
+        csv_writer = writer(file)
+        for f, x in zip(res.pop.get("F"), res.pop.get("X")):
+            _row = [f, round(x['SL'], 4), round(x['enter_at'], 3), round(x['close_at'], 3), x['type'], x['MAperiod'], x['ATRperiod'], round(x['ATRmulti'], 3)]
+            csv_writer.writerow(_row)
+            print(f'writing row {_row}')
     #print(f'res.pop {res.pop}')
     #print(f'res.pop.get(X) {res.pop.get("X")}')
     #print(f'res.pop.get(F) {res.pop.get("F")}')
-    if len(res.F)==1:
+    if len(res.F) == 1:
         if isinstance(res.X, dict):
             print(f'Reward: {-res.f} Variables: {round(res.X["SL"],4), round(res.X["enter_at"],3), round(res.X["close_at"],3), res.X["type"], res.X["MAperiod"], res.X["ATRperiod"], round(res.X["ATRmulti"],3)}')
             filename = f'Pop{POP_SIZE}Rew{-res.f:.0f}Vars{round(res.X["SL"],4):.4f}-{round(res.X["enter_at"],3):.3f}-{round(res.X["close_at"],3):.3f}-{res.X["type"]}-{res.X["MAperiod"]}-{res.X["ATRperiod"]}-{round(res.X["ATRmulti"],3):.3f}.png'
         else:
-            print(f'Reward: {-res.f} Variables: {round(res.X[0],4),int(res.X[1]),int(res.X[2]),int(res.X[3]),round(res.X[4],3)}')
-            filename = 'Pop'+str(POP_SIZE)+'Rew'+str(-res.f)+'Vars'+str(round(res.X[0],4))+str(res.X[1])+str(res.X[2])+str(res.X[3])+str(round(res.X[4],3))+'.png'
+            print(f'Reward: {-res.f} Variables: {round(res.X[0],4),int(res.X[1]),int(res.X[2]),int(res.X[3]),round(res.X[4], 3)}')
+            filename = 'Pop'+str(POP_SIZE)+'Rew'+str(-res.f)+'Vars'+str(round(res.X[0], 4))+str(res.X[1])+str(res.X[2])+str(res.X[3])+str(round(res.X[4], 3))+'.png'
     else:
         for front, var in zip(res.F, res.X):
-            print(f"Reward:", front , "Variables:", var)
-            filename = 'Figure.png'
+            print(f"Reward:", front, "Variables:", var)
+        filename = 'Figure.png'
     
     plt1 = display_callback(res.algorithm.callback, filename)
     plt2 = display_result(res, problem, filename)
@@ -179,7 +181,7 @@ def main():
     #time(1)
     #plt2.show()
 
-if __name__ == '__main__':
+if __name__  ==  '__main__':
     #profiler = cProfile.Profile() 
     #profiler.enable()
     main()

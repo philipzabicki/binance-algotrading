@@ -23,32 +23,15 @@ if __name__ == "__main__":
                          exclude_cols_left=4,
                          init_balance=1_000,
                          fee=0.0,
-                         coin_step=0.0001,
+                         coin_step=0.001,
                          slippage=get_market_slips_stats(),
                          render_range=120,
                          visualize=True)
-    # print('Checking env...')
-    # check_env(trading_env)
-
-    model = DQN("MlpPolicy", trading_env,  learning_rate=0.001, verbose=2, device='cuda')
-    model.learn(total_timesteps=432_000, log_interval=1, progress_bar=True)
-    model.save("RLtrader")
-
-    del model # remove to demonstrate saving and loading
-
-    model = DQN.load("RLtrader")
 
     obs = trading_env.reset()
     while True:
-        action, _states = model.predict(obs)
+        action = trading_env.action_space.sample()
         obs, reward, done, info = trading_env.step(action)
         trading_env.render()
         if done:
             obs = trading_env.reset()
-
-    trading_env.reset()
-    done = False
-    while not done:
-        action = env.action_space.sample()
-        obs,reward,done,info = env.step(action)
-        if env.visualize: env.render()

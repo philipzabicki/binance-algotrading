@@ -4,6 +4,7 @@ pandas
 matplotlib
 opencv-python
 scikit-learn
+stable-baselines3[extra]
 ta-lib
 binance_data
 gym

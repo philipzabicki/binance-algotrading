@@ -6,12 +6,11 @@ from time import time
 import numpy as np
 from gym import spaces, Env
 from numpy import array, inf, mean, std, random
-from visualize import TradingGraph
-
+from utility import TradingGraph
 
 class SpotRL(Env):
     def __init__(self, df, dates_df=None, max_steps=0, exclude_cols_left=0,
-                 init_balance=1_000, position_ratio=1.0, stop_loss=0.0, fee=0.0002, coin_step=0.001,
+                 init_balance=1_000, position_ratio=1.0, stop_loss=None, fee=0.0002, coin_step=0.001,
                  slippage=None, render_range=120, visualize=False):
         self.creation_t = time()
         print(f'Environment created. Fee: {fee} Coin step: {coin_step}')
@@ -52,7 +51,7 @@ class SpotRL(Env):
         self.action_space = spaces.Discrete(3)
         # Observation space #
         # none_df_obs_count are observations like current PnL, account balance, asset quantity etc. #
-        other_obs_count = 0
+        other_obs_count = 10
         obs_space_dims = len(self.df[0, exclude_cols_left:]) + other_obs_count
         obs_lower_bounds = array([-inf for _ in range(obs_space_dims)])
         obs_upper_bounds = array([inf for _ in range(obs_space_dims)])
@@ -82,7 +81,7 @@ class SpotRL(Env):
         self.in_position, self.position_closed, self.in_position_counter, self.episode_orders = 0, 0, 0, 0
         self.good_trades_count, self.bad_trades_count = 1, 1
         self.profit_mean, self.loss_mean = 0, 0
-        self.max_drawdown, self.max_profit = 0, 0
+        self.max_drawdown, self.max_profit, self.max_balance_bonus = 0, 0, 0
         self.loss_hold_counter, self.profit_hold_counter = 0, 0
         self.max_balance = self.min_balance = self.balance
         if self.max_steps > 0:
@@ -93,7 +92,10 @@ class SpotRL(Env):
             self.end_step = self.total_steps - 1
         self.current_step = self.start_step
         self.obs = iter(self.df[self.start_step:self.end_step, self.exclude_cols_left:])
-        return next(self.obs)
+        trade_data = [self.balance, self.position_size, self.qty, self.in_position, self.in_position_counter,
+                      self.pnl, self.profit_hold_counter, self.loss_hold_counter, self.max_drawdown,
+                      self.max_profit]
+        return np.hstack((next(self.obs), trade_data))
 
     # Get the data points for the given current_step
     def _next_observation(self):
@@ -118,23 +120,28 @@ class SpotRL(Env):
         if self.done:
             return self.reward
         elif self.position_closed:
-            self.reward = self.PL_ratios_and_PNLs[-1][0] * self.PL_ratios_and_PNLs[-1][1] \
+            if self.profit_hold_counter != 0 and self.loss_hold_counter != 0:
+                self.reward = 5*self.PL_ratios_and_PNLs[-1][0] * self.PL_ratios_and_PNLs[-1][1] \
                           * self.in_position_counter * (self.profit_hold_counter/self.loss_hold_counter)
+            else:
+                self.reward = 5 * self.PL_ratios_and_PNLs[-1][0] * self.PL_ratios_and_PNLs[-1][1]
             self.in_position_counter = 0
+            self.position_closed = 0
             if self.max_balance_bonus > 0:
                 # print('self.max_balance_bonus>0')
                 self.reward += self.max_balance_bonus * 0.01
                 self.max_balance_bonus = 0
         # In Position #
         elif self.in_position:
-            self.reward = self.pnl
+            self.reward = 0.0
             # self.reward=0
         else:
             self.reward = 0
         return self.reward
 
     def _buy(self, price):
-        self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
+        if self.stop_loss is not None:
+            self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
         # Considering random factor as in real world scenario #
         # price = self._random_factor(price, 'market_buy')
         price = price * self.buy_factor
@@ -156,7 +163,7 @@ class SpotRL(Env):
         # print(f'BOUGHT {self.qty} at {price}')
         if self.visualize:
             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long"})
+                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long", 'Reward': self.reward})
 
     def _sell(self, price, sl=False):
         # print(f'SOLD {self.qty} at {price}')
@@ -203,7 +210,7 @@ class SpotRL(Env):
         self.position_closed = 1
         if self.visualize:
             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type})
+                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type, 'Reward': self.reward})
 
     def step(self, action):
         # 30-day DCA, adding 222USD to balance
@@ -219,7 +226,7 @@ class SpotRL(Env):
                 self.profit_hold_counter += 1
             else:
                 self.loss_hold_counter += 1
-            if low <= self.stop_loss_price:
+            if (self.stop_loss is not None) and (low <= self.stop_loss_price):
                 self._sell(self.stop_loss_price, sl=True)
             elif action == 2 and self.qty > 0:
                 self._sell(close)
@@ -251,14 +258,15 @@ class SpotRL(Env):
             _low = self.df[self.current_step, 2]
             _close = self.df[self.current_step, 3]
             # Volume = self.df[self.current_step, 4]
-            _volume = self.df[self.current_step, -1]
+            _volume = self.reward
+            _dohlcv = [_date, _open, _high, _low, _close, _volume]
             if self.in_position:
                 _pnl = self.enter_price / _close - 1
-                self.visualization.render(_date, _open, _high, _low, _close, _volume,
+                self.visualization.render(_dohlcv,
                                           self.balance + (self.position_size + (self.position_size * _pnl)),
                                           self.trades)
             else:
-                self.visualization.render(_date, _open, _high, _low, _close, _volume, self.balance, self.trades)
+                self.visualization.render(_dohlcv, self.balance, self.trades)
 
     def _finish_episode(self):
         # print('BacktestEnv._finish_episode()')
@@ -296,8 +304,8 @@ class SpotRL(Env):
         else:
           self.reward = self.reward*slope_indicator'''
             # if gain>0:
-            if gain > self.init_balance * .1:
-                # if True:
+            # if gain > self.init_balance * .1:
+            if True:
                 self.output = True
                 print(
                     f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')

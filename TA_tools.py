@@ -7,7 +7,7 @@ from math import copysign
 from finta import TA as finTA
 from tindicators import ti
 import talib
-import ta
+import ta.trend, ta.momentum
 import get_data
 from utility import linear_reg_slope
 from numba import jit
@@ -1013,51 +1013,86 @@ def other_features(df: pd.DataFrame, suffix=''):
     df['up_x3'], _, df['low_x3'] = talib.BBANDS(C, timeperiod=11, nbdevup=2.5, nbdevdn=2.5, matype=0)
     df['BB_mid_dist'] = df['mid' + suffix] - C
     ### Signals
-    df['RSI3_sig' + suffix] = ULT_RSI_signal(df['RSI3' + suffix], timeperiod=3)
-    df['RSI7_sig' + suffix] = ULT_RSI_signal(df['RSI7' + suffix], timeperiod=7)
-    df['RSI14_sig' + suffix] = ULT_RSI_signal(df['RSI14' + suffix], timeperiod=14)
-    df['ULT_sig' + suffix] = ULT_RSI_signal(df['ULT' + suffix], timeperiod=28)
+    df['RSI3_sig' + suffix] = RSI_like_signal(df['RSI3' + suffix], timeperiod=3)
+    df['RSI7_sig' + suffix] = RSI_like_signal(df['RSI7' + suffix], timeperiod=7)
+    df['RSI14_sig' + suffix] = RSI_like_signal(df['RSI14' + suffix], timeperiod=14)
+    df['ULT_sig' + suffix] = RSI_like_signal(df['ULT' + suffix], timeperiod=28)
     df['ADX_sig' + suffix] = ADX_signal(df['ADX' + suffix], df['-DI' + suffix], df['+DI' + suffix])
-    df['ADX_trend_sig' + suffix] = ADX_trend(df['ADX' + suffix])
-    df['MFI_sig' + suffix] = MFI_signal(df['MFI' + suffix])
-    df['MFI_divergence_sig' + suffix] = MFI_divergence(df['MFI' + suffix], df['Close'])
-    df['MACD_cross_sig' + suffix] = MACD_cross(df['macd' + suffix], df['macdsignal' + suffix])
-    df['MACDhist_reversal_sig' + suffix] = MACDhist_reversal(df['macdhist' + suffix])
-    df['MACD_zerocross_sig' + suffix] = MACD_zerocross(df['macd' + suffix], df['macdsignal' + suffix])
-    df['BB_sig' + suffix] = BB_sig(df['mid' + suffix].to_numpy(), df['up_x1'].to_numpy(), df['low_x1'].to_numpy(),
-                                   df['up_x2'].to_numpy(), df['low_x2'].to_numpy(), df['up_x3'].to_numpy(),
-                                   df['low_x3'].to_numpy(), C)
+    df['ADX_trend_signal' + suffix] = ADX_trend_signal(df['ADX' + suffix])
+    df['MFI_sig' + suffix] = RSI_like_signal(df['MFI' + suffix])
+    df['MACD_cross_signal' + suffix] = MACD_cross_signal(df['macd' + suffix], df['macdsignal' + suffix])
+    df['MACDhist_reversal_signal' + suffix] = MACDhist_reversal_signal(df['macdhist' + suffix])
+    df['MACD_zerocross_signal' + suffix] = MACD_zerocross_signal(df['macd' + suffix], df['macdsignal' + suffix])
+    df['BB_signal' + suffix] = BB_signal(df['mid' + suffix].to_numpy(), df['up_x1'].to_numpy(), df['low_x1'].to_numpy(),
+                                       df['up_x2'].to_numpy(), df['low_x2'].to_numpy(), df['up_x3'].to_numpy(),
+                                       df['low_x3'].to_numpy(), C)
     return df
 
 
-def signal_only_features(df: pd.DataFrame, suffix=''):
+def signal_only_features(df: pd.DataFrame, suffix: str=''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
     ### Signals
-    df['RSI3_sig' + suffix] = ULT_RSI_signal(talib.RSI(C, timeperiod=3), timeperiod=3)
-    df['RSI7_sig' + suffix] = ULT_RSI_signal(talib.RSI(C, timeperiod=7), timeperiod=7)
-    df['RSI14_sig' + suffix] = ULT_RSI_signal(talib.RSI(C, timeperiod=14), timeperiod=14)
-    df['ULT_sig' + suffix] = ULT_RSI_signal(talib.ULTOSC(H, L, C, timeperiod1=7, timeperiod2=14, timeperiod3=28),
-                                            timeperiod=28)
-    df['ADX_sig' + suffix] = ADX_signal(talib.ADX(H, L, C, timeperiod=14), talib.MINUS_DI(H, L, C, timeperiod=14),
-                                        talib.PLUS_DI(H, L, C, timeperiod=14))
-    df['ADX_trend_sig' + suffix] = ADX_trend(talib.ADX(H, L, C, timeperiod=14))
-    df['MFI_sig' + suffix] = MFI_signal(talib.MFI(H, L, C, V, timeperiod=14))
-    df['MFI_divergence_sig' + suffix] = MFI_divergence(talib.MFI(H, L, C, V, timeperiod=14), C)
-    MACD, MACD_sig, MACD_hist = talib.MACD(C, fastperiod=12, slowperiod=26, signalperiod=9)
-    df['MACD_cross_sig' + suffix] = MACD_cross(MACD, MACD_sig)
-    df['MACDhist_reversal_sig' + suffix] = MACDhist_reversal(MACD_hist)
-    df['MACD_zerocross_sig' + suffix] = MACD_zerocross(MACD, MACD_sig)
-    up_x1, mid, low_x1 = talib.BBANDS(C, timeperiod=11, nbdevup=1.5, nbdevdn=1.5, matype=0)
-    up_x2, _, low_x2 = talib.BBANDS(C, timeperiod=11, nbdevup=2.0, nbdevdn=2.0, matype=0)
-    up_x3, _, low_x3 = talib.BBANDS(C, timeperiod=11, nbdevup=2.5, nbdevdn=2.5, matype=0)
-    df['BB_sig' + suffix] = BB_sig(mid, up_x1, low_x1, up_x2, low_x2, up_x3, low_x3, C)
-    df['Volume_probablity'] = Volume_probablity(V)
-    df['Move_probablity'] = Move_probablity(O, C)
-    df['SUM'] = df.iloc[:, 6:].sum(axis=1)
+    df['RSI3_signal' + suffix] = RSI_like_signal(talib.RSI(C, 3), 3)
+    df['RSI7_signal' + suffix] = RSI_like_signal(talib.RSI(C, 7), 7)
+    df['RSI14_signal' + suffix] = RSI_like_signal(talib.RSI(C, 14), 14)
+    df['ULT7-14-28_signal' + suffix] = RSI_like_signal(talib.ULTOSC(H, L, C, 7, 14, 28), 28)
+    df['ADX14_signal' + suffix] = ADX_signal(talib.ADX(H, L, C, 14),
+                                             talib.MINUS_DI(H, L, C, 14),
+                                             talib.PLUS_DI(H, L, C, 14))
+    df['ADX14_trend_signal' + suffix] = ADX_trend_signal(talib.ADX(H, L, C, 14))
+    df['MFI14_signal' + suffix] = RSI_like_signal(talib.MFI(H, L, C, V, 14), 14)
+    macd, macd_sig, macd_hist = talib.MACD(C, 12, 26, 9)
+    df['MACD12-26-9_cross_signal' + suffix] = MACD_cross_signal(macd, macd_sig)
+    df['MACD12-26-9hist_reversal_signal' + suffix] = MACDhist_reversal_signal(macd_hist)
+    df['MACD12-26-9zerocross_signal' + suffix] = MACD_zerocross_signal(macd, macd_sig)
+    bb_upper, bb_mid, bb_lower = talib.BBANDS(C, timeperiod=11, nbdevup=1.5, nbdevdn=1.5, matype=0)
+    df['BB11-1.5_signal' + suffix] = BB_signal(C, bb_upper, bb_mid, bb_lower)
+    df['volume_probablity'] = volume_probability(V)
+    df['move_probablity'] = move_probability(O, C)
+    df['SUM_OF_SIGNALS'] = df.iloc[:, 6:].sum(axis=1)
     return df
 
 
-def basic_features(df, suffix=''):
+def simple_rl_features(df: pd.DataFrame, suffix: str=''):
+    _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
+    df['ADX14' + suffix] = talib.ADX(H, L, C, 14)
+    df['ADXR14' + suffix] = talib.ADXR(H, L, C, 14)
+    df['APO12-26' + suffix] = talib.APO(C, fastperiod=12, slowperiod=26, matype=0)
+    df['AROON14_DOWN'+suffix], df['AROON14_UP'+suffix] = talib.AROON(H, L, 14)
+    df['AROONOSC14' + suffix] = talib.AROONOSC(H, L, 14)
+    df['BOP' + suffix] = talib.BOP(O, H, L, C)
+    df['CCI14' + suffix] = talib.CCI(H, L, C, 14)
+    df['CMO14' + suffix] = talib.CMO(C, 14)
+    df['DX14' + suffix] = talib.DX(H, L, C, 14)
+    df['MACD12-26' + suffix], df['MACDsignal9' + suffix], df['MACD12-26hist' + suffix] = talib.MACD(C, 12, 26, 9)
+    df['MFI14' + suffix] = talib.MFI(H, L, C, V, 14)
+    df['MINUS_DI14' + suffix] = talib.MINUS_DI(H, L, C, 14)
+    df['MINUS_DM14' + suffix] = talib.MINUS_DM(H, L, 14)
+    df['PLUS_DI14' + suffix] = talib.PLUS_DI(H, L, C, 14)
+    df['PLUS_DM14' + suffix] = talib.PLUS_DM(H, L, 14)
+    df['MOM10' + suffix] = talib.MOM(C, 10)
+    df['PPO12-26' + suffix] = talib.PPO(C, fastperiod=12, slowperiod=26, matype=0)
+    df['ROC10' + suffix] = talib.ROC(C, 10)
+    df['ROCP10' + suffix] = talib.ROCP(C, 10)
+    df['ROCR100-10' + suffix] = talib.ROCR100(C, 10)
+    df['RSI14' + suffix] = talib.RSI(C, 14)
+    df['SLOWK3' + suffix], df['SLOWD3' + suffix] = talib.STOCH(H, L, C, fastk_period=5, slowk_period=3, slowk_matype=0, slowd_period=3, slowd_matype=0)
+    df['FASTK5' + suffix], df['FASTD5' + suffix] = talib.STOCHF(H, L, C, fastk_period=5, fastd_period=3, fastd_matype=0)
+    df['ULTOSC7-14-28' + suffix] = talib.ULTOSC(H, L, C, 7, 14, 28)
+    df['WILLR14' + suffix] = talib.WILLR(H, L, C, 14)
+    df['AD' + suffix] = talib.AD(H, L, C, V)
+    df['ADOSC' + suffix] = talib.ADOSC(H, L, C, V, fastperiod=3, slowperiod=10)
+    df['OBV' + suffix] = talib.OBV(C, V)
+    df['ATR14' + suffix] = talib.ATR(H, L, C, 14)
+    df['NATR14' + suffix] = talib.NATR(H, L, C, 14)
+    df['TRANGE' + suffix] = talib.TRANGE(H, L, C)
+    df['AVGPRICE' + suffix] = talib.AVGPRICE(O, H, L, C)
+    df['MEDPRICE' + suffix] = talib.MEDPRICE(H, L)
+    df['TYPPRICE' + suffix] = talib.TYPPRICE(H, L, C)
+    df['WCLPRICE(high, low, close)' + suffix] = talib.WCLPRICE(H, L, C)
+    return df
+
+def custom_features(df, suffix=''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
     # OHLC simple features
     df['candle_size' + suffix] = H - L
@@ -1067,11 +1102,11 @@ def basic_features(df, suffix=''):
                                                 (H - O) / df['candle_size' + suffix])
     df['candle_lower_wick' + suffix] = np.where(C > O, (O - L) / df['candle_size' + suffix],
                                                 (C - L) / df['candle_size' + suffix])
-    df['Hourly_seasonality'] = Hourly_seasonality(df)
-    df['Daily_seasonality'] = Daily_seasonality(df)
-    df['Volume_probablity'] = Volume_probablity(V)
-    df['Move_probablity'] = Move_probablity(O, C)
-    df['Price_levels'] = Price_levels(O, C)
+    df['hourly_seasonality' + suffix] = hourly_seasonality(df)
+    df['daily_seasonality' + suffix] = daily_seasonality(df)
+    df['volume_probablity' + suffix] = volume_probability(V)
+    df['move_probablity' + suffix] = move_probability(O, C)
+    df['price_levels' + suffix] = price_levels(O, C)
     return df
 
 
@@ -1080,7 +1115,7 @@ def blank_features(df, *args, **kwargs):
 
 
 TA_FEATURES_TEMPLATE = {'None': blank_features,
-                        'basic': basic_features,
+                        'custom': custom_features,
                         'signals': signal_only_features}
 
 

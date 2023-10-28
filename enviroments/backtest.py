@@ -5,7 +5,7 @@ from random import randint
 from time import time
 from gym import spaces, Env
 from numpy import array, inf, mean, std, random
-from visualize import TradingGraph
+from utility import TradingGraph
 
 
 class SpotBacktest(Env):
@@ -14,7 +14,7 @@ class SpotBacktest(Env):
                  slippage=None, render_range=120, visualize=False):
         self.creation_t = time()
         print(f'Environment created. Fee: {fee} Coin step: {coin_step}')
-        print(f' Obs sample (last row): {df[-1,]}')
+        print(f' Obs sample (last row): {df[-1,:]}')
         print(f' Slippage stats: {slippage}')
         if visualize and dates_df is not None:
             self.dates_df = dates_df
@@ -24,7 +24,7 @@ class SpotBacktest(Env):
             self.render_range = render_range
         else:
             self.visualize = False
-            print(f'    Visualize is set to false or there was no dates df provided.')
+            print(f' Visualize is set to false or there was no dates df provided.')
         # This implementation uses only mean values provided by arg dict (slippage) #
         # as factor for calculation of real buy and sell prices. #
         # Generation of random numbers is too expensive computational wise. #
@@ -136,7 +136,7 @@ class SpotBacktest(Env):
         # print(f'BOUGHT {self.qty} at {price}')
         if self.visualize:
             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long"})
+                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long", 'Reward': 0})
 
     def _sell(self, price, sl=False):
         # print(f'SOLD {self.qty} at {price}')
@@ -180,7 +180,7 @@ class SpotBacktest(Env):
         self.stop_loss_price = 0
         if self.visualize:
             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type})
+                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type, 'Reward': 0})
 
     def step(self, action):
         # 30-day DCA, adding 222USD to balance
@@ -228,13 +228,14 @@ class SpotBacktest(Env):
             _close = self.df[self.current_step, 3]
             # Volume = self.df[self.current_step, 4]
             _volume = self.df[self.current_step, -1]
+            _dohlcv = [_date, _open, _high, _low, _close, _volume]
             if self.in_position:
                 _pnl = self.enter_price / _close - 1
-                self.visualization.render(_date, _open, _high, _low, _close, _volume,
+                self.visualization.render(_dohlcv,
                                           self.balance + (self.position_size + (self.position_size * _pnl)),
                                           self.trades)
             else:
-                self.visualization.render(_date, _open, _high, _low, _close, _volume, self.balance, self.trades)
+                self.visualization.render(_dohlcv, self.balance, self.trades)
 
     def _finish_episode(self):
         # print('BacktestEnv._finish_episode()')
@@ -413,7 +414,7 @@ class FuturesBacktest(SpotBacktest):
         if side == 'long':
             if self.visualize:
                 self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                    'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long"})
+                                    'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long", 'Reward': 0})
                 print(f'OPENING LONG at {price}')
             rnd_factor = random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], 1)[0]
             price = round(price * rnd_factor, 2)
@@ -421,7 +422,7 @@ class FuturesBacktest(SpotBacktest):
         elif side == 'short':
             if self.visualize:
                 self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                    'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_short"})
+                                    'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_short", 'Reward': 0})
                 print(f'OPENING SHORT at {price}')
             rnd_factor = random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1], 1)[0]
             price = round(price * rnd_factor, 2)
