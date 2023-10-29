@@ -1,7 +1,9 @@
 **/data
+**/tensorboard
 .other
 credentials.py
 **/__pycache__
 *.png
 *.old
 *.txt
+*.zip

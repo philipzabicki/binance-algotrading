@@ -68,7 +68,7 @@ class SpotRL(Env):
             self.trades = deque(maxlen=self.render_range)
             self.visualization = TradingGraph(self.render_range)
         self.info = {}
-        self.PL_ratios_and_PNLs = []
+        self.PLs_and_ratios = []
         self.balance = self.init_balance
         self.init_position_size = self.init_balance * self.position_ratio
         self.position_size = self.init_position_size
@@ -121,10 +121,10 @@ class SpotRL(Env):
             return self.reward
         elif self.position_closed:
             if self.profit_hold_counter != 0 and self.loss_hold_counter != 0:
-                self.reward = 5*self.PL_ratios_and_PNLs[-1][0] * self.PL_ratios_and_PNLs[-1][1] \
+                self.reward = 5 * self.PLs_and_ratios[-1][0] * self.PLs_and_ratios[-1][1] \
                           * self.in_position_counter * (self.profit_hold_counter/self.loss_hold_counter)
             else:
-                self.reward = 5 * self.PL_ratios_and_PNLs[-1][0] * self.PL_ratios_and_PNLs[-1][1]
+                self.reward = 5 * self.PLs_and_ratios[-1][0] * self.PLs_and_ratios[-1][1]
             self.in_position_counter = 0
             self.position_closed = 0
             if self.max_balance_bonus > 0:
@@ -133,7 +133,7 @@ class SpotRL(Env):
                 self.max_balance_bonus = 0
         # In Position #
         elif self.in_position:
-            self.reward = 0.0
+            self.reward = self.pnl
             # self.reward=0
         else:
             self.reward = 0
@@ -147,7 +147,6 @@ class SpotRL(Env):
         price = price * self.buy_factor
         self.in_position = 1
         self.episode_orders += 1
-        self.position_closed = 0
         self.enter_price = price
         # When there is no fee, subtract 1 just to be sure balance can buy this amount #
         step_adj_qty = floor((self.position_size * (1 - 2 * self.fee)) / (price * self.coin_step))
@@ -198,7 +197,7 @@ class SpotRL(Env):
                 self.max_drawdown = percentage_profit
             if sl:
                 self.SL_losses += self.prev_bal - self.balance
-        self.PL_ratios_and_PNLs.append((percentage_profit, self.good_trades_count / self.bad_trades_count))
+        self.PLs_and_ratios.append((percentage_profit, self.good_trades_count / self.bad_trades_count))
         self.position_size = (self.balance * self.position_ratio)
         # If balance minus position_size and fee is less or eq 0 #
         if self.position_size < (price * self.coin_step):
@@ -222,6 +221,7 @@ class SpotRL(Env):
             # print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
             self.in_position_counter += 1
             self.pnl = (close / self.enter_price) - 1
+            #print(f'pnl: {self.pnl}')
             if self.pnl > 0:
                 self.profit_hold_counter += 1
             else:
@@ -261,9 +261,8 @@ class SpotRL(Env):
             _volume = self.reward
             _dohlcv = [_date, _open, _high, _low, _close, _volume]
             if self.in_position:
-                _pnl = self.enter_price / _close - 1
                 self.visualization.render(_dohlcv,
-                                          self.balance + (self.position_size + (self.position_size * _pnl)),
+                                          self.balance + (self.position_size + (self.position_size * self.pnl)),
                                           self.trades)
             else:
                 self.visualization.render(_dohlcv, self.balance, self.trades)
@@ -276,7 +275,7 @@ class SpotRL(Env):
         self.done = True
         # if (self.current_step==self.end_step) and self.good_trades_count>1 and self.bad_trades_count>1:
         if self.good_trades_count > 1 and self.bad_trades_count > 1:
-            self.PNL_arrays = array(self.PL_ratios_and_PNLs)
+            self.PNL_arrays = array(self.PLs_and_ratios)
             # self.realized_PNLs, self.PL_count_ratios = array([e[0] for e in self.PL_ratios_and_PNLs]), array([e[1] for e in self.PL_ratios_and_PNLs])
             gain = self.balance - self.init_balance
             total_return = (self.balance / self.init_balance) - 1

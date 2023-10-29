@@ -9,7 +9,7 @@ from stable_baselines3 import DQN
 
 if __name__ == "__main__":
     df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=129_600)
-    df = simple_rl_features(df)
+    #df = simple_rl_features(df)
     '''for col in df.columns:
         print(col)
         plt.plot(df[col])
@@ -29,9 +29,8 @@ if __name__ == "__main__":
                          visualize=True)
 
     obs = trading_env.reset()
-    while True:
+    done = False
+    while not done:
         action = trading_env.action_space.sample()
         obs, reward, done, info = trading_env.step(action)
         trading_env.render()
-        if done:
-            obs = trading_env.reset()
