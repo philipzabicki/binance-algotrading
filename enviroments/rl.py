@@ -4,9 +4,11 @@ from math import copysign, sqrt, floor
 from random import randint
 from time import time
 import numpy as np
-from gym import spaces, Env
+# from gym import spaces, Env
+from gymnasium import Env, spaces
 from numpy import array, inf, mean, std, random
 from utility import TradingGraph
+
 
 class SpotRL(Env):
     def __init__(self, df, dates_df=None, max_steps=0, exclude_cols_left=0,
@@ -16,12 +18,12 @@ class SpotRL(Env):
         print(f'Environment created. Fee: {fee} Coin step: {coin_step}')
         print(f' Obs sample (last row): {df[-1,]}')
         print(f' Slippage stats: {slippage}')
-        if visualize and dates_df is not None:
+        if dates_df is not None:
             self.dates_df = dates_df
-            print(f' Visualization started, from: {self.dates_df[0]}', end=' ')
-            print(f'to: {self.dates_df[-1]}')
+        if visualize:
+            print(f' Visualization started, from: {dates_df[0]}', end=' ')
+            print(f'to: {dates_df[-1]}')
             self.visualize = True
-            self.render_range = render_range
         else:
             self.visualize = False
             print(f'    Visualize is set to false or there was no dates df provided.')
@@ -36,6 +38,7 @@ class SpotRL(Env):
         else:
             self.buy_factor, self.sell_factor, self.stop_loss_factor = 1.0, 1.0, 1.0
         self.df = df
+        self.render_range = render_range
         self.total_steps = len(self.df)
         self.exclude_cols_left = exclude_cols_left
         self.coin_step = coin_step
@@ -77,12 +80,12 @@ class SpotRL(Env):
         self.stop_loss_price = 0
         self.qty = 0
         self.pnl = 0
-        self.SL_losses, self.cumulative_fees, self.liquidations = 0, 0, 0
+        self.SL_losses, self.cumulative_fees = 0, 0
         self.in_position, self.position_closed, self.in_position_counter, self.episode_orders = 0, 0, 0, 0
         self.good_trades_count, self.bad_trades_count = 1, 1
         self.profit_mean, self.loss_mean = 0, 0
         self.max_drawdown, self.max_profit, self.max_balance_bonus = 0, 0, 0
-        self.loss_hold_counter, self.profit_hold_counter = 0, 0
+        self.loss_hold_counter, self.profit_hold_counter = 1, 1
         self.max_balance = self.min_balance = self.balance
         if self.max_steps > 0:
             self.start_step = randint(0, self.total_steps - self.max_steps)
@@ -95,36 +98,31 @@ class SpotRL(Env):
         trade_data = [self.balance, self.position_size, self.qty, self.in_position, self.in_position_counter,
                       self.pnl, self.profit_hold_counter, self.loss_hold_counter, self.max_drawdown,
                       self.max_profit]
-        return np.hstack((next(self.obs), trade_data))
+        return (np.hstack((next(self.obs), trade_data)), self.info)
 
     # Get the data points for the given current_step
     def _next_observation(self):
+        trade_data = [self.balance, self.position_size, self.qty, self.in_position, self.in_position_counter,
+                      self.pnl, self.profit_hold_counter, self.loss_hold_counter, self.max_drawdown,
+                      self.max_profit]
         try:
             self.current_step += 1
             # _obs = next(self.obs)
             # print(_obs)
-            trade_data = [self.balance, self.position_size, self.qty, self.in_position, self.in_position_counter,
-                          self.pnl, self.profit_hold_counter, self.loss_hold_counter, self.max_drawdown,
-                          self.max_profit]
             return np.hstack((next(self.obs), trade_data))
         except StopIteration:
             self.current_step -= 1
             self._finish_episode()
-            trade_data = [self.balance, self.position_size, self.qty, self.in_position, self.in_position_counter,
-                          self.pnl, self.profit_hold_counter, self.loss_hold_counter, self.max_drawdown,
-                          self.max_profit]
             return np.hstack((self.df[self.current_step, self.exclude_cols_left:], trade_data))
 
     def _calculate_reward(self):
         # Position closed/sold #
-        if self.done:
-            return self.reward
-        elif self.position_closed:
+        if self.position_closed:
             if self.profit_hold_counter != 0 and self.loss_hold_counter != 0:
-                self.reward = 5 * self.PLs_and_ratios[-1][0] * self.PLs_and_ratios[-1][1] \
+                self.reward = 10 * self.PLs_and_ratios[-1][0] * self.PLs_and_ratios[-1][1] \
                           * self.in_position_counter * (self.profit_hold_counter/self.loss_hold_counter)
             else:
-                self.reward = 5 * self.PLs_and_ratios[-1][0] * self.PLs_and_ratios[-1][1]
+                self.reward = 10 * self.PLs_and_ratios[-1][0] * self.PLs_and_ratios[-1][1]
             self.in_position_counter = 0
             self.position_closed = 0
             if self.max_balance_bonus > 0:
@@ -137,6 +135,7 @@ class SpotRL(Env):
             # self.reward=0
         else:
             self.reward = 0
+        # print(f'reward: {self.reward}')
         return self.reward
 
     def _buy(self, price):
@@ -182,7 +181,7 @@ class SpotRL(Env):
         self.cumulative_fees += fee
         percentage_profit = (self.balance / self.prev_bal) - 1
         # PROFIT #
-        if percentage_profit > 0:
+        if percentage_profit >= 0:
             if self.balance >= self.max_balance:
                 self.max_balance_bonus = self.balance-self.max_balance
                 self.max_balance = self.balance
@@ -212,6 +211,7 @@ class SpotRL(Env):
                                 'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type, 'Reward': self.reward})
 
     def step(self, action):
+        #print(f'action {action}')
         # 30-day DCA, adding 222USD to balance
         # if (self.current_step-self.start_step)%43_200 == 0:
         # self.balance+=222
@@ -234,7 +234,8 @@ class SpotRL(Env):
             close = self.df[self.current_step, 3]
             self._buy(close)
         elif (not self.episode_orders) and ((self.current_step - self.start_step) > 2_880):
-            self._finish_episode()
+            # self._finish_episode()
+            self.reward = -1
         '''if self.current_step==self.end_step:
         if self.in_position:
           close = self.df[self.current_step, 3]
@@ -248,7 +249,7 @@ class SpotRL(Env):
                 'current_step': self.current_step,
                 'end_step': self.end_step}'''
         # print(info)
-        return self._next_observation(), self._calculate_reward(), self.done, self.info
+        return self._next_observation(), self._calculate_reward(), self.done, False, self.info
 
     def render(self, visualize=False, *args, **kwargs):
         if visualize or self.visualize:
@@ -273,67 +274,43 @@ class SpotRL(Env):
             close = self.df[self.current_step, 3]
             self._sell(close)
         self.done = True
-        # if (self.current_step==self.end_step) and self.good_trades_count>1 and self.bad_trades_count>1:
-        if self.good_trades_count > 1 and self.bad_trades_count > 1:
-            self.PNL_arrays = array(self.PLs_and_ratios)
-            # self.realized_PNLs, self.PL_count_ratios = array([e[0] for e in self.PL_ratios_and_PNLs]), array([e[1] for e in self.PL_ratios_and_PNLs])
-            gain = self.balance - self.init_balance
-            total_return = (self.balance / self.init_balance) - 1
-            risk_free_return = (self.df[-1, 3] / self.df[0, 3]) - 1
+        # Summary
+        self.PNL_arrays = array(self.PLs_and_ratios)
+        gain = self.balance - self.init_balance
+        total_return = (self.balance / self.init_balance) - 1
+        risk_free_return = (self.df[-1, 3] / self.df[0, 3]) - 1
+        hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 0 and self.profit_hold_counter > 0 else 1
+        if len(self.PNL_arrays) > 1:
             mean_pnl, stddev_pnl = mean(self.PNL_arrays[:, 0]), std(self.PNL_arrays[:, 0])
-            profit_mean = mean(self.PNL_arrays[:, 0][self.PNL_arrays[:, 0] > 0])
-            losses_mean = mean(self.PNL_arrays[:, 0][self.PNL_arrays[:, 0] < 0])
-            losses_stddev = std(self.PNL_arrays[:, 0][self.PNL_arrays[:, 0] < 0])
-            hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 0 and self.profit_hold_counter > 0 else 1
-            self.PL_count_mean = mean(self.PNL_arrays[:, 1])
-            self.PL_ratio = abs(profit_mean / losses_mean)
-            # PL_count_final = self.good_trades_count/self.bad_trades_count
-            # PLratio_x_PLcount = self.PL_ratio*self.PL_count_mean
-            self.sharpe_ratio = (mean_pnl - risk_free_return) / stddev_pnl if stddev_pnl != 0 else -1
-            self.sortino_ratio = (total_return - risk_free_return) / losses_stddev if losses_stddev != 0 else -1
-            # self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.total_steps
-            # self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
-            self.reward = (copysign(abs(gain) ** 1.5, gain) * self.episode_orders * (self.PL_count_mean ** 2) * sqrt(
-                hold_ratio) * sqrt(self.PL_ratio)) / self.total_steps
-            # print(self.reward)
-            slope_indicator = 1.000
-            '''slope_indicator = linear_slope_indicator(self.PL_count_ratios)
-        if self.reward<0 and slope_indicator<0:
-          self.reward = self.reward*slope_indicator*-1
+            profits = self.PNL_arrays[:, 0][self.PNL_arrays[:, 0] > 0]
+            losses = self.PNL_arrays[:, 0][self.PNL_arrays[:, 0] < 0]
+            profits_mean = mean(profits) if len(profits) > 1 else 0.0
+            losses_mean = mean(losses) if len(losses) > 1 else 0.0
+            losses_stddev = std(losses) if len(losses) > 1 else 0.0
+            PnL_trades_ratio = mean(self.PNL_arrays[:, 1])
+            PnL_means_ratio = abs(profits_mean / losses_mean) if profits_mean != 0 and losses_mean != 0 else 0.0
         else:
-          self.reward = self.reward*slope_indicator'''
-            # if gain>0:
-            # if gain > self.init_balance * .1:
-            if True:
-                self.output = True
-                print(
-                    f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}, liquidations:{self.liquidations}')
-                print(
-                    f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profit_mean * 100:.2f}%/{losses_mean * 100:.2f}%, ',
-                    end='')
-                print(f'max(profit/drawdown):{self.max_profit * 100:.2f}%/{self.max_drawdown * 100:.2f}%')
-                print(
-                    f' reward:{self.reward:.8f}, PL_ratio:{self.PL_ratio:.3f}, PL_count_mean:{self.PL_count_mean:.3f}, hold_ratio:{hold_ratio:.3f}, PNL_mean:{mean_pnl * 100:.2f}%')
-                print(
-                    f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{self.sharpe_ratio:.2f}, sortino_ratio:{self.sortino_ratio:.2f}')
-            else:
-                self.output = False
-            self.info = {'gain': gain,
-                         'PL_ratio': self.PL_ratio,
-                         'PL_count_mean': self.PL_count_mean,
-                         'hold_ratio': hold_ratio,
-                         'PNL_mean': mean_pnl,
-                         'slope_indicator': slope_indicator,
-                         'exec_time': time() - self.creation_t}
-        else:
-            self.output = False
-            self.reward = -inf
-            self.sharpe_ratio, self.sortino_ratio, self.PL_count_mean, self.PL_ratio = -1, -1, -1, -1
-            self.info = {'gain': 0, 'PL_ratio': 0, 'hold_ratio': 0,
-                         'PL_count_mean': 0, 'PNL_mean': 0, 'slope_indicator': 0,
-                         'exec_time': time() - self.creation_t}
-            # print(f'EPISODE FAILED! (end_step not reached OR profit/loss trades less than 2)')
-        # return self.df[self.current_step, self.exclude_count:], self.reward, self.done, self.info
+            mean_pnl, stddev_pnl = 0.0, 0.0
+            profits_mean, losses_mean, losses_stddev = 0.0, 0.0, 0.0
+            PnL_trades_ratio, PnL_means_ratio = 0.0, 0.0
+        sharpe_ratio = (mean_pnl - risk_free_return) / stddev_pnl if stddev_pnl != 0 else -1
+        sortino_ratio = (total_return - risk_free_return) / losses_stddev if losses_stddev != 0 else -1
+        slope_indicator = 1.000
+        self.reward = (copysign(abs(gain) ** 1.5, gain) * self.episode_orders * (PnL_trades_ratio ** 2) * sqrt(hold_ratio) * sqrt(PnL_means_ratio)) / self.total_steps
+
+        print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}')
+        print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count:_}/{self.bad_trades_count:_}, trades_avg(profit/loss):{profits_mean * 100:.2f}%/{losses_mean * 100:.2f}%,', end='')
+        print(f' max(profit/drawdown):{self.max_profit * 100:.2f}%/{self.max_drawdown * 100:.2f}%')
+        print(f' reward:{self.reward:.8f}, PnL_trades_ratio:{PnL_trades_ratio:.3f}, PnL_means_ratio:{PnL_means_ratio:.3f}, hold_ratio:{hold_ratio:.3f}, PNL_mean:{mean_pnl * 100:.2f}%')
+        print(f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{sharpe_ratio:.2f}, sortino_ratio:{sortino_ratio:.2f}')
+
+        self.info = {'gain': gain,
+                     'PnL_means_ratio': PnL_means_ratio,
+                     'PnL_trades_ratio': PnL_trades_ratio,
+                     'hold_ratio': hold_ratio,
+                     'PNL_mean': mean_pnl,
+                     'slope_indicator': slope_indicator,
+                     'exec_time': time() - self.creation_t}
 
 
 class FuturesRL(SpotRL):

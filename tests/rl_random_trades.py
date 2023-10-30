@@ -28,9 +28,9 @@ if __name__ == "__main__":
                          render_range=120,
                          visualize=True)
 
-    obs = trading_env.reset()
-    done = False
-    while not done:
+    obs = trading_env.reset()[0]
+    terminated = False
+    while not terminated:
         action = trading_env.action_space.sample()
-        obs, reward, done, info = trading_env.step(action)
+        obs, reward, terminated, truncated, info = trading_env.step(action)
         trading_env.render()

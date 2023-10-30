@@ -2,6 +2,8 @@ from os import getcwd
 import numpy as np
 import pandas as pd
 import datetime as dt
+import matplotlib
+matplotlib.use('Agg')
 from dateutil.parser import parse
 from scipy.stats import skew, kurtosis
 from pympler import asizeof
@@ -205,8 +207,8 @@ class TradingGraph:
         Close = dohlcv[4]
         Volume = dohlcv[5]
         if Open == Close:
-            High *= 1.000001
-            Low *= 0.999999
+            High *= 1.00001
+            Low *= 0.99999
         # append volume and net_worth to deque list
         self.Volume.append(Volume)
         self.net_worth.append(net_worth)

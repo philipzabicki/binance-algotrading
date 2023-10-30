@@ -8,6 +8,7 @@ stable-baselines3[extra]
 ta-lib
 binance_data
 gym
+gymnasium
 mplfinance
 tindicators
 finta
