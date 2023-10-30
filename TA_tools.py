@@ -1094,8 +1094,8 @@ def simple_rl_features(df: pd.DataFrame, suffix: str=''):
 
 def simple_rl_features_fibbos(df: pd.DataFrame, suffix: str='', fibonnaci_numbers: int=5):
     fibs = []
-    a, b = 1, 2
-    while b <= fibonnaci_numbers:
+    a, b = 5, 8
+    while len(fibs) <= fibonnaci_numbers:
         fibs.append(b)
         a, b = b, a + b
     print(f'Fibonacci periods used: {fibs}')
