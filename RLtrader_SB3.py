@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # print('Checking env...')
     # check_env(trading_env)
     policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                         net_arch=[2_187, 729, 243, 9])
+                         net_arch=[27, 9])
 
     model = DQN("MlpPolicy",
                 policy_kwargs=policy_kwargs,

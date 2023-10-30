@@ -1092,6 +1092,53 @@ def simple_rl_features(df: pd.DataFrame, suffix: str=''):
     df['WCLPRICE(high, low, close)' + suffix] = talib.WCLPRICE(H, L, C)
     return df
 
+def simple_rl_features_fibbos(df: pd.DataFrame, suffix: str='', fibonnaci_numbers: int=5):
+    fibs = []
+    a, b = 1, 2
+    while b <= fibonnaci_numbers:
+        fibs.append(b)
+        a, b = b, a + b
+    print(f'Fibonacci periods used: {fibs}')
+    _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
+    for f in fibs:
+        _f = f+int((2*f)/f)
+        df['ADX' + str(f) + suffix] = talib.ADX(H, L, C, f)
+        df['ADXR' + str(f) + suffix] = talib.ADXR(H, L, C, f)
+        df['APO' + str(f) + '-' + str(f*2) + suffix] = talib.APO(C, fastperiod=f, slowperiod=f*2, matype=0)
+        df['AROON_DOWN' + str(f) + suffix], df['AROON_UP'+ str(f) + suffix] = talib.AROON(H, L, f)
+        df['AROONOSC' + str(f) + suffix] = talib.AROONOSC(H, L, f)
+        df['CCI' + str(f) + suffix] = talib.CCI(H, L, C, f)
+        df['CMO' + str(f) + suffix] = talib.CMO(C, f)
+        df['DX14' + suffix] = talib.DX(H, L, C, 14)
+        df['MACD' + str(f) + '-' + str(f*2) + suffix], df['MACDsignal' + str(_f) + suffix], df['MACDhist' + str(f) + '-' + str(f*2) + suffix] = talib.MACD(C, f, f*2, _f)
+        df['MFI' + str(f) + suffix] = talib.MFI(H, L, C, V, f)
+        df['MINUS_DI' + str(f) + suffix] = talib.MINUS_DI(H, L, C, f)
+        df['MINUS_DM' + str(f) + suffix] = talib.MINUS_DM(H, L, f)
+        df['PLUS_DI' + str(f) + suffix] = talib.PLUS_DI(H, L, C, f)
+        df['PLUS_DM' + str(f) + suffix] = talib.PLUS_DM(H, L, f)
+        df['MOM' + str(f) + suffix] = talib.MOM(C, f)
+        df['PPO' + str(f) + '-' + str(f*2) + suffix] = talib.PPO(C, fastperiod=f, slowperiod=f*2, matype=0)
+        df['ROC' + str(f) + suffix] = talib.ROC(C, f)
+        df['ROCP' + str(f) + suffix] = talib.ROCP(C, f)
+        df['ROCR100-' + str(f) + suffix] = talib.ROCR100(C, f)
+        df['RSI' + str(f) + suffix] = talib.RSI(C, f)
+        df['SLOWK' + str(f) + suffix], df['SLOWD' + str(f) + suffix] = talib.STOCH(H, L, C, fastk_period=_f, slowk_period=f, slowk_matype=0, slowd_period=f, slowd_matype=0)
+        df['FASTK' + str(_f) + suffix], df['FASTD' + str(_f) + suffix] = talib.STOCHF(H, L, C, fastk_period=f, fastd_period=_f, fastd_matype=0)
+        df['ULTOSC' + str(f) + str(f*2) + str(f*3) + suffix] = talib.ULTOSC(H, L, C, f, f*2, f*3)
+        df['WILLR' + str(f) + suffix] = talib.WILLR(H, L, C, f)
+        df['ADOSC' + str(f) + '-' + str(_f) + suffix] = talib.ADOSC(H, L, C, V, fastperiod=f, slowperiod=_f)
+        df['ATR' + str(f) + suffix] = talib.ATR(H, L, C, f)
+        df['NATR' + str(f) + suffix] = talib.NATR(H, L, C, f)
+    df['BOP' + suffix] = talib.BOP(O, H, L, C)
+    df['AD' + suffix] = talib.AD(H, L, C, V)
+    df['OBV' + suffix] = talib.OBV(C, V)
+    df['TRANGE' + suffix] = talib.TRANGE(H, L, C)
+    df['AVGPRICE' + suffix] = talib.AVGPRICE(O, H, L, C)
+    df['MEDPRICE' + suffix] = talib.MEDPRICE(H, L)
+    df['TYPPRICE' + suffix] = talib.TYPPRICE(H, L, C)
+    df['WCLPRICE(high, low, close)' + suffix] = talib.WCLPRICE(H, L, C)
+    return df
+
 def custom_features(df, suffix=''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
     # OHLC simple features

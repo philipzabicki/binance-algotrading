@@ -59,6 +59,7 @@ class SpotRL(Env):
         obs_lower_bounds = array([-inf for _ in range(obs_space_dims)])
         obs_upper_bounds = array([inf for _ in range(obs_space_dims)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
+        print(f'    observation_space {self.observation_space}')
 
     # Reset the state of the environment to an initial state
     def reset(self, **kwargs):
