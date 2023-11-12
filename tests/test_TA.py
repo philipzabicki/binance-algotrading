@@ -1,5 +1,6 @@
 import TA_tools
-import get_data
+from utility import seconds_since
+from get_data import by_BinanceVision
 import talib
 from finta import TA as finTA
 from tindicators import ti
@@ -9,7 +10,11 @@ from matplotlib import pyplot as plt
 from random import randint
 
 if __name__=='__main__':
-    df = get_data.by_BinanceVision('BTCUSDT', '1h', 'um', 'klines')
+    df = by_BinanceVision(ticker='BTCFDUSD',
+                          interval='1s',
+                          type='spot',
+                          data='klines',
+                          delay=604_800).tail(seconds_since('09-11-2023'))
     df.drop(columns=['Opened'], inplace=True)
     print(df)
     lower_idx = randint(0, len(df))

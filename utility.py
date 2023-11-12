@@ -221,7 +221,7 @@ class TradingGraph:
 
         # Clear the frame rendered last step
         self.ax1.clear()
-        candlestick_ohlc(self.ax1, self.render_data, width=1/90_000, colorup='green', colordown='red', alpha=1.0)
+        candlestick_ohlc(self.ax1, self.render_data, width=1/100_000, colorup='green', colordown='red', alpha=1.0)
 
         # Put all dates to one list and fill ax2 sublot with volume
         Date_Render_range = [i[0] for i in self.render_data]
@@ -263,11 +263,12 @@ class TradingGraph:
 
                 if self.Show_reward:
                     try:
+                        #print(trade['Reward'])
                         self.ax1.annotate('{0:.2f}'.format(trade['Reward']), (trade_date - 0.02, high_low),
                                           xytext=(trade_date - 0.02, ycoords),
                                           bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), fontsize="small")
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
 
         # we need to set layers every step, because we are clearing subplots every step
         self.ax2.set_xlabel('Date')

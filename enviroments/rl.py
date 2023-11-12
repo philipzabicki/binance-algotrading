@@ -16,7 +16,7 @@ class SpotRL(Env):
                  slippage=None, render_range=120, visualize=False):
         self.creation_t = time()
         print(f'Environment created. Fee: {fee} Coin step: {coin_step}')
-        print(f' df size: {len(df)} sample: (last row): {df[-1,]}')
+        print(f' df size: {len(df)} obs sample(last row): {df[-1, exclude_cols_left:]}')
         print(f' slippage stats: {slippage}')
         if dates_df is not None:
             self.dates_df = dates_df
@@ -54,7 +54,7 @@ class SpotRL(Env):
         self.action_space = spaces.Discrete(3)
         # Observation space #
         # none_df_obs_count are observations like current PnL, account balance, asset quantity etc. #
-        other_obs_count = 14
+        other_obs_count = 12
         obs_space_dims = len(self.df[0, exclude_cols_left:]) + other_obs_count
         obs_lower_bounds = array([-inf for _ in range(obs_space_dims)])
         obs_upper_bounds = array([inf for _ in range(obs_space_dims)])
@@ -82,7 +82,7 @@ class SpotRL(Env):
         self.qty = 0
         self.pnl = 0
         self.SL_losses, self.cumulative_fees = 0, 0
-        self.in_position, self.position_closed, self.in_position_counter, self.episode_orders = 0, 0, 0, 0
+        self.in_position, self.position_closed, self.in_position_counter, self.episode_orders = 0, 0, 0, 1
         self.good_trades_count, self.bad_trades_count = 1, 1
         self.max_drawdown, self.max_profit, self.max_balance_bonus = 0, 0, 0
         self.loss_hold_counter, self.profit_hold_counter = 1, 1
@@ -95,18 +95,22 @@ class SpotRL(Env):
             self.end_step = self.total_steps - 1
         self.current_step = self.start_step
         self.obs = iter(self.df[self.start_step:self.end_step, self.exclude_cols_left:])
-        trade_data = [self.balance, self.position_size, self.qty, self.in_position, self.in_position_counter,
+        trade_data = [self.qty, self.in_position, self.in_position_counter,
                       self.position_closed, self.episode_orders, self.pnl, self.profit_hold_counter,
                       self.loss_hold_counter, self.good_trades_count, self.bad_trades_count, self.max_drawdown,
                       self.max_profit]
-        return (np.hstack((next(self.obs), trade_data)), self.info)
+        if np.isnan(trade_data).any():
+            print(trade_data)
+        return np.hstack((next(self.obs), trade_data)), self.info
 
     # Get the data points for the given current_step
     def _next_observation(self):
-        trade_data = [self.balance, self.position_size, self.qty, self.in_position, self.in_position_counter,
+        trade_data = [self.qty, self.in_position, self.in_position_counter,
                       self.position_closed, self.episode_orders, self.pnl, self.profit_hold_counter,
                       self.loss_hold_counter, self.good_trades_count, self.bad_trades_count, self.max_drawdown,
                       self.max_profit]
+        if np.isnan(trade_data).any():
+            print(trade_data)
         try:
             self.current_step += 1
             # _obs = next(self.obs)
@@ -120,7 +124,11 @@ class SpotRL(Env):
     def _calculate_reward(self):
         # Position closed/sold #
         if self.position_closed:
-            self.reward += 10 * self.PLs_and_ratios[-1][0] * self.PLs_and_ratios[-1][1]
+            last_pnl = self.PLs_and_ratios[-1][0]
+            if last_pnl > 0:
+                self.reward = 100 * last_pnl * (self.good_trades_count / self.bad_trades_count)
+            elif last_pnl < 0:
+                self.reward = 100 * last_pnl * (self.bad_trades_count / self.good_trades_count)
             self.in_position_counter = 0
             self.position_closed = 0
             if self.max_balance_bonus > 0:
@@ -129,8 +137,8 @@ class SpotRL(Env):
                 self.max_balance_bonus = 0
         # In Position #
         elif self.in_position:
-            self.reward += self.pnl
-            # self.reward=0
+            # self.reward = self.pnl
+            self.reward = 0
         else:
             self.reward = 0
         # print(f'reward: {self.reward}')
@@ -141,14 +149,15 @@ class SpotRL(Env):
             self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
         # Considering random factor as in real world scenario #
         # price = self._random_factor(price, 'market_buy')
-        price = price * self.buy_factor
-        self.in_position = 1
-        self.episode_orders += 1
         self.enter_price = price
+        price = price * self.buy_factor
         # When there is no fee, subtract 1 just to be sure balance can buy this amount #
         step_adj_qty = floor((self.position_size * (1 - 2 * self.fee)) / (price * self.coin_step))
         if step_adj_qty == 0:
             self._finish_episode()
+        # self.enter_price = price
+        self.in_position = 1
+        self.episode_orders += 1
         self.qty = round(step_adj_qty * self.coin_step, 5)
         self.position_size = round(self.qty * price, 2)
         self.prev_bal = self.balance
@@ -159,7 +168,7 @@ class SpotRL(Env):
         # print(f'BOUGHT {self.qty} at {price}')
         if self.visualize:
             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long", 'Reward': self.reward})
+                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long", 'Reward': self.df[self.current_step, -1]})
 
     def _sell(self, price, sl=False):
         # print(f'SOLD {self.qty} at {price}')
@@ -206,7 +215,7 @@ class SpotRL(Env):
         self.position_closed = 1
         if self.visualize:
             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type, 'Reward': self.reward})
+                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type, 'Reward': self.df[self.current_step, -1]})
 
     def step(self, action):
         #print(f'action {action}')
@@ -247,6 +256,8 @@ class SpotRL(Env):
                 'current_step': self.current_step,
                 'end_step': self.end_step}'''
         # print(info)
+        #obs = self._next_observation()
+        #print(self.df[self.current_step, -1])
         return self._next_observation(), self._calculate_reward(), self.done, False, self.info
 
     def render(self, visualize=False, *args, **kwargs):

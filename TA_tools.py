@@ -3,7 +3,7 @@ np.seterr(divide='ignore', invalid='ignore')
 import pandas as pd
 from time import time
 from statistics import mean, stdev
-from math import copysign
+from math import copysign, log
 from finta import TA as finTA
 from tindicators import ti
 import talib
@@ -11,6 +11,7 @@ import ta.trend, ta.momentum
 import get_data
 from utility import linear_reg_slope
 from numba import jit
+from scipy import stats
 # config.THREADING_LAYER = 'safe'
 # import MAs
 # import datetime as dt
@@ -29,7 +30,6 @@ def feature_timeit(feature_func: callable) -> callable:
       Callable: A wrapped version of the feature function that measures and
       prints the execution time.
   """
-
     def wrapper(*args, **kwargs):
         start_t = time()
         print(f'\r adding {feature_func.__name__} feature...', end='')
@@ -59,6 +59,13 @@ def scale_columns(df: pd.DataFrame, scaler: callable) -> pd.DataFrame:
             # scaler.fit(df[[col]])
             df[col] = scaler.fit_transform(df[[col]])
     return df
+
+@feature_timeit
+def zscore_standardize(values: list | np.ndarray) -> np.ndarray:
+    """
+    (...)
+    """
+    return (values - np.mean(values)) / np.std(values)
 
 
 def linear_slope_indicator(values: list | np.ndarray) -> float:
@@ -453,7 +460,6 @@ def move_probability(open: list | np.ndarray, close: list | np.ndarray) -> list[
 
   Note: This function assumes that Open and Close arrays/lists have the same length.
   """
-
     def get_avg_changes(open, close):
         gain = [(c / o - 1) * 100 for o, c in zip(open, close) if c > o]
         loss = [(o / c - 1) * 100 for o, c in zip(open, close) if c < o]
@@ -462,24 +468,6 @@ def move_probability(open: list | np.ndarray, close: list | np.ndarray) -> list[
     return [(((c / o - 1) * 100) - avg_gain) / gain_stddev if c > o else
             (((o / c - 1) * 100) - avg_loss) / loss_stddev
             for o, c in zip(open, close)]
-
-
-@feature_timeit
-def volume_probability(volume: list | np.ndarray) -> np.ndarray:
-    """
-  Calculate the probability distribution of a given volume data.
-
-  This function takes a list or NumPy array containing volume data and calculates the probability distribution
-  by standardizing the data. It subtracts the mean and divides by the standard deviation.
-
-  Args:
-      volume (np.ndarray or list): A list or NumPy array containing volume data.
-
-  Returns:
-      np.ndarray: A NumPy array representing the probability distribution of the input volume data.
-  """
-    return (volume - np.mean(volume)) / np.std(volume)
-
 
 @feature_timeit
 def hourly_seasonality_by_ticker(ticker: str,
@@ -510,7 +498,6 @@ def hourly_seasonality_by_ticker(ticker: str,
   - The function internally uses the `get_data.by_BinanceVision` function to retrieve data for the ticker.
 
   """
-
     def get_hour_changes(ticker='BTCUSDT', type='um', data='klines'):
         df = get_data.by_BinanceVision(ticker, '1h', type=type, data=data)
         hours = df['Opened'].dt.hour.to_numpy()
@@ -1029,7 +1016,7 @@ def other_features(df: pd.DataFrame, suffix=''):
     return df
 
 
-def signal_only_features(df: pd.DataFrame, suffix: str=''):
+def signal_features(df: pd.DataFrame, suffix: str = ''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
     ### Signals
     df['RSI3_signal' + suffix] = RSI_like_signal(talib.RSI(C, 3), 3)
@@ -1047,11 +1034,38 @@ def signal_only_features(df: pd.DataFrame, suffix: str=''):
     df['MACD12-26-9zerocross_signal' + suffix] = MACD_zerocross_signal(macd, macd_sig)
     bb_upper, bb_mid, bb_lower = talib.BBANDS(C, timeperiod=11, nbdevup=1.5, nbdevdn=1.5, matype=0)
     df['BB11-1.5_signal' + suffix] = BB_signal(C, bb_upper, bb_mid, bb_lower)
-    df['volume_probablity'] = volume_probability(V)
     df['move_probablity'] = move_probability(O, C)
     df['SUM_OF_SIGNALS'] = df.iloc[:, 6:].sum(axis=1)
     return df
 
+def signal_features_periods(df: pd.DataFrame, periods: list[int], suffix: str = '') -> pd.DataFrame:
+    print(f'Periods used: {periods}')
+    _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
+    for f in periods:
+        _f = int((2/3)*f)
+        ### Signals
+        df[f'RSI{f}_signal{suffix}'] = RSI_like_signal(talib.RSI(C, f), f)
+        df[f'MFI{f}_signal{suffix}'] = RSI_like_signal(talib.MFI(H, L, C, V, f), f)
+        df[f'ULT{f}-{2*f}-{3*f}_signal{suffix}'] = RSI_like_signal(talib.ULTOSC(H, L, C, f, 2*f, 3*f), 3*f)
+        adx, mDI, pDI = talib.ADX(H, L, C, f), talib.MINUS_DI(H, L, C, f), talib.PLUS_DI(H, L, C, f)
+        df[f'ADX{f}_signal{suffix}'] = ADX_signal(adx, mDI, pDI)
+        df[f'ADX{f}trend_signal{suffix}'] = ADX_trend_signal(adx, mDI, pDI)
+        for i in range(0, 9):
+            macd, macdsignal, macdhist = talib.MACDEXT(C,
+                                                       fastperiod=f,
+                                                       slowperiod=2*f,
+                                                       signalperiod=_f,
+                                                       fastmatype=i,
+                                                       slowmatype=i,
+                                                       signalmatype=i)
+            df[f'{i}MACD{f}-{2*f}-{_f}_cross_signal{suffix}'] = MACD_cross_signal(macd, macdsignal)
+            df[f'{i}MACD{f}-{2*f}-{_f}hist_reversal_signal{suffix}'] = MACDhist_reversal_signal(macdhist)
+            df[f'{i}MACD{f}-{2*f}-{_f}zerocross_signal{suffix}'] = MACD_zerocross_signal(macd, macdsignal)
+        bb_upper, bb_mid, bb_lower = talib.BBANDS(C, timeperiod=f, nbdevup=1.5, nbdevdn=1.5, matype=0)
+        df[f'BB{f}-{1.5}_signal{suffix}'] = BB_signal(C, bb_upper, bb_mid, bb_lower)
+        # df['move_probablity'] = move_probability(O, C)
+    df['SUM_OF_SIGNALS'] = df.iloc[:, 6:].sum(axis=1)
+    return df
 
 def simple_rl_features(df: pd.DataFrame, suffix: str=''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
@@ -1092,7 +1106,7 @@ def simple_rl_features(df: pd.DataFrame, suffix: str=''):
     df['WCLPRICE(high, low, close)' + suffix] = talib.WCLPRICE(H, L, C)
     return df
 
-def simple_rl_features_periods(df: pd.DataFrame, periods: list[int], suffix: str=''):
+def simple_rl_features_periods(df: pd.DataFrame, periods: list[int], zscore_standardization: bool=False, suffix: str=''):
     print(f'Periods used: {periods}')
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
     for f in periods:
@@ -1108,9 +1122,9 @@ def simple_rl_features_periods(df: pd.DataFrame, periods: list[int], suffix: str
         df['MACD' + str(f) + '-' + str(f*2) + suffix], df['MACDsignal' + str(_f) + suffix], df['MACDhist' + str(f) + '-' + str(f*2) + suffix] = talib.MACD(C, f, f*2, _f)
         df['MFI' + str(f) + suffix] = talib.MFI(H, L, C, V, f)
         df['MINUS_DI' + str(f) + suffix] = talib.MINUS_DI(H, L, C, f)
-        df['MINUS_DM' + str(f) + suffix] = talib.MINUS_DM(H, L, f)
+        df['MINUS_DM' + str(f) + suffix] = np.emath.log(talib.MINUS_DM(H, L, f))
         df['PLUS_DI' + str(f) + suffix] = talib.PLUS_DI(H, L, C, f)
-        df['PLUS_DM' + str(f) + suffix] = talib.PLUS_DM(H, L, f)
+        df['PLUS_DM' + str(f) + suffix] = np.emath.log(talib.PLUS_DM(H, L, f))
         df['MOM' + str(f) + suffix] = talib.MOM(C, f)
         df['PPO' + str(f) + '-' + str(f*2) + suffix] = talib.PPO(C, fastperiod=f, slowperiod=f*2, matype=0)
         df['ROC' + str(f) + suffix] = talib.ROC(C, f)
@@ -1124,15 +1138,21 @@ def simple_rl_features_periods(df: pd.DataFrame, periods: list[int], suffix: str
         df['ADOSC' + str(f) + '-' + str(_f) + suffix] = talib.ADOSC(H, L, C, V, fastperiod=_f, slowperiod=f)
         df['ATR' + str(f) + suffix] = talib.ATR(H, L, C, f)
         df['NATR' + str(f) + suffix] = talib.NATR(H, L, C, f)
-    df['BOP' + suffix] = talib.BOP(O, H, L, C)
-    df['AD' + suffix] = talib.AD(H, L, C, V)
+    df['BOP' + suffix] = talib.BOP(O, H, L, C) # log
     df['OBV' + suffix] = talib.OBV(C, V)
     df['TRANGE' + suffix] = talib.TRANGE(H, L, C)
-    df['AVGPRICE' + suffix] = talib.AVGPRICE(O, H, L, C)
-    df['MEDPRICE' + suffix] = talib.MEDPRICE(H, L)
-    df['TYPPRICE' + suffix] = talib.TYPPRICE(H, L, C)
-    df['WCLPRICE' + suffix] = talib.WCLPRICE(H, L, C)
-    return df
+    # To avoid NaN indicator values at the beginning
+    longest_period = max(periods)*3
+    df = df.tail(len(df) - longest_period)
+    if not zscore_standardization:
+        print(df.columns[df.isna().any()].tolist())
+        return df
+    else:
+        cols_to_exclude = ['Opened', 'Open', 'High', 'Low', 'Close']
+        cols_to_zscore = [col for col in df.columns if col not in cols_to_exclude]
+        df[cols_to_zscore] = df[cols_to_zscore].apply(lambda x: (x - np.mean(x)) / np.std(x))
+        print(df.columns[df.isna().any()].tolist())
+        return df
 
 def custom_features(df, suffix=''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
@@ -1146,7 +1166,7 @@ def custom_features(df, suffix=''):
                                                 (C - L) / df['candle_size' + suffix])
     df['hourly_seasonality' + suffix] = hourly_seasonality(df)
     df['daily_seasonality' + suffix] = daily_seasonality(df)
-    df['volume_probablity' + suffix] = volume_probability(V)
+    ##df['volume_probablity' + suffix] = volume_probability(V)
     df['move_probablity' + suffix] = move_probability(O, C)
     df['price_levels' + suffix] = price_levels(O, C)
     return df
@@ -1158,7 +1178,7 @@ def blank_features(df, *args, **kwargs):
 
 TA_FEATURES_TEMPLATE = {'None': blank_features,
                         'custom': custom_features,
-                        'signals': signal_only_features}
+                        'signals': signal_features}
 
 
 def get_combined_intervals_df(ticker, interval_list, type='um', data='klines', template='None'):
