@@ -18,7 +18,7 @@ if __name__=='__main__':
     df.drop(columns=['Opened'], inplace=True)
     print(df)
     lower_idx = randint(0, len(df))
-    lower_idx = 500
+    # lower_idx = 500
 
     rsi = talib.RSI(df['Close'], timeperiod=14)
     rsi_sig = TA_tools.RSI_like_signal(rsi.to_numpy(), 14)
