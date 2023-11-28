@@ -40,7 +40,6 @@ def feature_timeit(feature_func: callable) -> callable:
         ret = feature_func(*args, **kwargs)
         print(f' ({(time() - start_t)*1_000:.2f}ms)')
         return ret
-
     return wrapper
 
 
