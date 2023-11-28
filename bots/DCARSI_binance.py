@@ -32,7 +32,7 @@ class TakerBot:
         prev_data = array([list(map(float, candle[1:6])) for candle in prev_candles[:-1]])
         self.OHLCVX_data = deque(prev_data,
                                  maxlen=len(prev_candles[:-1]))
-        # print(self.OHLCVX_data)
+        print(self.OHLCVX_data)
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         self.buy_amount = self.settings['buy_amount']
         self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
@@ -58,7 +58,7 @@ class TakerBot:
             self.OHLCVX_data.append(
                 list(map(float, [data_k['o'], data_k['h'], data_k['l'], data_k['c'], data_k['v']])))
             self._analyze(float(data_k['c']))
-            print(f' INFO close:{data_k["c"]} rsi:{self.rsi[-1]:.2f} signal:{self.signal} qty:{self.q} balance:{self.balance}', end=' ')
+            print(f' INFO close:{data_k["c"]:.2f} rsi:{self.rsi:.2f} signal:{self.signal} qty:{self.q} balance:{self.balance:.2f}', end=' ')
             # print(f'init_balance:{self.init_balance:.2f}')
 
     def _analyze(self, close):
@@ -72,8 +72,9 @@ class TakerBot:
 
     def _check_signal(self, close):
         self.OHLCV0_np = array(self.OHLCVX_data)
-        self.rsi = RSI(self.OHLCV0_np[:, 3], timeperiod=self.settings['period'])
-        self.signal = RSI_like_signal(self.rsi, self.settings['period'])[-1]
+        _rsi = RSI(self.OHLCV0_np[:, 3], timeperiod=self.settings['period'])
+        self.signal = RSI_like_signal(_rsi, self.settings['period'])[-1]
+        self.rsi = _rsi[-1]
         # print(f'(_analyze to _check_signal: {time()-self.start_t2}s)')
 
     def _report_slipp(self, order, req_price, order_type):
