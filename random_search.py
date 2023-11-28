@@ -10,7 +10,7 @@ from statistics import mean
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient, by_BinanceVision
 from enviroments.macd import MACDStratEnv
-from utilityx import minutes_since, seconds_since, get_market_slips_stats
+from utility import minutes_since, seconds_since, get_market_slips_stats
 from definitions import REPORT_DIR
 import cProfile
 

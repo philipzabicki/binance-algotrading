@@ -51,7 +51,7 @@ class TakerBot:
     def on_message(self, ws, message):
         # self.start_t1 = time()
         data = loads(message)
-        # print(f"Received: {data}")
+        print(f"Received: {data}")
         data_k = data['k']
         if data_k['x']:
             self.OHLCVX_data.append(

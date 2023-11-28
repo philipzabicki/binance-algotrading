@@ -1,7 +1,7 @@
 from numpy import array, hstack, mean, zeros, arange, inf
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient, by_BinanceVision
-from utilityx import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
+from utility import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
 from enviroments.bands import BandsStratEnv
 from definitions import ROOT_DIR
 from matplotlib import pyplot as plt

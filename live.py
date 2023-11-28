@@ -1,5 +1,5 @@
 from bots.bands_binance import TakerBot
-from credentials import binance_API_KEY,binance_SECRET_KEY
+from credentials import binance_API_KEY, binance_SECRET_KEY
 
 
 SYMBOL = 'BTCFDUSD'

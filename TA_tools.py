@@ -9,7 +9,6 @@ import talib
 import ta.trend
 import ta.momentum
 import get_data
-from utility import linear_reg_slope
 from numba import jit
 
 np.seterr(divide='ignore', invalid='ignore')
@@ -73,6 +72,17 @@ def zscore_standardize(values: list | np.ndarray) -> np.ndarray:
     """
     return (values - np.mean(values)) / np.std(values)
 
+# Calculates and returns linear regression slope but predictor variable(X) are natural numbers from 1 to len of dependent variable(Y)
+# Y are supposed to be balance divided by initial balance ratios per every env step
+def linear_reg_slope(Y):
+    Y = np.array(Y)
+    n = len(Y)
+    X = np.arange(1, n + 1)
+    # print(f'X: {X}')
+    x_mean = np.mean(X)
+    Sxy = np.sum(X * Y) - n * x_mean * np.mean(Y)
+    Sxx = np.sum(X * X) - n * x_mean ** 2
+    return Sxy / Sxx
 
 def linear_slope_indicator(values: list | np.ndarray) -> float:
     """

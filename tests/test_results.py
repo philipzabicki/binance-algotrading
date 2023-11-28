@@ -3,7 +3,7 @@ import pandas as pd
 from get_data import by_BinanceVision
 from numpy import hstack, zeros
 
-from utilityx import seconds_since, get_market_slips_stats
+from utility import seconds_since, get_market_slips_stats
 from enviroments.bands import BandsStratEnv
 SLIPP = get_market_slips_stats()
 

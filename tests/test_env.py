@@ -4,7 +4,7 @@ from datetime import datetime
 from dateutil.parser import parse
 
 import TA_tools
-from utilityx import minutes_since, get_slips_stats
+from utility import minutes_since, get_slips_stats
 from enviroments.backtest import BacktestEnvSpot
 
 if __name__=='__main__':

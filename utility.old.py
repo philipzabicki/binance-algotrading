@@ -205,7 +205,7 @@ class TradingGraph:
 
         # # Add Relative Strength Index
         self.ax4.plot(Date_Render_range, self.RSI, 'g-')
-     def append(self):
+    def append(self):
          pass
     # Render the environment to the screen
     # def render(self, Date, Open, High, Low, Close, Volume, net_worth, trades):
@@ -305,7 +305,7 @@ class TradingGraph:
         # redraw the canvas
         self.fig.canvas.draw()
         # convert canvas to image
-        img = np.fromstring(self.fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        img = np.fromstring(self.fig.canvas.to_string_rgb(), dtype=np.uint8, sep='')
         img = img.reshape(self.fig.canvas.get_width_height()[::-1] + (3,))
 
         # img is rgb, convert to opencv's default bgr

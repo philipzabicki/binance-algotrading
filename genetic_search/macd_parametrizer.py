@@ -19,7 +19,7 @@ from datetime import datetime as dt
 from csv import writer
 from enviroments.macd import MACDStratEnv
 from definitions import REPORT_DIR
-from utilityx import minutes_since, get_market_slips_stats
+from utility import minutes_since, get_market_slips_stats
 
 # from time import time
 # import cProfile

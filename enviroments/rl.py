@@ -7,7 +7,7 @@ import numpy as np
 # from gym import spaces, Env
 from gymnasium import Env, spaces
 from numpy import array, inf, mean, std, random
-from utilityx import TradingGraph
+from utility import TradingGraph
 
 
 class SpotRL(Env):

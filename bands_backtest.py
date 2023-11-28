@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from enviroments.bands import BandsStratEnv
 import get_data
 from TA_tools import get_MA_signal
-from utilityx import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
+from utility import minutes_since, seconds_since, get_limit_slips_stats, get_market_slips_stats
 
 if __name__ == "__main__":
     SL, enter_at, close_at, typeMA, MA_period, ATR_period, ATR_multi = 0.005, 0.5, 0.5, 29, 50, 50, 2.0

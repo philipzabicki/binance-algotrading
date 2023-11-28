@@ -8,7 +8,7 @@ import numpy as np
 from gym import spaces, Env
 from matplotlib.dates import date2num
 from numpy import array, inf, mean, std, random, hstack
-from utility import TradingGraph
+from visualize import TradingGraph
 
 
 class SpotBacktest(Env):

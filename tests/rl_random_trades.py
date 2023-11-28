@@ -1,5 +1,5 @@
 from TA_tools import simple_rl_features
-from utilityx import seconds_since, get_market_slips_stats
+from utility import seconds_since, get_market_slips_stats
 from matplotlib import pyplot as plt
 from get_data import by_BinanceVision
 from enviroments.rl import SpotRL

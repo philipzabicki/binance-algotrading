@@ -1,5 +1,5 @@
-from enviroments.bands import BandsStratEnvSpot
-from TA_tools import get_df
+from enviroments.bands import BandsStratEnv
+import get_data
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import DDPG
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
@@ -11,10 +11,10 @@ from sb3_contrib import ARS
 if __name__=="__main__":
     slippages = {'market_buy':(1.000026, 0.000032), 'market_sell':(0.999971, 0.000029), 'SL':(1.0, 0.0)}
     # Parallel environments
-    df = get_df(ticker='BTCTUSD', interval_list=['1m'], type='backtest', futures=False, indicator=None, period=None)
+    df = get_data(ticker='BTCTUSD', interval_list=['1m'], type='backtest', futures=False, indicator=None, period=None)
     dates_df = df['Opened'].to_numpy()
     df = df.drop(columns='Opened').to_numpy()
-    env = BandsStratEnvSpot(df=df[-136_304:,:], init_balance=1_000, fee=0.0, slippage=slippages, dates_df=False, visualize=False, Render_range=60, write_to_csv=False)
+    env = BandsStratEnv(df=df[-136_304:,:], init_balance=1_000, fee=0.0, slippage=slippages, dates_df=False, visualize=False, Render_range=60, write_to_csv=False)
     #check_env(env)
     #env = make_vec_env(env, n_envs=10)
 
