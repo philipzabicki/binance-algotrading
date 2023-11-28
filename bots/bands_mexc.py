@@ -73,7 +73,7 @@ class MEXCTakerBot:
     def _analyze(self):
         print('ANALYZING DATA')
         self.signal, close = self._get_signal()
-        #if (self.signal >= self.settings['enter_at']) and (self.balance>1.0):
+        #if (self.macd.py >= self.settings['enter_at']) and (self.balance>1.0):
         if (self.signal >= self.settings['enter_at']):
             self.req_p_buy = close
             adj_close = round(close+.01, 2)
@@ -82,14 +82,14 @@ class MEXCTakerBot:
             print(f'(delay(msg to buy order): {time()-self.start_t}s)')
             #self._report_slipp(self.buy_order, close, 'buy')
             self._stoploss(q, round(adj_close*(1-self.settings['SL']),2))
-        #elif (self.signal<=-self.settings['close_at']) and (self.balance<1.0):
+        #elif (self.macd.py<=-self.settings['close_at']) and (self.balance<1.0):
         elif (self.signal<=-self.settings['close_at']):
             self._cancel_all_orders()
             adj_close = round(close-.01, 2)
             self._market_sell(self.q, adj_close)
             print(f'(delay(msg to  sell order): {time()-self.start_t}s)')
             #self._report_slipp(self.sell_order, close, 'sell')
-        print(f' INFO close:{close} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
+        print(f' INFO close:{close} signal.py:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
         print(f'init_balance:{self.init_balance:.2f}')
     
     def _get_signal(self):

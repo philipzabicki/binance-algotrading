@@ -7,15 +7,16 @@ from csv import writer
 from collections import deque
 from time import time
 from datetime import datetime as dt
-from TA_tools import get_MA
 from talib import ATR
 from binance.enums import *
+from TA_tools import get_MA
+from definitions import SETTINGS_DIR
 
 class TakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
-        self.buy_slipp_file = getcwd()+'/settings/slippages_market_buy.csv'
-        self.sell_slipp_file = getcwd()+'/settings/slippages_market_sell.csv'
-        self.stoploss_slipp_file = getcwd()+'/settings/slippages_StopLoss.csv'
+        self.buy_slipp_file = SETTINGS_DIR+'slippages_market_buy.csv'
+        self.sell_slipp_file = SETTINGS_DIR+'slippages_market_sell.csv'
+        self.stoploss_slipp_file = SETTINGS_DIR+'slippages_StopLoss.csv'
         #sl_slipp_file = '/settings/slippages_StopLoss.csv'
         #with open(self.cwd+self.buy_slipp_file, 'a', newline='') as file: self.buy_slipp_wr = writer(file)
         #with open(self.cwd+self.sell_slipp_file, 'a', newline='') as file: self.sell_slipp_wr = writer(file)
@@ -64,7 +65,7 @@ class TakerBot:
             _volume = '0.00000001' if float(data_k['v'])<=0.0 else data_k['v']
             self.OHLCVX_data.append(list( map(float, [data_k['o'],data_k['h'],data_k['l'],data_k['c'],_volume,0]) ))
             self._analyze(float(data_k['c']))
-            #print(f' INFO close:{data_k["c"]} signal:{self.signal:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
+            #print(f' INFO close:{data_k["c"]} macd.py:{self.macd.py:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
             #print(f'init_balance:{self.init_balance:.2f}')
         if float(data_k['l'])<=self.stoploss_price:
             _order = self.client.get_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
@@ -142,7 +143,6 @@ class TakerBot:
             print(f'{dt.today()} DELETED ALL ORDERS')
         except Exception as e:  print(f'exception(_cancel_all_orders): {e}')
     def _stop_loss(self, q, price):
-        print(f'{dt.today()} STOPLOSS_LIMIT q:{q} price:{price}')
         try:
             self.SL_order = self.client.create_order(symbol=self.symbol,
                                                      side=SIDE_SELL,
@@ -152,21 +152,23 @@ class TakerBot:
                                                      stopPrice=price, 
                                                      price=price)
             self.SL_placed = True
+            print(f'{dt.today()} STOPLOSS_LIMIT q:{q} price:{price}')
             #print(self.SL_order)
-        except Exception as e:  print(f'exception(_stop_loss): {e}')
+        except Exception as e:
+            print(f'exception at _stop_loss(): {e}')
     def _market_buy(self, q):
-        print(f'{dt.today()} BUY_MARKET q:{q}')
         try:
             self.buy_order = self.client.order_market_buy(  symbol=self.symbol,
                                                             quantity=q  )
             print(f'(_analyze to _market_buy: {time()-self.start_t2}s)')
             self.q = q
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
+            print(f'{dt.today()} BUY_MARKET q:{q}')
             return self.buy_order
-        except Exception as e: print(f'exception(_market_buy): {e}')
+        except Exception as e:
+            print(f'exception at _market_buy(): {e}')
         #print(self.buy_order)
     def _market_sell(self, q):
-        print(f'{dt.today()} SELL_MARKET q:{q}')
         try:
             self.sell_order = self.client.order_market_sell(symbol=self.symbol,
                                                             quantity=q)
@@ -174,8 +176,10 @@ class TakerBot:
             print(f'(_analyze to _market_sell: {time()-self.start_t2}s)')
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self.q = '0.00000'
+            print(f'{dt.today()} SELL_MARKET q:{q}')
             return self.sell_order
-        except Exception as e: print(f'exception(_market_sell): {e}')
+        except Exception as e:
+            print(f'exception at _market_sell(): {e}')
 
     def run(self):
         self.ws.run_forever()

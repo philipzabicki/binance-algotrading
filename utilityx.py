@@ -121,16 +121,11 @@ class TradingGraph:
     # A crypto trading visualization using matplotlib made to render custom prices which come in following way:
     # Date, Open, High, Low, Close, Volume, net_worth, trades
     # call render every step
-    def __init__(self, render_range, time_step=1/24, Show_reward=True, Show_indicators=False):
-        self.render_queue = deque(maxlen=render_range)
-        self.render_arr = np.array(self.render_queue)
-        self.trades = deque(maxlen=render_range)
-        self.trades_arr = np.array(self.trades)
-        self.render_range = render_range
-        self.time_step = float(time_step)*.8
-        print(f'self.time_step {self.time_step}')
-        self.date_format = mpl_dates.DateFormatter('%Y-%m-%d %H:%M:%S')
-
+    def __init__(self, Render_range, Show_reward=True, Show_indicators=False):
+        self.Volume = deque(maxlen=Render_range)
+        self.net_worth = deque(maxlen=Render_range)
+        self.render_data = deque(maxlen=Render_range)
+        self.Render_range = Render_range
         self.Show_reward = Show_reward
         self.Show_indicators = Show_indicators
 
@@ -139,7 +134,7 @@ class TradingGraph:
         # close all plots if there are open
         plt.close('all')
         # figsize attribute allows us to specify the width and height of a figure in unit inches
-        self.fig = plt.figure(figsize=(21, 9))
+        self.fig = plt.figure(figsize=(16, 8))
 
         # Create top subplot for price axis
         self.ax1 = plt.subplot2grid((6, 1), (0, 0), rowspan=5, colspan=1)
@@ -151,7 +146,7 @@ class TradingGraph:
         self.ax3 = self.ax1.twinx()
 
         # Formatting Date
-        # self.date_format = mpl_dates.DateFormatter('%d-%m-%Y')
+        # self.date_format = mpl_dates.DateFormatter('%Y-%m-%d %H:%M:%S')
 
         # Add paddings to make graph easier to view
         # plt.subplots_adjust(left=0.07, bottom=-0.1, right=0.93, top=0.97, wspace=0, hspace=0)
@@ -210,71 +205,86 @@ class TradingGraph:
 
         # # Add Relative Strength Index
         self.ax4.plot(Date_Render_range, self.RSI, 'g-')
+     def append(self):
+         pass
     # Render the environment to the screen
     # def render(self, Date, Open, High, Low, Close, Volume, net_worth, trades):
+    def render(self, dohlcv, net_worth, trades):
+        Date = dohlcv[0]
+        Open = dohlcv[1]
+        High = dohlcv[2]
+        Low = dohlcv[3]
+        Close = dohlcv[4]
+        Volume = dohlcv[5]
+        if Open == Close:
+            High *= 1.00001
+            Low *= 0.99999
+        # append volume and net_worth to deque list
+        self.Volume.append(Volume)
+        self.net_worth.append(net_worth)
 
-    def append(self, data_portion, trade):
-        # print(f'type(data_portion[0]) {type(data_portion[0])}')
-        # data_portion[0] = mpl_dates.num2date(data_portion[0])
-        # print(f'_date {type(_date)}')
-        # print(f'data_portion {data_portion}')
-        self.render_queue.append(data_portion)
-        self.trades.append(trade)
-        self.render_arr = np.array(self.render_queue)
-        self.trades_arr = np.array(self.trades)
-        # print(f'self.trades_arr {self.trades_arr}')
-
-    def render(self):
-        # print(f'render_arr[:, 0:5] {self.render_arr[:, 0:5]}')
-        ohlc_equal = np.where(self.render_arr[:, 2] == self.render_arr[:, 3])
-        #print(f'ohlc_equal {ohlc_equal}')
-        # print(self.render_arr[ohlc_equal, 2])
-        self.render_arr[ohlc_equal, 2] *= 1.00001
-        self.render_arr[ohlc_equal, 3] *= 0.99999
+        # before appending to deque list, need to convert Date to special format
+        # print(f'Date: {Date}')
+        _Date = mpl_dates.date2num(Date)
+        # print(f'_Date: {_Date}')
+        self.render_data.append([_Date, Open, High, Low, Close])
+        #print(f'self.render_data {self.render_data}')
+        if len(self.render_data) > 1:
+            difference = (self.render_data[1][0] - self.render_data[0][0])*.8
+            print(f'timedelta: {difference}')
+        else:
+            difference = 1 / 100_000
 
         # Clear the frame rendered last step
         self.ax1.clear()
-        candlestick_ohlc(self.ax1, self.render_arr, width=self.time_step, colorup='green', colordown='red', alpha=1.0)
+        candlestick_ohlc(self.ax1, self.render_data, width=difference, colorup='green', colordown='red', alpha=1.0)
 
         # Put all dates to one list and fill ax2 sublot with volume
+        Date_Render_range = [i[0] for i in self.render_data]
         # print(f'Date_Render_range {Date_Render_range}')
-        # ploting indicator/reward
         self.ax2.clear()
-        self.ax2.fill_between(self.render_arr[:, 0], self.render_arr[:, 5], 0)
+        self.ax2.fill_between(Date_Render_range, self.Volume, 0)
 
         # if self.Show_indicators:
             # self.plot_indicators(df, Date_Render_range)
 
-        # draw our balance graph on ax3 (shared with ax1) subplot
+        # draw our net_worth graph on ax3 (shared with ax1) subplot
         self.ax3.clear()
-        self.ax3.plot(self.render_arr[:, 0], self.render_arr[:, 6], color="blue")
+        self.ax3.plot(Date_Render_range, self.net_worth, color="blue")
 
         # beautify the x-labels (Our Date format)
-        self.ax1.xaxis.set_major_formatter(self.date_format)
+        # self.ax1.xaxis.set_major_formatter(self.date_format)
         self.fig.autofmt_xdate()
 
-        RANGE = np.max(self.render_arr[:, 2]) - np.min(self.render_arr[:, 3])
+        minimum = np.min(np.array(self.render_data)[:, 1:])
+        # print(f'minimum {minimum}')
+        maximum = np.max(np.array(self.render_data)[:, 1:])
+        # print(f'maximum {maximum}')
+        RANGE = maximum - minimum
 
         # sort sell and buy orders, put arrows in appropiate order positions
-        idx = list(*np.where('' != self.trades_arr))
-        # print(f'idx {idx}')
-        for i in idx:
-            # print(f'i: {i} self.trades_arr[i]: {self.trades_arr[i]}')
-            if self.trades_arr[i] == 'open_long' or self.trades_arr[i] == 'close_short':
-                high_low = self.render_arr[i, 3] - RANGE * 0.02
-                ycoords = self.render_arr[i, 3] - RANGE * 0.08
-                self.ax1.scatter(self.render_arr[i, 0], high_low, c='green', label='green', s=120, edgecolors='none',
-                                 marker="^")
-            else:
-                high_low = self.render_arr[i, 2] + RANGE * 0.02
-                ycoords = self.render_arr[i, 2] + RANGE * 0.06
-                self.ax1.scatter(self.render_arr[i, 0], high_low, c='red', label='red', s=120, edgecolors='none', marker="v")
-            '''try:
-                self.ax1.annotate('{0:.2f}'.format(self.render_arr[i, 5]), (self.render_arr[i, 0] - 0.02, high_low),
-                                  xytext=(self.render_arr[i, 0] - 0.02, ycoords),
-                                  bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), fontsize="small")
-            except Exception as e:
-                print(f'Exception: {e}')'''
+        for trade in trades:
+            trade_date = mpl_dates.date2num(trade['Date'])
+            # print(f'trade_date {trade_date}')
+            if trade_date in Date_Render_range:
+                if trade['type'] == 'open_long' or trade['type'] == 'close_short':
+                    high_low = trade['Low'] - RANGE * 0.02
+                    ycoords = trade['Low'] - RANGE * 0.08
+                    self.ax1.scatter(trade_date, high_low, c='green', label='green', s=120, edgecolors='none',
+                                     marker="^")
+                else:
+                    high_low = trade['High'] + RANGE * 0.02
+                    ycoords = trade['High'] + RANGE * 0.06
+                    self.ax1.scatter(trade_date, high_low, c='red', label='red', s=120, edgecolors='none', marker="v")
+
+                if self.Show_reward:
+                    try:
+                        # print(trade['Reward'])
+                        self.ax1.annotate('{0:.2f}'.format(trade['Reward']), (trade_date - 0.02, high_low),
+                                          xytext=(trade_date - 0.02, ycoords),
+                                          bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), fontsize="small")
+                    except Exception as e:
+                        print(e)
 
         # we need to set layers every step, because we are clearing subplots every step
         self.ax2.set_xlabel('Date')
@@ -286,9 +296,9 @@ class TradingGraph:
 
         """Display image with matplotlib - interrupting other tasks"""
         # Show the graph without blocking the rest of the program
-        #plt.show(block=False)
+        # plt.show(block=False)
         # Necessary to view frames before they are unrendered
-        #plt.pause(0.001)
+        # plt.pause(0.001)
 
         """Display image with OpenCV - no interruption"""
 

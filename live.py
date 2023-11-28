@@ -16,7 +16,6 @@ SETTINGS = {'SL': stop_loss,
             'ATR_multi': ATR_multi}
 
 if __name__ == '__main__':
-    socket_url = f'wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@kline_{INTERVAL}'
     bot = TakerBot(SYMBOL,
                    INTERVAL,
                    SETTINGS,

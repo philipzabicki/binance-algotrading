@@ -1,7 +1,8 @@
-from TA_tools import simple_rl_features, simple_rl_features_periods, signal_features_periods
-from utility import seconds_since, get_market_slips_stats
+from TA_tools import  simple_rl_features_periods # , signal_features_periods, simple_rl_features
+# from utility import seconds_since, get_market_slips_stats
 from definitions import ROOT_DIR
 import matplotlib
+
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 from get_data import by_BinanceVision
@@ -9,17 +10,21 @@ from enviroments.rl import SpotRL
 # from time import sleep
 import torch as th
 # from stable_baselines3.common.env_checker import check_env
-from stable_baselines3 import DQN, PPO, A2C
-from sklearn.preprocessing import StandardScaler
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3 import DQN  # , PPO, A2C
+
+# from sklearn.preprocessing import StandardScaler
+# from stable_baselines3.common.env_util import make_vec_env
+# from stable_baselines3.common.vec_env import SubprocVecEnv
 
 if __name__ == "__main__":
+    periods = [3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
+    # periods = [3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765]
     # 1_620_000 means 150 episodes 10_800 steps each (3 hours for 1s step)
-    df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=604_800).tail(1_620_000+6_765*3)
-    # df = simple_rl_features_periods(df, [3, 5, 8, 13, 21, 34, 55, 89, 144, 233], zscore_standardization=True)
-    df = signal_features_periods(df, [3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765])
-    # df.to_csv('C:/Users/philipz/Desktop/simple_rf_features.csv')
+    df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=604_800).tail(
+        108_000 + max(periods) * 3)
+    df = simple_rl_features_periods(df, periods, zscore_standardization=True)
+    # df = signal_features_periods(df, periods)
+    df.to_csv('C:/Users/philipz/Desktop/simple_rf_features.csv')
 
     '''
     for col in df.columns:
@@ -44,7 +49,7 @@ if __name__ == "__main__":
                          init_balance=1_000,
                          fee=0.0,
                          coin_step=0.0001,
-                         slippage=get_market_slips_stats(),
+                         # slippage=get_market_slips_stats(),
                          render_range=120,
                          visualize=False)
     # print('Checking env...')
@@ -54,13 +59,13 @@ if __name__ == "__main__":
 
     arch = [140, 279, 279, 81]
     policy_kwargs = dict(activation_fn=th.nn.ReLU, net_arch=arch)
-    # gammas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    gammas = [0.7]
+    gammas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    # gammas = [0.7]
     print(f'gammas tested {gammas}')
     for g in gammas:
         model = DQN("MlpPolicy",
                     trading_env,
-                    # gamma=g,
+                    gamma=g,
                     # batch_size=10,
                     # learning_starts=10_800,
                     # learning_rate=.00001,
@@ -83,15 +88,15 @@ if __name__ == "__main__":
                     tensorboard_log=ROOT_DIR+'/tensorboard/',
                     device='cuda')
         '''
-        model.learn(total_timesteps=10_800*1_000, log_interval=1, progress_bar=True)
+        model.learn(total_timesteps=10_800 * 15, log_interval=1, progress_bar=True)
 
     model.save("RLtrader")
     del model
     model = DQN.load("RLtrader")
 
     # Test without visualization for 3 days
-    trading_env.max_steps = 10_800*50
-    obs = trading_env.reset()[0]
+    trading_env.max_steps = 10_800 * 250
+    obs, _ = trading_env.reset()
     terminated = False
     while not terminated:
         action, _states = model.predict(obs)

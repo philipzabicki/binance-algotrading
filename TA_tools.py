@@ -1,17 +1,21 @@
 import numpy as np
-np.seterr(divide='ignore', invalid='ignore')
 import pandas as pd
 from time import time
 from statistics import mean, stdev
-from math import copysign, log
+from math import copysign
 from finta import TA as finTA
 from tindicators import ti
 import talib
-import ta.trend, ta.momentum
+import ta.trend
+import ta.momentum
 import get_data
 from utility import linear_reg_slope
 from numba import jit
-from scipy import stats
+
+np.seterr(divide='ignore', invalid='ignore')
+
+
+# from scipy import stats
 # config.THREADING_LAYER = 'safe'
 # import MAs
 # import datetime as dt
@@ -30,6 +34,7 @@ def feature_timeit(feature_func: callable) -> callable:
       Callable: A wrapped version of the feature function that measures and
       prints the execution time.
   """
+
     def wrapper(*args, **kwargs):
         start_t = time()
         print(f'\r adding {feature_func.__name__} feature...', end='')
@@ -59,6 +64,7 @@ def scale_columns(df: pd.DataFrame, scaler: callable) -> pd.DataFrame:
             # scaler.fit(df[[col]])
             df[col] = scaler.fit_transform(df[[col]])
     return df
+
 
 @feature_timeit
 def zscore_standardize(values: list | np.ndarray) -> np.ndarray:
@@ -104,35 +110,38 @@ def linear_slope_indicator(values: list | np.ndarray) -> float:
 ######################################################################################
 @feature_timeit
 @jit(nopython=True)
-def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: int) -> list[float]:
+def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: int,
+                    top_bound: float = 80.0, bottom_bound: float = 20.0) -> list[float]:
     """
   Calculate RSI like (Ultimate oscillator, MFI) signals for a given column of values.
 
   Args:
+      top_bound:
+      bottom_bound:
       rsi_like_indicator (np.ndarray or List[float]): An array or list of RSI like values [0,100].
-      timeperiod (int): The time period for calculating the signal.
+      timeperiod (int): The time period for calculating the macd.py.
 
   Returns:
       List[float]: A list of signals corresponding to the input values [-1,1].
 
   Input values interpretation:
     >=90, singal: -0.75, extremely overbought
-    >=75, signal: -0.5, overbought
-    >=65, signal: -0.25, somewhat overbought
-    <=10, signal: 0.75, extremely oversold
-    <=25, signal: 0.5, oversold
-    <=35, signal: 0.25, somewhat oversold
+    >=75, macd.py: -0.5, overbought
+    >=65, macd.py: -0.25, somewhat overbought
+    <=10, macd.py: 0.75, extremely oversold
+    <=25, macd.py: 0.5, oversold
+    <=35, macd.py: 0.25, somewhat oversold
     For 80/20 line crosses:
-    80.0 line cross from above, signal: -1, bearish cross
-    20.0 line cross from below, signal: 1, bullish cross 
+    80.0 line cross from above, macd.py: -1, bearish cross
+    20.0 line cross from below, macd.py: 1, bullish cross
 
   Example:
       >>> rsi_values = [60.0, 55.0, 45.0, 35.0, 19.0, 40.0, 75.0, 85.0]
       >>> RSI_like_signal(rsi_values, 3)
       [None, None, None, 0.25, 0.5, 1, -0.25, -0.5]
   """
-    return [0.0] * timeperiod + [-1 if (prev > 80.0) and (cur <= 80.0) else
-                                 1 if (prev < 20.0) and (cur >= 20.0) else
+    return [0.0] * timeperiod + [-1 if (prev > top_bound) and (cur <= top_bound) else
+                                 1 if (prev < bottom_bound) and (cur >= bottom_bound) else
                                  -.75 if (cur > 90.0) else
                                  .75 if (cur < 10.0) else
                                  -.5 if (cur > 75.0) else
@@ -173,10 +182,10 @@ def ADX_signal(adx_col: list | np.ndarray, minus_di: list | np.ndarray, plus_di:
       First value in returned list is always 0.0
 
   Example:
-      >>> adx_col = np.array([30.0, 28.0, 26.0, 25.0])
-      >>> minus_di = np.array([10.0, 12.0, 14.0, 16.0])
-      >>> plus_di = np.array([20.0, 18.0, 16.0, 14.0])
-      >>> ADX_signal(adx_col, minus_di, plus_di)
+      >>> adx_values = np.array([30.0, 28.0, 26.0, 25.0])
+      >>> minusDI_values = np.array([10.0, 12.0, 14.0, 16.0])
+      >>> plusDI_values = np.array([20.0, 18.0, 16.0, 14.0])
+      >>> ADX_signal(adx_values, minusDI_values, plusDI_values)
       [0.0, -0.5, -0.5, -1.0]
   """
     return [0.0] + [0.0 if adx < 25.0 else
@@ -198,7 +207,7 @@ def ADX_trend_signal(adx_col: list | np.ndarray,
                      minus_di: list | np.ndarray,
                      plus_di: list | np.ndarray) -> list[float | int]:
     """
-  Calculates the ADX trend signal based on the given ADX, minus DI, and plus DI values.
+  Calculates the ADX trend macd.py based on the given ADX, minus DI, and plus DI values.
 
   Args:
       adx_col (np.ndarray or List[float]): An array or list of ADX values.
@@ -218,7 +227,7 @@ def ADX_trend_signal(adx_col: list | np.ndarray,
           0: No clear trend.
 
   Note:
-      The function calculates the trend signal for each set of corresponding ADX, minus DI, and plus DI values
+      The function calculates the trend macd.py for each set of corresponding ADX, minus DI, and plus DI values
       in the input arrays or lists.
 
   Example:
@@ -240,20 +249,20 @@ def ADX_trend_signal(adx_col: list | np.ndarray,
             for adx, mDI, pDI in zip(adx_col, minus_di, plus_di)]
 
 
-@feature_timeit
+# @feature_timeit
 def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray) -> list[float | int]:
     """
   Calculate MACD (Moving Average Convergence Divergence) crossover signals.
 
   Args:
       macd_col (np.ndarray or List[float]): An array or list containing MACD values.
-      signal_col (np.ndarray or List[float]): An array or list containing signal line values.
+      signal_col (np.ndarray or List[float]): An array or list containing macd.py line values.
 
   Returns:
       List[float]: A list of crossover signals with values 1, -1, 0.5, or -0.5.
 
-  The function calculates crossover signals based on the provided MACD and signal data. It compares
-  the current MACD and signal values with the previous values and assigns a signal.
+  The function calculates crossover signals based on the provided MACD and macd.py data. It compares
+  the current MACD and macd.py values with the previous values and assigns a macd.py.
 
   Note:
   The input arrays or lists should have the same length.
@@ -293,8 +302,8 @@ def MACDhist_reversal_signal(macdhist_col: list | np.ndarray) -> list[float | in
   or bearish reversal has occurred.
 
   Note:
-  - If cur_macd > prev_macd and prev_macd < preprev_macd < prepreprev_macd, it's considered a bullish reversal (returns 1).
-  - If cur_macd < prev_macd and prev_macd > preprev_macd > prepreprev_macd, it's considered a bearish reversal (returns -1).
+  - If cur_macd > prev_macd and prev_macd < preprev_macd < prepreprev_macd, it's a bullish reversal(returns 1).
+  - If cur_macd < prev_macd and prev_macd > preprev_macd > prepreprev_macd, it's a bearish reversal(returns -1).
   - Otherwise, no reversal is detected (returns 0).
 
   Example:
@@ -321,7 +330,7 @@ def MACD_zerocross_signal(macd_col: list | np.ndarray, signal_col: list | np.nda
 
   Args:
       macd_col (np.ndarray or List[float]): An array or list containing MACD values.
-      signal_col (np.ndarray or List[float]): An array or list containing signal line values.
+      signal_col (np.ndarray or List[float]): An array or list containing macd.py line values.
 
   Returns:
       List[Union[float, int]]: A list of zero crossing singals [-1,1]
@@ -339,8 +348,8 @@ def MACD_zerocross_signal(macd_col: list | np.ndarray, signal_col: list | np.nda
 
   Examples:
       >>> macd = [1.0, 0.5, -0.2, -0.7, 0.9]
-      >>> signal = [0.5, 0.1, -0.3, -0.6, 0.8]
-      >>> MACD_zerocross_signal(macd, signal)
+      >>> macd.py = [0.5, 0.1, -0.3, -0.6, 0.8]
+      >>> MACD_zerocross_signal(macd, macd.py)
       [0, 0.5, -0.5, 0, 1]
 
   """
@@ -359,7 +368,7 @@ def BB_signal(close: list | np.ndarray,
               mid: list | np.ndarray,
               lower_band: list | np.ndarray) -> list[float]:
     """
-  Calculate Bollinger Bands signal based on the provided data.
+  Calculate Bollinger Bands macd.py based on the provided data.
 
   Args:
       close (np.ndarray or List[float]): A one-dimensional array of closing prices.
@@ -406,7 +415,7 @@ def price_levels(open: list | np.ndarray, close: list | np.ndarray, decimals: in
   Args:
       open (list | np.ndarray[float]): An array or list of opening prices.
       close (list | np.ndarray[float]): An array or list of closing prices.
-      decimals (int, optional): Number of decimal places to round prive-level to. Defaults to 0.
+      decimals (int, optional): Number of decimal places to round price-level to. Defaults to 0.
       sort (bool, optional): Whether to sort the price-levels by frequency. Defaults to False.
 
   Returns:
@@ -419,6 +428,7 @@ def price_levels(open: list | np.ndarray, close: list | np.ndarray, decimals: in
 
   If `sort` is set to True, the price levels are sorted in descending order of frequency.
   """
+
     def get_levels(open, close, decimals=0, sort=False):
         price_levels = {}
         for open, close, close_next in zip(open[:-1], close[:-1], close[1:]):
@@ -431,6 +441,7 @@ def price_levels(open: list | np.ndarray, close: list | np.ndarray, decimals: in
         if sort:
             price_levels = {k: v for k, v in sorted(price_levels.items(), key=lambda item: item[1], reverse=True)}
         return price_levels
+
     levels = get_levels(open, close, decimals=decimals, sort=sort)
     return [levels[round(c, decimals)] if round(c, decimals) in levels.keys() else 0 for c in close]
 
@@ -460,14 +471,17 @@ def move_probability(open: list | np.ndarray, close: list | np.ndarray) -> list[
 
   Note: This function assumes that Open and Close arrays/lists have the same length.
   """
+
     def get_avg_changes(open, close):
         gain = [(c / o - 1) * 100 for o, c in zip(open, close) if c > o]
         loss = [(o / c - 1) * 100 for o, c in zip(open, close) if c < o]
         return mean(gain), stdev(gain), mean(loss), stdev(loss)
+
     avg_gain, gain_stddev, avg_loss, loss_stddev = get_avg_changes(open, close)
     return [(((c / o - 1) * 100) - avg_gain) / gain_stddev if c > o else
             (((o / c - 1) * 100) - avg_loss) / loss_stddev
             for o, c in zip(open, close)]
+
 
 @feature_timeit
 def hourly_seasonality_by_ticker(ticker: str,
@@ -498,9 +512,10 @@ def hourly_seasonality_by_ticker(ticker: str,
   - The function internally uses the `get_data.by_BinanceVision` function to retrieve data for the ticker.
 
   """
+
     def get_hour_changes(ticker='BTCUSDT', type='um', data='klines'):
         df = get_data.by_BinanceVision(ticker, '1h', type=type, data=data)
-        hours = df['Opened'].dt.hour.to_numpy()
+        hours = df[f'Opened'].dt.hour.to_numpy()
         co_change = ((df['Close'].to_numpy() / df['Open'].to_numpy()) - 1) * 100
         return {i: np.mean([chng for chng, h in zip(co_change, hours) if h == i]) for i in range(0, 24)}
 
@@ -532,8 +547,8 @@ def hourly_seasonality(df: pd.DataFrame) -> list[float]:
 @feature_timeit
 def daily_seasonality_by_ticker(ticker: str,
                                 opened_as_dt_weekday: pd.Series,
-                                type: str='um',
-                                data: str='klines') -> list[float]:
+                                type: str = 'um',
+                                data: str = 'klines') -> list[float]:
     """
   Compute the daily seasonality for a given ticker.
 
@@ -900,53 +915,60 @@ def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_
 ######################################################################################
 
 # @feature_timeit
-def get_MA(np_df: np.ndarray, type: int, MA_period: int) -> np.ndarray:
+def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     # print(f'{np_df} {type} {MA_period}')
-    ma_types = {0: lambda np_df, period: RMA(np_df[:, 3], timeperiod=period),
-                1: lambda np_df, period: talib.SMA(np_df[:, 3], timeperiod=period),
-                2: lambda np_df, period: talib.EMA(np_df[:, 3], timeperiod=period),
-                3: lambda np_df, period: talib.WMA(np_df[:, 3], timeperiod=period),
-                4: lambda np_df, period: VWMA(np_df[:, 3], np_df[:, 4], timeperiod=period),
-                5: lambda np_df, period: talib.KAMA(np_df[:, 3], timeperiod=period),
-                6: lambda np_df, period: talib.TRIMA(np_df[:, 3], timeperiod=period),
-                7: lambda np_df, period: talib.DEMA(np_df[:, 3], timeperiod=period),
-                8: lambda np_df, period: talib.TEMA(np_df[:, 3], timeperiod=period),
-                9: lambda np_df, period: talib.T3(np_df[:, 3], timeperiod=period),
-                10: lambda np_df, period: talib.MAMA(np_df[:, 3])[0],
-                11: lambda np_df, period: finTA.SMM(
-                    pd.DataFrame(np_df[:, :5], columns=['open', 'high', 'low', 'close', 'volume']), period).to_numpy(),
-                12: lambda np_df, period: finTA.SSMA(
-                    pd.DataFrame(np_df[:, :5], columns=['open', 'high', 'low', 'close', 'volume']), period).to_numpy(),
-                13: lambda np_df, period: finTA.VAMA(
-                    pd.DataFrame(np_df[:, :5], columns=['open', 'high', 'low', 'close', 'volume']), period).to_numpy(),
-                14: lambda np_df, period: finTA.ZLEMA(
-                    pd.DataFrame(np_df[:, :5], columns=['open', 'high', 'low', 'close', 'volume']), max(4, period)).to_numpy(),
-                15: lambda np_df, period: finTA.EVWMA(
-                    pd.DataFrame(np_df[:, :5], columns=['open', 'high', 'low', 'close', 'volume']), period).to_numpy(),
-                16: lambda np_df, period: finTA.SMMA(
-                    pd.DataFrame(np_df[:, :5], columns=['open', 'high', 'low', 'close', 'volume']), period).to_numpy(),
-                17: lambda np_df, period: finTA.HMA(
-                    pd.DataFrame(np_df[:, :5], columns=['open', 'high', 'low', 'close', 'volume']), period).to_numpy(),
-                18: lambda np_df, period: ti.ehma(np_df[:, 3], period),
-                19: lambda np_df, period: ti.lma(np_df[:, 3], period),
-                20: lambda np_df, period: ti.shmma(np_df[:, 3], period),
-                21: lambda np_df, period: ti.ahma(np_df[:, 3], period),
-                22: lambda np_df, period: ALMA(np_df[:, 3], timeperiod=period),
-                23: lambda np_df, period: HammingMA(np_df[:, 3], period),
-                24: lambda np_df, period: LSMA(np_df[:, 3], max(3, period)),
-                25: lambda np_df, period: LWMA(np_df[:, 3], period),
-                26: lambda np_df, period: MGD(np_df[:, 3], period),
-                27: lambda np_df, period: GMA(np_df[:, 3], period),
-                28: lambda np_df, period: FBA(np_df[:, 3], period),
-                29: lambda np_df, period: NadarayWatsonMA(np_df[:, 3], period, kernel=0),
-                30: lambda np_df, period: NadarayWatsonMA(np_df[:, 3], period, kernel=1),
-                31: lambda np_df, period: NadarayWatsonMA(np_df[:, 3], period, kernel=2),
-                32: lambda np_df, period: NadarayWatsonMA(np_df[:, 3], period, kernel=3),
-                33: lambda np_df, period: NadarayWatsonMA(np_df[:, 3], period, kernel=4),
-                34: lambda np_df, period: NadarayWatsonMA(np_df[:, 3], period, kernel=5)}
-                # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
-                # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
-    return np.around(ma_types[type](np_df, MA_period), 2)
+    ma_types = {0: lambda ohlcv_array, period: RMA(ohlcv_array[:, 3], timeperiod=period),
+                1: lambda ohlcv_array, period: talib.SMA(ohlcv_array[:, 3], timeperiod=period),
+                2: lambda ohlcv_array, period: talib.EMA(ohlcv_array[:, 3], timeperiod=period),
+                3: lambda ohlcv_array, period: talib.WMA(ohlcv_array[:, 3], timeperiod=period),
+                4: lambda ohlcv_array, period: VWMA(ohlcv_array[:, 3], ohlcv_array[:, 4], timeperiod=period),
+                5: lambda ohlcv_array, period: talib.KAMA(ohlcv_array[:, 3], timeperiod=period),
+                6: lambda ohlcv_array, period: talib.TRIMA(ohlcv_array[:, 3], timeperiod=period),
+                7: lambda ohlcv_array, period: talib.DEMA(ohlcv_array[:, 3], timeperiod=period),
+                8: lambda ohlcv_array, period: talib.TEMA(ohlcv_array[:, 3], timeperiod=period),
+                9: lambda ohlcv_array, period: talib.T3(ohlcv_array[:, 3], timeperiod=period),
+                10: lambda ohlcv_array, period: talib.MAMA(ohlcv_array[:, 3])[0],
+                11: lambda ohlcv_array, period: finTA.SMM(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                12: lambda ohlcv_array, period: finTA.SSMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                13: lambda ohlcv_array, period: finTA.VAMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                14: lambda ohlcv_array, period: finTA.ZLEMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    max(4, period)).to_numpy(),
+                15: lambda ohlcv_array, period: finTA.EVWMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                16: lambda ohlcv_array, period: finTA.SMMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                17: lambda ohlcv_array, period: finTA.HMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                18: lambda ohlcv_array, period: ti.ehma(ohlcv_array[:, 3], period),
+                19: lambda ohlcv_array, period: ti.lma(ohlcv_array[:, 3], period),
+                20: lambda ohlcv_array, period: ti.shmma(ohlcv_array[:, 3], period),
+                21: lambda ohlcv_array, period: ti.ahma(ohlcv_array[:, 3], period),
+                22: lambda ohlcv_array, period: ALMA(ohlcv_array[:, 3], timeperiod=period),
+                23: lambda ohlcv_array, period: HammingMA(ohlcv_array[:, 3], period),
+                24: lambda ohlcv_array, period: LSMA(ohlcv_array[:, 3], max(3, period)),
+                25: lambda ohlcv_array, period: LWMA(ohlcv_array[:, 3], period),
+                26: lambda ohlcv_array, period: MGD(ohlcv_array[:, 3], period),
+                27: lambda ohlcv_array, period: GMA(ohlcv_array[:, 3], period),
+                28: lambda ohlcv_array, period: FBA(ohlcv_array[:, 3], period),
+                29: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=0),
+                30: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=1),
+                31: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=2),
+                32: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=3),
+                33: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=4),
+                34: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
+    # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
+    # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
+    return np.around(ma_types[ma_type](np_df, ma_period), 2)
 
 
 def get_MA_signal(np_df: np.ndarray, type: int, MA_period: int, ATR_period: int, ATR_multi: float):
@@ -969,180 +991,209 @@ def get_MA_signal(np_df: np.ndarray, type: int, MA_period: int, ATR_period: int,
 # @feature_timeit
 def other_features(df: pd.DataFrame, suffix=''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
-    df['RSI14' + suffix] = talib.RSI(C, timeperiod=14)
-    df['RSI7' + suffix] = talib.RSI(C, timeperiod=7)
-    df['RSI3' + suffix] = talib.RSI(C, timeperiod=3)
-    df['ULT' + suffix] = talib.ULTOSC(H, L, C, timeperiod1=7, timeperiod2=14, timeperiod3=28)
-    df['ADX' + suffix] = talib.ADX(H, L, C, timeperiod=14)
-    df['-DI' + suffix] = talib.MINUS_DI(H, L, C, timeperiod=14)
-    df['+DI' + suffix] = talib.PLUS_DI(H, L, C, timeperiod=14)
-    df['MFI' + suffix] = talib.MFI(H, L, C, V, timeperiod=14)
-    df['macd' + suffix], df['macdsignal' + suffix], df['macdhist' + suffix] = talib.MACD(C, fastperiod=12,
+    df[f'RSI14{suffix}'] = talib.RSI(C, timeperiod=14)
+    df[f'RSI7{suffix}'] = talib.RSI(C, timeperiod=7)
+    df[f'RSI3{suffix}'] = talib.RSI(C, timeperiod=3)
+    df[f'ULT{suffix}'] = talib.ULTOSC(H, L, C, timeperiod1=7, timeperiod2=14, timeperiod3=28)
+    df[f'ADX{suffix}'] = talib.ADX(H, L, C, timeperiod=14)
+    df[f'-DI{suffix}'] = talib.MINUS_DI(H, L, C, timeperiod=14)
+    df[f'+DI{suffix}'] = talib.PLUS_DI(H, L, C, timeperiod=14)
+    df[f'MFI{suffix}'] = talib.MFI(H, L, C, V, timeperiod=14)
+    df[f'macd{suffix}'], df[f'macdsignal{suffix}'], df[f'macdhist{suffix}'] = talib.MACD(C, fastperiod=12,
                                                                                          slowperiod=26, signalperiod=9)
-    df['ATR' + suffix] = talib.ATR(H, L, C, timeperiod=14)
-    df['ADOSC' + suffix] = talib.ADOSC(H, L, C, V, fastperiod=3, slowperiod=10)
-    df['APO' + suffix] = talib.APO(C, fastperiod=12, slowperiod=26, matype=0)
-    df['AROONOSC' + suffix] = talib.AROONOSC(H, L, timeperiod=14)
-    df['STOCHRSIfastk' + suffix], df['STOCHRSIfastd' + suffix] = talib.STOCHRSI(C, timeperiod=14, fastk_period=5,
+    df[f'ATR{suffix}'] = talib.ATR(H, L, C, timeperiod=14)
+    df[f'ADOSC{suffix}'] = talib.ADOSC(H, L, C, V, fastperiod=3, slowperiod=10)
+    df[f'APO{suffix}'] = talib.APO(C, fastperiod=12, slowperiod=26, matype=0)
+    df[f'AROONOSC{suffix}'] = talib.AROONOSC(H, L, timeperiod=14)
+    df[f'STOCHRSIfastk{suffix}'], df[f'STOCHRSIfastd{suffix}'] = talib.STOCHRSI(C, timeperiod=14, fastk_period=5,
                                                                                 fastd_period=3, fastd_matype=0)
-    df['CMO' + suffix] = talib.CMO(C, timeperiod=14)
-    df['BOP' + suffix] = talib.BOP(O, H, L, C)
-    df['TRANGE' + suffix] = talib.TRANGE(H, L, C)
-    df['PPO' + suffix] = talib.PPO(C, fastperiod=12, slowperiod=26, matype=0)
-    df['WILLR' + suffix] = talib.WILLR(H, L, C, timeperiod=14)
-    df['KST' + suffix] = ta.trend.kst_sig(df['Close'])
-    df['Vortex' + suffix] = ta.trend.VortexIndicator(df['High'], df['Low'], df['Close']).vortex_indicator_diff()
-    df['STC' + suffix] = ta.trend.STCIndicator(df['Close']).stc()
-    df['PVO' + suffix] = ta.momentum.PercentageVolumeOscillator(df['Volume']).pvo()
-    df['AO' + suffix] = ta.momentum.AwesomeOscillatorIndicator(df['High'], df['Low']).awesome_oscillator()
-    df['up_x1'], df['mid' + suffix], df['low_x1'] = talib.BBANDS(C, timeperiod=11, nbdevup=1.5, nbdevdn=1.5, matype=0)
-    df['up_x2'], _, df['low_x2'] = talib.BBANDS(C, timeperiod=11, nbdevup=2.0, nbdevdn=2.0, matype=0)
-    df['up_x3'], _, df['low_x3'] = talib.BBANDS(C, timeperiod=11, nbdevup=2.5, nbdevdn=2.5, matype=0)
-    df['BB_mid_dist'] = df['mid' + suffix] - C
+    df[f'CMO{suffix}'] = talib.CMO(C, timeperiod=14)
+    df[f'BOP{suffix}'] = talib.BOP(O, H, L, C)
+    df[f'TRANGE{suffix}'] = talib.TRANGE(H, L, C)
+    df[f'PPO{suffix}'] = talib.PPO(C, fastperiod=12, slowperiod=26, matype=0)
+    df[f'WILLR{suffix}'] = talib.WILLR(H, L, C, timeperiod=14)
+    df[f'KST{suffix}'] = ta.trend.kst_sig(df['Close'])
+    df[f'Vortex{suffix}'] = ta.trend.VortexIndicator(df['High'], df['Low'], df['Close']).vortex_indicator_diff()
+    df[f'STC{suffix}'] = ta.trend.STCIndicator(df['Close']).stc()
+    df[f'PVO{suffix}'] = ta.momentum.PercentageVolumeOscillator(df['Volume']).pvo()
+    df[f'AO{suffix}'] = ta.momentum.AwesomeOscillatorIndicator(df['High'], df['Low']).awesome_oscillator()
+    bb_upper, bb_mid, bb_lower = talib.BBANDS(C, timeperiod=11, nbdevup=1.5, nbdevdn=1.5, matype=0)
+    df[f'BB11-1.5_signal{suffix}'] = BB_signal(C, bb_upper, bb_mid, bb_lower)
     ### Signals
-    df['RSI3_sig' + suffix] = RSI_like_signal(df['RSI3' + suffix], timeperiod=3)
-    df['RSI7_sig' + suffix] = RSI_like_signal(df['RSI7' + suffix], timeperiod=7)
-    df['RSI14_sig' + suffix] = RSI_like_signal(df['RSI14' + suffix], timeperiod=14)
-    df['ULT_sig' + suffix] = RSI_like_signal(df['ULT' + suffix], timeperiod=28)
-    df['ADX_sig' + suffix] = ADX_signal(df['ADX' + suffix], df['-DI' + suffix], df['+DI' + suffix])
-    df['ADX_trend_signal' + suffix] = ADX_trend_signal(df['ADX' + suffix])
-    df['MFI_sig' + suffix] = RSI_like_signal(df['MFI' + suffix])
-    df['MACD_cross_signal' + suffix] = MACD_cross_signal(df['macd' + suffix], df['macdsignal' + suffix])
-    df['MACDhist_reversal_signal' + suffix] = MACDhist_reversal_signal(df['macdhist' + suffix])
-    df['MACD_zerocross_signal' + suffix] = MACD_zerocross_signal(df['macd' + suffix], df['macdsignal' + suffix])
-    df['BB_signal' + suffix] = BB_signal(df['mid' + suffix].to_numpy(), df['up_x1'].to_numpy(), df['low_x1'].to_numpy(),
-                                       df['up_x2'].to_numpy(), df['low_x2'].to_numpy(), df['up_x3'].to_numpy(),
-                                       df['low_x3'].to_numpy(), C)
+    df[f'RSI3_sig{suffix}'] = RSI_like_signal(df[f'RSI3{suffix}'], timeperiod=3)
+    df[f'RSI7_sig{suffix}'] = RSI_like_signal(df[f'RSI7{suffix}'], timeperiod=7)
+    df[f'RSI14_sig{suffix}'] = RSI_like_signal(df[f'RSI14{suffix}'], timeperiod=14)
+    df[f'ULT_sig{suffix}'] = RSI_like_signal(df[f'ULT{suffix}'], timeperiod=28)
+    df[f'ADX_sig{suffix}'] = ADX_signal(df[f'ADX{suffix}'], df[f'-DI{suffix}'], df[f'+DI{suffix}'])
+    df[f'ADX_trend_signal{suffix}'] = ADX_trend_signal(df[f'ADX{suffix}'])
+    df[f'MFI_sig{suffix}'] = RSI_like_signal(df[f'MFI{suffix}'])
+    df[f'MACD_cross_signal{suffix}'] = MACD_cross_signal(df[f'macd{suffix}'], df[f'macdsignal{suffix}'])
+    df[f'MACDhist_reversal_signal{suffix}'] = MACDhist_reversal_signal(df[f'macdhist{suffix}'])
+    df[f'MACD_zerocross_signal{suffix}'] = MACD_zerocross_signal(df[f'macd{suffix}'], df[f'macdsignal{suffix}'])
+    df[f'BB_signal{suffix}'] = BB_signal(df[f'mid{suffix}'].to_numpy(), df[f'up_x1'].to_numpy(),
+                                         df['low_x1'].to_numpy(),
+                                         df['up_x2'].to_numpy(), df['low_x2'].to_numpy(), df['up_x3'].to_numpy(),
+                                         df['low_x3'].to_numpy(), C)
     return df
 
 
 def signal_features(df: pd.DataFrame, suffix: str = ''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
     ### Signals
-    df['RSI3_signal' + suffix] = RSI_like_signal(talib.RSI(C, 3), 3)
-    df['RSI7_signal' + suffix] = RSI_like_signal(talib.RSI(C, 7), 7)
-    df['RSI14_signal' + suffix] = RSI_like_signal(talib.RSI(C, 14), 14)
-    df['ULT7-14-28_signal' + suffix] = RSI_like_signal(talib.ULTOSC(H, L, C, 7, 14, 28), 28)
-    df['ADX14_signal' + suffix] = ADX_signal(talib.ADX(H, L, C, 14),
+    df[f'RSI3_signal{suffix}'] = RSI_like_signal(talib.RSI(C, 3), 3)
+    df[f'RSI7_signal{suffix}'] = RSI_like_signal(talib.RSI(C, 7), 7)
+    df[f'RSI14_signal{suffix}'] = RSI_like_signal(talib.RSI(C, 14), 14)
+    df[f'ULT7-14-28_signal{suffix}'] = RSI_like_signal(talib.ULTOSC(H, L, C, 7, 14, 28), 28)
+    df[f'ADX14_signal{suffix}'] = ADX_signal(talib.ADX(H, L, C, 14),
                                              talib.MINUS_DI(H, L, C, 14),
                                              talib.PLUS_DI(H, L, C, 14))
-    df['ADX14_trend_signal' + suffix] = ADX_trend_signal(talib.ADX(H, L, C, 14))
-    df['MFI14_signal' + suffix] = RSI_like_signal(talib.MFI(H, L, C, V, 14), 14)
+    df[f'ADX14_trend_signal{suffix}'] = ADX_trend_signal(talib.ADX(H, L, C, 14))
+    df[f'MFI14_signal{suffix}'] = RSI_like_signal(talib.MFI(H, L, C, V, 14), 14)
     macd, macd_sig, macd_hist = talib.MACD(C, 12, 26, 9)
-    df['MACD12-26-9_cross_signal' + suffix] = MACD_cross_signal(macd, macd_sig)
-    df['MACD12-26-9hist_reversal_signal' + suffix] = MACDhist_reversal_signal(macd_hist)
-    df['MACD12-26-9zerocross_signal' + suffix] = MACD_zerocross_signal(macd, macd_sig)
+    df[f'MACD12-26-9_cross_signal{suffix}'] = MACD_cross_signal(macd, macd_sig)
+    df[f'MACD12-26-9hist_reversal_signal{suffix}'] = MACDhist_reversal_signal(macd_hist)
+    df[f'MACD12-26-9zerocross_signal{suffix}'] = MACD_zerocross_signal(macd, macd_sig)
     bb_upper, bb_mid, bb_lower = talib.BBANDS(C, timeperiod=11, nbdevup=1.5, nbdevdn=1.5, matype=0)
-    df['BB11-1.5_signal' + suffix] = BB_signal(C, bb_upper, bb_mid, bb_lower)
+    df[f'BB11-1.5_signal{suffix}'] = BB_signal(C, bb_upper, bb_mid, bb_lower)
     df['move_probablity'] = move_probability(O, C)
     df['SUM_OF_SIGNALS'] = df.iloc[:, 6:].sum(axis=1)
     return df
+
 
 def signal_features_periods(df: pd.DataFrame, periods: list[int], suffix: str = '') -> pd.DataFrame:
     print(f'Periods used: {periods}')
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
     for f in periods:
-        _f = int((2/3)*f)
+        _f = int((2 / 3) * f)
+        ff, fff = 2 * f, 3 * f
         ### Signals
         df[f'RSI{f}_signal{suffix}'] = RSI_like_signal(talib.RSI(C, f), f)
         df[f'MFI{f}_signal{suffix}'] = RSI_like_signal(talib.MFI(H, L, C, V, f), f)
-        df[f'ULT{f}-{2*f}-{3*f}_signal{suffix}'] = RSI_like_signal(talib.ULTOSC(H, L, C, f, 2*f, 3*f), 3*f)
+        df[f'ULT{f}-{ff}-{3 * f}_signal{suffix}'] = RSI_like_signal(talib.ULTOSC(H, L, C, f, ff, fff), fff)
         adx, mDI, pDI = talib.ADX(H, L, C, f), talib.MINUS_DI(H, L, C, f), talib.PLUS_DI(H, L, C, f)
         df[f'ADX{f}_signal{suffix}'] = ADX_signal(adx, mDI, pDI)
         df[f'ADX{f}trend_signal{suffix}'] = ADX_trend_signal(adx, mDI, pDI)
         for i in range(0, 9):
-            macd, macdsignal, macdhist = talib.MACDEXT(C,
-                                                       fastperiod=f,
-                                                       slowperiod=2*f,
-                                                       signalperiod=_f,
-                                                       fastmatype=i,
-                                                       slowmatype=i,
-                                                       signalmatype=i)
-            df[f'{i}MACD{f}-{2*f}-{_f}_cross_signal{suffix}'] = MACD_cross_signal(macd, macdsignal)
-            df[f'{i}MACD{f}-{2*f}-{_f}hist_reversal_signal{suffix}'] = MACDhist_reversal_signal(macdhist)
-            df[f'{i}MACD{f}-{2*f}-{_f}zerocross_signal{suffix}'] = MACD_zerocross_signal(macd, macdsignal)
+            macd, macd_signal, macd_hist = talib.MACDEXT(C,
+                                                         fastperiod=f,
+                                                         slowperiod=ff,
+                                                         signalperiod=_f,
+                                                         fastmatype=i,
+                                                         slowmatype=i,
+                                                         signalmatype=i)
+            df[f'{i}MACD{f}-{ff}-{_f}_cross_signal{suffix}'] = MACD_cross_signal(macd, macd_signal)
+            df[f'{i}MACD{f}-{ff}-{_f}hist_reversal_signal{suffix}'] = MACDhist_reversal_signal(macd_hist)
+            df[f'{i}MACD{f}-{ff}-{_f}zerocross_signal{suffix}'] = MACD_zerocross_signal(macd, macd_signal)
         bb_upper, bb_mid, bb_lower = talib.BBANDS(C, timeperiod=f, nbdevup=1.5, nbdevdn=1.5, matype=0)
         df[f'BB{f}-{1.5}_signal{suffix}'] = BB_signal(C, bb_upper, bb_mid, bb_lower)
         # df['move_probablity'] = move_probability(O, C)
     df['SUM_OF_SIGNALS'] = df.iloc[:, 6:].sum(axis=1)
     return df
 
-def simple_rl_features(df: pd.DataFrame, suffix: str=''):
+
+def simple_rl_features(df: pd.DataFrame, suffix: str = ''):
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
-    df['ADX14' + suffix] = talib.ADX(H, L, C, 14)
-    df['ADXR14' + suffix] = talib.ADXR(H, L, C, 14)
-    df['APO12-26' + suffix] = talib.APO(C, fastperiod=12, slowperiod=26, matype=0)
-    df['AROON14_DOWN'+suffix], df['AROON14_UP'+suffix] = talib.AROON(H, L, 14)
-    df['AROONOSC14' + suffix] = talib.AROONOSC(H, L, 14)
-    df['BOP' + suffix] = talib.BOP(O, H, L, C)
-    df['CCI14' + suffix] = talib.CCI(H, L, C, 14)
-    df['CMO14' + suffix] = talib.CMO(C, 14)
-    df['DX14' + suffix] = talib.DX(H, L, C, 14)
-    df['MACD12-26' + suffix], df['MACDsignal9' + suffix], df['MACD12-26hist' + suffix] = talib.MACD(C, 12, 26, 9)
-    df['MFI14' + suffix] = talib.MFI(H, L, C, V, 14)
-    df['MINUS_DI14' + suffix] = talib.MINUS_DI(H, L, C, 14)
-    df['MINUS_DM14' + suffix] = talib.MINUS_DM(H, L, 14)
-    df['PLUS_DI14' + suffix] = talib.PLUS_DI(H, L, C, 14)
-    df['PLUS_DM14' + suffix] = talib.PLUS_DM(H, L, 14)
-    df['MOM10' + suffix] = talib.MOM(C, 10)
-    df['PPO12-26' + suffix] = talib.PPO(C, fastperiod=12, slowperiod=26, matype=0)
-    df['ROC10' + suffix] = talib.ROC(C, 10)
-    df['ROCP10' + suffix] = talib.ROCP(C, 10)
-    df['ROCR100-10' + suffix] = talib.ROCR100(C, 10)
-    df['RSI14' + suffix] = talib.RSI(C, 14)
-    df['SLOWK3' + suffix], df['SLOWD3' + suffix] = talib.STOCH(H, L, C, fastk_period=5, slowk_period=3, slowk_matype=0, slowd_period=3, slowd_matype=0)
-    df['FASTK5' + suffix], df['FASTD5' + suffix] = talib.STOCHF(H, L, C, fastk_period=5, fastd_period=3, fastd_matype=0)
-    df['ULTOSC7-14-28' + suffix] = talib.ULTOSC(H, L, C, 7, 14, 28)
-    df['WILLR14' + suffix] = talib.WILLR(H, L, C, 14)
-    df['AD' + suffix] = talib.AD(H, L, C, V)
-    df['ADOSC' + suffix] = talib.ADOSC(H, L, C, V, fastperiod=3, slowperiod=10)
-    df['OBV' + suffix] = talib.OBV(C, V)
-    df['ATR14' + suffix] = talib.ATR(H, L, C, 14)
-    df['NATR14' + suffix] = talib.NATR(H, L, C, 14)
-    df['TRANGE' + suffix] = talib.TRANGE(H, L, C)
-    df['AVGPRICE' + suffix] = talib.AVGPRICE(O, H, L, C)
-    df['MEDPRICE' + suffix] = talib.MEDPRICE(H, L)
-    df['TYPPRICE' + suffix] = talib.TYPPRICE(H, L, C)
-    df['WCLPRICE(high, low, close)' + suffix] = talib.WCLPRICE(H, L, C)
+    df[f'ADX14{suffix}'] = talib.ADX(H, L, C, 14)
+    df[f'ADXR14{suffix}'] = talib.ADXR(H, L, C, 14)
+    df[f'APO12-26{suffix}'] = talib.APO(C, fastperiod=12, slowperiod=26, matype=0)
+    df[f'AROON14_DOWN{suffix}'], df[f'AROON14_UP{suffix}'] = talib.AROON(H, L, 14)
+    df[f'AROONOSC14{suffix}'] = talib.AROONOSC(H, L, 14)
+    df[f'BOP{suffix}'] = talib.BOP(O, H, L, C)
+    df[f'CCI14{suffix}'] = talib.CCI(H, L, C, 14)
+    df[f'CMO14{suffix}'] = talib.CMO(C, 14)
+    df[f'DX14{suffix}'] = talib.DX(H, L, C, 14)
+    df[f'MACD12-26{suffix}'], df[f'MACDsignal9{suffix}'], df[f'MACD12-26hist{suffix}'] = talib.MACD(C, 12, 26, 9)
+    df[f'MFI14{suffix}'] = talib.MFI(H, L, C, V, 14)
+    df[f'MINUS_DI14{suffix}'] = talib.MINUS_DI(H, L, C, 14)
+    df[f'MINUS_DM14{suffix}'] = talib.MINUS_DM(H, L, 14)
+    df[f'PLUS_DI14{suffix}'] = talib.PLUS_DI(H, L, C, 14)
+    df[f'PLUS_DM14{suffix}'] = talib.PLUS_DM(H, L, 14)
+    df[f'MOM10{suffix}'] = talib.MOM(C, 10)
+    df[f'PPO12-26{suffix}'] = talib.PPO(C, fastperiod=12, slowperiod=26, matype=0)
+    df[f'ROC10{suffix}'] = talib.ROC(C, 10)
+    df[f'ROCP10{suffix}'] = talib.ROCP(C, 10)
+    df[f'ROCR100-10{suffix}'] = talib.ROCR100(C, 10)
+    df[f'RSI14{suffix}'] = talib.RSI(C, 14)
+    df[f'SLOWK3{suffix}'], df[f'SLOWD3{suffix}'] = talib.STOCH(H, L, C, fastk_period=5, slowk_period=3, slowk_matype=0,
+                                                               slowd_period=3, slowd_matype=0)
+    df[f'FASTK5{suffix}'], df[f'FASTD5{suffix}'] = talib.STOCHF(H, L, C, fastk_period=5, fastd_period=3, fastd_matype=0)
+    df[f'ULTOSC7-14-28{suffix}'] = talib.ULTOSC(H, L, C, 7, 14, 28)
+    df[f'WILLR14{suffix}'] = talib.WILLR(H, L, C, 14)
+    df[f'AD{suffix}'] = talib.AD(H, L, C, V)
+    df[f'ADOSC{suffix}'] = talib.ADOSC(H, L, C, V, fastperiod=3, slowperiod=10)
+    df[f'OBV{suffix}'] = talib.OBV(C, V)
+    df[f'ATR14{suffix}'] = talib.ATR(H, L, C, 14)
+    df[f'NATR14{suffix}'] = talib.NATR(H, L, C, 14)
+    df[f'TRANGE{suffix}'] = talib.TRANGE(H, L, C)
+    df[f'AVGPRICE{suffix}'] = talib.AVGPRICE(O, H, L, C)
+    df[f'MEDPRICE{suffix}'] = talib.MEDPRICE(H, L)
+    df[f'TYPPRICE{suffix}'] = talib.TYPPRICE(H, L, C)
+    df[f'WCLPRICE{suffix}'] = talib.WCLPRICE(H, L, C)
     return df
 
-def simple_rl_features_periods(df: pd.DataFrame, periods: list[int], zscore_standardization: bool=False, suffix: str=''):
+
+def simple_rl_features_periods(df: pd.DataFrame, periods: list[int], zscore_standardization: bool = False,
+                               suffix: str = ''):
     print(f'Periods used: {periods}')
     _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
     for f in periods:
-        _f = int((2/3)*f)
-        df['ADX' + str(f) + suffix] = talib.ADX(H, L, C, f)
-        df['ADXR' + str(f) + suffix] = talib.ADXR(H, L, C, f)
-        df['APO' + str(f) + '-' + str(f*2) + suffix] = talib.APO(C, fastperiod=f, slowperiod=f*2, matype=0)
-        df['AROON_DOWN' + str(f) + suffix], df['AROON_UP' + str(f) + suffix] = talib.AROON(H, L, f)
-        df['AROONOSC' + str(f) + suffix] = talib.AROONOSC(H, L, f)
-        df['CCI' + str(f) + suffix] = talib.CCI(H, L, C, f)
-        df['CMO' + str(f) + suffix] = talib.CMO(C, f)
-        df['DX' + str(f) + suffix] = talib.DX(H, L, C, f)
-        df['MACD' + str(f) + '-' + str(f*2) + suffix], df['MACDsignal' + str(_f) + suffix], df['MACDhist' + str(f) + '-' + str(f*2) + suffix] = talib.MACD(C, f, f*2, _f)
-        df['MFI' + str(f) + suffix] = talib.MFI(H, L, C, V, f)
-        df['MINUS_DI' + str(f) + suffix] = talib.MINUS_DI(H, L, C, f)
-        df['MINUS_DM' + str(f) + suffix] = np.emath.log(talib.MINUS_DM(H, L, f))
-        df['PLUS_DI' + str(f) + suffix] = talib.PLUS_DI(H, L, C, f)
-        df['PLUS_DM' + str(f) + suffix] = np.emath.log(talib.PLUS_DM(H, L, f))
-        df['MOM' + str(f) + suffix] = talib.MOM(C, f)
-        df['PPO' + str(f) + '-' + str(f*2) + suffix] = talib.PPO(C, fastperiod=f, slowperiod=f*2, matype=0)
-        df['ROC' + str(f) + suffix] = talib.ROC(C, f)
-        df['ROCP' + str(f) + suffix] = talib.ROCP(C, f)
-        df['ROCR100-' + str(f) + suffix] = talib.ROCR100(C, f)
-        df['RSI' + str(f) + suffix] = talib.RSI(C, f)
-        df['SLOWK' + str(f) + suffix], df['SLOWD' + str(f) + suffix] = talib.STOCH(H, L, C, fastk_period=f, slowk_period=_f, slowk_matype=0, slowd_period=f, slowd_matype=0)
-        df['FASTK' + str(_f) + suffix], df['FASTD' + str(_f) + suffix] = talib.STOCHF(H, L, C, fastk_period=f, fastd_period=_f, fastd_matype=0)
-        df['ULTOSC' + str(f) + str(f*2) + str(f*3) + suffix] = talib.ULTOSC(H, L, C, f, f*2, f*3)
-        df['WILLR' + str(f) + suffix] = talib.WILLR(H, L, C, f)
-        df['ADOSC' + str(f) + '-' + str(_f) + suffix] = talib.ADOSC(H, L, C, V, fastperiod=_f, slowperiod=f)
-        df['ATR' + str(f) + suffix] = talib.ATR(H, L, C, f)
-        df['NATR' + str(f) + suffix] = talib.NATR(H, L, C, f)
-    df['BOP' + suffix] = talib.BOP(O, H, L, C) # log
-    df['OBV' + suffix] = talib.OBV(C, V)
-    df['TRANGE' + suffix] = talib.TRANGE(H, L, C)
+        _f = int((2 / 3) * f)
+        ff, fff = 2 * f, 3 * f
+        df[f'ADX{f}{suffix}'] = talib.ADX(H, L, C, f)
+        df[f'ADXR{f}{suffix}'] = talib.ADXR(H, L, C, f)
+        df[f'AROON_DOWN{f}{suffix}'], df[f'AROON_UP{f}{suffix}'] = talib.AROON(H, L, f)
+        df[f'AROONOSC{f}{suffix}'] = talib.AROONOSC(H, L, f)
+        df[f'CCI{f}{suffix}'] = talib.CCI(H, L, C, f)
+        df[f'CMO{f}{suffix}'] = talib.CMO(C, f)
+        df[f'DX{f}{suffix}'] = talib.DX(H, L, C, f)
+        # Using every talib MAtype possible (0,8]
+        for i in range(0, 9):
+            df[f'APO{f}-{ff}{suffix}'] = talib.APO(C, fastperiod=f, slowperiod=ff, matype=i)
+            df[f'PPO{f}-{ff}{suffix}'] = talib.PPO(C, fastperiod=f, slowperiod=ff, matype=i)
+            df[f'MACD{f}-{ff}{suffix}'], df[f'MACDsignal{_f}{suffix}'], df[f'MACDhist{f}-{ff}{suffix}'] = talib.MACDEXT(
+                C,
+                fastperiod=f,
+                slowperiod=ff,
+                signalperiod=_f,
+                fastmatype=i,
+                slowmatype=i,
+                signalmatype=i)
+            df[f'STOCH_SLOWK{_f}-{f}{suffix}'], df[f'STOCH_SLOWD{_f}-{f}{suffix}'] = talib.STOCH(H, L, C,
+                                                                                                 fastk_period=f,
+                                                                                                 slowk_period=_f,
+                                                                                                 slowk_matype=i,
+                                                                                                 slowd_period=_f,
+                                                                                                 slowd_matype=i)
+            df[f'STOCH_FASTK{_f}-{f}{suffix}'], df[f'STOCH_FASTD{_f}-{f}{suffix}'] = talib.STOCHF(H, L, C,
+                                                                                                  fastk_period=f,
+                                                                                                  fastd_period=_f,
+                                                                                                  fastd_matype=i)
+            df[f'STOCHRSI_FASTK{_f}-{f}-{ff}'], df[f'STOCHRSI_FASTD{_f}-{f}-{ff}'] = talib.STOCHRSI(C,
+                                                                                                    timeperiod=ff,
+                                                                                                    fastk_period=f,
+                                                                                                    fastd_period=_f,
+                                                                                                    fastd_matype=i)
+        df[f'MFI{f}{suffix}'] = talib.MFI(H, L, C, V, f)
+        df[f'MINUS_DI{f}{suffix}'] = talib.MINUS_DI(H, L, C, f)
+        df[f'MINUS_DM{f}{suffix}'] = np.emath.log(talib.MINUS_DM(H, L, f))
+        df[f'PLUS_DI{f}{suffix}'] = talib.PLUS_DI(H, L, C, f)
+        df[f'PLUS_DM{f}{suffix}'] = np.emath.log(talib.PLUS_DM(H, L, f))
+        df[f'MOM{f}{suffix}'] = talib.MOM(C, f)
+        df[f'ROC{f}{suffix}'] = talib.ROC(C, f)
+        df[f'ROCP{f}{suffix}'] = talib.ROCP(C, f)
+        df[f'ROCR100-{f}{suffix}'] = talib.ROCR100(C, f)
+        df[f'RSI{f}{suffix}'] = talib.RSI(C, f)
+        df[f'ULTOSC{f}-{ff}-{fff}{suffix}'] = talib.ULTOSC(H, L, C, f, ff, fff)
+        df[f'WILLR{f}{suffix}'] = talib.WILLR(H, L, C, f)
+        df[f'ADOSC{f}-{_f}{suffix}'] = talib.ADOSC(H, L, C, V, fastperiod=_f, slowperiod=f)
+        df[f'ATR{f}{suffix}'] = talib.ATR(H, L, C, f)
+        df[f'NATR{f}{suffix}'] = talib.NATR(H, L, C, f)
+    df[f'BOP{suffix}'] = talib.BOP(O, H, L, C)
+    df[f'OBV{suffix}'] = talib.OBV(C, V)
+    df[f'TRANGE{suffix}'] = talib.TRANGE(H, L, C)
+    df = custom_features(df)
     # To avoid NaN indicator values at the beginning
-    longest_period = max(periods)*3
+    longest_period = max(periods) * 3
     df = df.tail(len(df) - longest_period)
     if not zscore_standardization:
         print(df.columns[df.isna().any()].tolist())
@@ -1154,21 +1205,22 @@ def simple_rl_features_periods(df: pd.DataFrame, periods: list[int], zscore_stan
         print(df.columns[df.isna().any()].tolist())
         return df
 
+
 def custom_features(df, suffix=''):
-    _, O, H, L, C, V, *_ = [df[col].to_numpy() for col in df.columns]
+    _, O, H, L, C, *_ = [df[col].to_numpy() for col in df.columns]
     # OHLC simple features
-    df['candle_size' + suffix] = H - L
-    df['candle_body_size' + suffix] = np.where(C > O, (C - O) / df['candle_size' + suffix],
-                                               (O - C) / df['candle_size' + suffix])
-    df['candle_upper_wick' + suffix] = np.where(C > O, (H - C) / df['candle_size' + suffix],
-                                                (H - O) / df['candle_size' + suffix])
-    df['candle_lower_wick' + suffix] = np.where(C > O, (O - L) / df['candle_size' + suffix],
-                                                (C - L) / df['candle_size' + suffix])
-    df['hourly_seasonality' + suffix] = hourly_seasonality(df)
-    df['daily_seasonality' + suffix] = daily_seasonality(df)
-    ##df['volume_probablity' + suffix] = volume_probability(V)
-    df['move_probablity' + suffix] = move_probability(O, C)
-    df['price_levels' + suffix] = price_levels(O, C)
+    df[f'candle_size{suffix}'] = H - L
+    df[f'candle_body_size{suffix}'] = np.where(C > O, (C - O) / df['candle_size{suffix}'],
+                                               (O - C) / df['candle_size{suffix}'])
+    df[f'candle_upper_wick{suffix}'] = np.where(C > O, (H - C) / df['candle_size{suffix}'],
+                                                (H - O) / df['candle_size{suffix}'])
+    df[f'candle_lower_wick{suffix}'] = np.where(C > O, (O - L) / df['candle_size{suffix}'],
+                                                (C - L) / df['candle_size{suffix}'])
+    df[f'hourly_seasonality{suffix}'] = hourly_seasonality(df)
+    df[f'daily_seasonality{suffix}'] = daily_seasonality(df)
+    # df['volume_probability{suffix}'] = volume_probability(V)
+    df[f'move_probability{suffix}'] = move_probability(O, C)
+    df[f'price_levels{suffix}'] = price_levels(O, C)
     return df
 
 
@@ -1182,14 +1234,12 @@ TA_FEATURES_TEMPLATE = {'None': blank_features,
 
 
 def get_combined_intervals_df(ticker, interval_list, type='um', data='klines', template='None'):
-    for itv in interval_list:
-        if itv == interval_list[0] or len(interval_list) == 1:
-            df = get_data.by_BinanceVision(ticker=ticker, interval=itv, type=type, data=data)
-            df = TA_FEATURES_TEMPLATE[template](df, ticker)
-        else:
-            _df = get_data.by_BinanceVision(ticker=ticker, interval=itv, type=type, data=data)
-            _df['Opened'] = _df['Opened'] + (_df.iloc[-1]['Opened'] - _df.iloc[-2]['Opened'])
-            _df = TA_FEATURES_TEMPLATE[template](_df, ticker, suffix='_' + itv)
-            df = pd.merge_asof(df, _df, on='Opened', direction='backward', suffixes=('', '_' + itv))
+    df = get_data.by_BinanceVision(ticker=ticker, interval=interval_list[0], type=type, data=data)
+    df = TA_FEATURES_TEMPLATE[template](df, ticker)
+    for itv in interval_list[1:]:
+        _df = get_data.by_BinanceVision(ticker=ticker, interval=itv, type=type, data=data)
+        _df['Opened'] = _df['Opened'] + (_df.iloc[-1]['Opened'] - _df.iloc[-2]['Opened'])
+        _df = TA_FEATURES_TEMPLATE[template](_df, ticker, suffix='_' + itv)
+        df = pd.merge_asof(df, _df, on='Opened', direction='backward', suffixes=('', '_' + itv))
     df.fillna(method='ffill', inplace=True)
     return df
