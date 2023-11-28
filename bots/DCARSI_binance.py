@@ -32,6 +32,7 @@ class TakerBot:
         prev_data = array([list(map(float, candle[1:6])) for candle in prev_candles[:-1]])
         self.OHLCVX_data = deque(prev_data,
                                  maxlen=len(prev_candles[:-1]))
+        print(self.OHLCVX_data)
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         self.buy_amount = self.settings['buy_amount']
         self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
@@ -51,7 +52,7 @@ class TakerBot:
     def on_message(self, ws, message):
         # self.start_t1 = time()
         data = loads(message)
-        print(f"Received: {data}")
+        #print(f"Received: {data}")
         data_k = data['k']
         if data_k['x']:
             self.OHLCVX_data.append(
@@ -62,7 +63,7 @@ class TakerBot:
 
     def _analyze(self, close):
         # print(f'(on_message to _analyze: {time()-self.start_t1}s)')
-        self.start_t2 = time()
+        # self.start_t2 = time()
         self._check_signal(close)
         if (self.signal == self.settings['enter_at']) and (self.balance >= self.buy_amount):
             q = str((self.buy_amount / close) + .00001)[:7]
@@ -101,13 +102,13 @@ class TakerBot:
         return value / quantity
 
     def _market_buy(self, q):
-        print(f'{dt.today()} BUY_MARKET q:{q}')
         try:
             self.buy_order = self.client.order_market_buy(symbol=self.symbol,
                                                           quantity=q)
-            print(f'(_analyze to _market_buy: {time() - self.start_t2}s)')
+            # print(f'(_analyze to _market_buy: {time() - self.start_t2}s)')
             self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
+            print(f'{dt.today()} BUY_MARKET q:{q}')
             return self.buy_order
         except Exception as e:
             print(f'exception(_market_buy): {e}')
