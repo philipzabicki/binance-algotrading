@@ -117,7 +117,7 @@ def linear_slope_indicator(values: list | np.ndarray) -> float:
 ######################################################################################
 #                                SIGNAL GENERATORS                                   #
 ######################################################################################
-@feature_timeit
+#@feature_timeit
 @jit(nopython=True)
 def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: int,
                     top_bound: float = 80.0, bottom_bound: float = 20.0) -> list[float]:
