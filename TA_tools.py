@@ -38,8 +38,9 @@ def feature_timeit(feature_func: callable) -> callable:
         start_t = time()
         print(f'\r adding {feature_func.__name__} feature...', end='')
         ret = feature_func(*args, **kwargs)
-        print(f' ({(time() - start_t)*1_000:.2f}ms)')
+        print(f' ({(time() - start_t) * 1_000:.2f}ms)')
         return ret
+
     return wrapper
 
 
@@ -71,6 +72,7 @@ def zscore_standardize(values: list | np.ndarray) -> np.ndarray:
     """
     return (values - np.mean(values)) / np.std(values)
 
+
 # Calculates and returns linear regression slope but predictor variable(X) are natural numbers from 1 to len of dependent variable(Y)
 # Y are supposed to be balance divided by initial balance ratios per every env step
 def linear_reg_slope(Y):
@@ -82,6 +84,7 @@ def linear_reg_slope(Y):
     Sxy = np.sum(X * Y) - n * x_mean * np.mean(Y)
     Sxx = np.sum(X * X) - n * x_mean ** 2
     return Sxy / Sxx
+
 
 def linear_slope_indicator(values: list | np.ndarray) -> float:
     """
@@ -117,7 +120,7 @@ def linear_slope_indicator(values: list | np.ndarray) -> float:
 ######################################################################################
 #                                SIGNAL GENERATORS                                   #
 ######################################################################################
-#@feature_timeit
+# @feature_timeit
 @jit(nopython=True)
 def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: int,
                     top_bound: float = 80.0, bottom_bound: float = 20.0) -> list[float]:
@@ -149,7 +152,7 @@ def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: in
       >>> RSI_like_signal(rsi_values, 3)
       [None, None, None, 0.25, 0.5, 1, -0.25, -0.5]
   """
-    return ([0.0] * timeperiod + [-1 if (prev > top_bound) and (cur <= top_bound) else
+    return [0.0] * timeperiod + [-1 if (prev > top_bound) and (cur <= top_bound) else
                                  1 if (prev < bottom_bound) and (cur >= bottom_bound) else
                                  -.75 if (cur > 90.0) else
                                  .75 if (cur < 10.0) else
@@ -161,7 +164,8 @@ def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: in
                                  for cur, prev in
                                  zip(rsi_like_indicator[timeperiod:], rsi_like_indicator[timeperiod - 1:-1])]
 
-@jit(nopython=True))
+
+@jit(nopython=True)
 def RSI_oversold_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: int,
                         oversold_threshold: float = 20.0) -> list[float]:
     return [0.0] * timeperiod + [1 if (prev > oversold_threshold) and (cur <= oversold_threshold) else 0

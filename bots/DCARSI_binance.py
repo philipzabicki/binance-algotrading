@@ -32,7 +32,7 @@ class TakerBot:
         prev_data = array([list(map(float, candle[1:6])) for candle in prev_candles[:-1]])
         self.OHLCVX_data = deque(prev_data,
                                  maxlen=len(prev_candles[:-1]))
-        print(self.OHLCVX_data)
+        print(f'PRE-DOWNLOADED KLINES LAST ROW: {self.OHLCVX_data[-1]}')
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         self.buy_amount = self.settings['buy_amount']
         self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])

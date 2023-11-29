@@ -40,10 +40,11 @@ class SignalExecuteEnv(SpotBacktest):
                 action = 1
             elif (self.qty > 0) and (signal <= -self.close_threshold):
                 action = 2
-            self.current_step -= 1
             obs, _, _, _, _ = self.step(action)
+            # current_step manipulation just to synchronize plot rendering
+            # could be fixed by calling .render() inside .step() just before return statement
+            self.current_step -= 1
             if self.visualize:
                 self.render()
             self.current_step += 1
-            print(f'obs: {obs} action: {action} qty: {self.qty}')
         return obs, self.reward, self.done, False, self.info

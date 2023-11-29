@@ -27,7 +27,7 @@ class SpotBacktest(Env):
             self.render_range = render_range
             self.time_step = self.dates_df[1] - self.dates_df[0]
             print(f' Visualization started, from: {dates_df[0]}', end=' ')
-            print(f'to: {dates_df[-1]}, time step: {self.time_step}')
+            print(f'to: {dates_df[-1]}, time step: {self.time_step} (as factor of day)')
         else:
             self.visualize = False
             print(f'    Visualize is set to false or there was no dates df provided.')
@@ -85,6 +85,7 @@ class SpotBacktest(Env):
         self.stop_loss_price = 0
         self.qty = 0
         self.pnl = 0
+        self.absolute_profit = 0.0
         self.SL_losses, self.cumulative_fees, self.liquidations = 0, 0, 0
         self.in_position, self.position_closed, self.in_position_counter, self.episode_orders = 0, 0, 0, 0
         self.good_trades_count, self.bad_trades_count = 1, 1
@@ -100,18 +101,8 @@ class SpotBacktest(Env):
             self.end_step = self.total_steps - 1
         self.current_step = self.start_step
         self.obs = iter(self.df[self.start_step:self.end_step, self.exclude_cols_left:])
-        return self.df[self.current_step, self.exclude_cols_left:]
-
-    def _next_observation(self):
-        try:
-            self.current_step += 1
-            # _obs = next(self.obs)
-            # print(_obs)
-            return next(self.obs)
-        except StopIteration:
-            self.current_step -= 1
-            self._finish_episode()
-            return self.df[self.current_step, self.exclude_cols_left:]
+        #return self.df[self.current_step, self.exclude_cols_left:]
+        return next(self.obs)
 
     '''def _next_observation(self):
       self.current_step += 1
@@ -143,7 +134,8 @@ class SpotBacktest(Env):
         fee = (self.position_size * self.fee)
         self.position_size -= fee
         self.cumulative_fees += fee
-        print(f'BOUGHT {self.qty} at {price}({adj_price})')
+        self.absolute_profit = fee
+        # print(f'BOUGHT {self.qty} at {price}({adj_price})')
 
     def _sell(self, price, sl=False):
         if sl:
@@ -161,7 +153,8 @@ class SpotBacktest(Env):
         self.balance -= fee
         self.cumulative_fees += fee
         percentage_profit = (self.balance / self.prev_bal) - 1
-        print(f'SOLD {self.qty} at {price}({adj_price}) profit ${self.balance-self.prev_bal:.2f}')
+        self.absolute_profit = self.balance - self.prev_bal
+        # print(f'SOLD {self.qty} at {price}({adj_price}) profit ${self.balance-self.prev_bal:.2f}')
         # PROFIT #
         if percentage_profit > 0:
             if self.balance >= self.max_balance: self.max_balance = self.balance
@@ -186,12 +179,18 @@ class SpotBacktest(Env):
         self.in_position_counter = 0
         self.stop_loss_price = 0
 
+    def _next_observation(self):
+        try:
+            self.current_step += 1
+            return next(self.obs)
+        except StopIteration:
+            self.current_step -= 1
+            self._finish_episode()
+            return self.df[self.current_step, self.exclude_cols_left:]
+
     def step(self, action):
-        # 30-day DCA, adding 222USD to balance
-        # if (self.current_step-self.start_step)%43_200 == 0:
-        # self.balance+=222
-        # self.init_balance+=222
         self.last_order_type = ''
+        self.absolute_profit = 0.0
         if self.in_position:
             low, close = self.df[self.current_step, 2:4]
             # print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
@@ -209,18 +208,6 @@ class SpotBacktest(Env):
             self._buy(close)
         elif (not self.episode_orders) and ((self.current_step - self.start_step) > self.no_action_finish):
             self._finish_episode()
-        '''if self.current_step==self.end_step:
-        if self.in_position:
-          close = self.df[self.current_step, 3]
-          self._sell(close)
-        return self._finish_episode()'''
-        '''info = {'action': action,
-                'in_position': self.in_position,
-                'position_size': self.position_size,
-                'balance': self.balance,
-                'reward': 0,
-                'current_step': self.current_step,
-                'end_step': self.end_step}'''
         # Older version:
         # return self._next_observation(), self.reward, self.done, self.info
         return self._next_observation(), self.reward, self.done, False, self.info
@@ -236,7 +223,9 @@ class SpotBacktest(Env):
                           *self.df[self.current_step, 0:4],
                           self.df[self.current_step, -1],
                           _balance]
-            self.visualization.append(render_row, self.last_order_type)
+            trade_info = [self.last_order_type, round(self.absolute_profit, 2)]
+            #   print(f'trade_info {trade_info}')
+            self.visualization.append(render_row, trade_info)
             self.visualization.render()
 
 

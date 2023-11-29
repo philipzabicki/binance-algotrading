@@ -16,7 +16,7 @@ class TradingGraph:
         self.trades_arr = array(self.trades)
         self.render_range = render_range
         self.time_step = float(time_step) * .8
-        print(f'self.time_step {self.time_step}')
+        # print(f'self.time_step {self.time_step}')
         self.date_format = mpl_dates.DateFormatter('%Y-%m-%d %H:%M:%S')
 
         self.Show_reward = Show_reward
@@ -145,20 +145,24 @@ class TradingGraph:
         RANGE = max(self.render_arr[:, 2]) - min(self.render_arr[:, 3])
 
         # sort sell and buy orders, put arrows in appropiate order positions
-        idx = list(*where('' != self.trades_arr))
+        idx = list(*where('' != self.trades_arr[:, 0]))
         # print(f'idx {idx}')
         for i in idx:
             # print(f'i: {i} self.trades_arr[i]: {self.trades_arr[i]}')
-            if self.trades_arr[i] == 'open_long' or self.trades_arr[i] == 'close_short':
+            annotate_text = '$'+self.trades_arr[i, 1] if self.trades_arr[i, 1] != '0.0' else ''
+            x_position = self.render_arr[i, 0]
+            if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i,0] == 'close_short':
                 high_low = self.render_arr[i, 3] - RANGE * 0.02
                 ycoords = self.render_arr[i, 3] - RANGE * 0.08
-                self.ax1.scatter(self.render_arr[i, 0], high_low, c='green', label='green', s=120, edgecolors='none',
+                self.ax1.scatter(x_position, high_low, c='green', label='green', s=120, edgecolors='none',
                                  marker="^")
+                self.ax1.annotate(annotate_text, (x_position - 2*self.time_step, high_low*0.9999), c='black')
             else:
                 high_low = self.render_arr[i, 2] + RANGE * 0.02
                 ycoords = self.render_arr[i, 2] + RANGE * 0.06
-                self.ax1.scatter(self.render_arr[i, 0], high_low, c='red', label='red', s=120, edgecolors='none',
+                self.ax1.scatter(x_position, high_low, c='red', label='red', s=120, edgecolors='none',
                                  marker="v")
+                self.ax1.annotate(annotate_text, (x_position - 2*self.time_step, high_low*1.0001), c='black')
             '''try:
                 self.ax1.annotate('{0:.2f}'.format(self.render_arr[i, 5]), (self.render_arr[i, 0] - 0.02, high_low),
                                   xytext=(self.render_arr[i, 0] - 0.02, ycoords),

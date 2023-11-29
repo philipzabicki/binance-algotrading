@@ -24,7 +24,8 @@ class MACDExecuteEnv(SignalExecuteEnv):
         # print(f'1: {count_nonzero(self.df[self.start_step:self.end_step, -1]>=1)}')
         # print(f'-1: {count_nonzero(self.df[self.start_step:self.end_step, -1]<=-1)}')
         self.obs = iter(self.df[self.start_step:self.end_step, :])
-        return self.df[self.current_step, :]
+        return next(self.obs)
+        # return self.df[self.current_step, :]
 
     def _finish_episode(self):
         super()._finish_episode()
@@ -57,12 +58,12 @@ class MACDStratEnv(Env):
 
 
 if __name__ == "__main__":
-    action = [15, 25, 10, 6, 4, 2]
-    df = by_BinanceVision(ticker='BTCFDUSD', interval='1m', type='spot', data='klines', delay=129_600)
-    dates_df = df['Opened'].to_numpy()[-minutes_since('11-09-2023'):]
-    df = df.drop(columns='Opened').to_numpy()[-minutes_since('11-09-2023'):, :]
+    action = [3944,1743,14,4,0,7]
+    df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=129_600)
+    dates_df = df['Opened'].to_numpy()[-seconds_since('11-09-2023'):]
+    df = df.drop(columns='Opened').to_numpy()[-seconds_since('11-09-2023'):, :]
     df = hstack((df, zeros((df.shape[0], 1))))
-    env = MACDStratEnv(df=df, dates_df=dates_df, init_balance=1_000, no_action_finish=inf,
+    env = MACDStratEnv(df=df, dates_df=dates_df, init_balance=300, no_action_finish=inf,
                        fee=0.0, coin_step=0.00001, slippage=get_market_slips_stats(),
-                       verbose=True, visualize=True)
+                       verbose=True, visualize=False)
     env.step(action)
