@@ -149,7 +149,7 @@ def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: in
       >>> RSI_like_signal(rsi_values, 3)
       [None, None, None, 0.25, 0.5, 1, -0.25, -0.5]
   """
-    return [0.0] * timeperiod + [-1 if (prev > top_bound) and (cur <= top_bound) else
+    return ([0.0] * timeperiod + [-1 if (prev > top_bound) and (cur <= top_bound) else
                                  1 if (prev < bottom_bound) and (cur >= bottom_bound) else
                                  -.75 if (cur > 90.0) else
                                  .75 if (cur < 10.0) else
@@ -158,6 +158,13 @@ def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: in
                                  -.25 if (cur > 65.0) else
                                  .25 if (cur < 35.0) else
                                  0
+                                 for cur, prev in
+                                 zip(rsi_like_indicator[timeperiod:], rsi_like_indicator[timeperiod - 1:-1])]
+
+@jit(nopython=True))
+def RSI_oversold_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: int,
+                        oversold_threshold: float = 20.0) -> list[float]:
+    return [0.0] * timeperiod + [1 if (prev > oversold_threshold) and (cur <= oversold_threshold) else 0
                                  for cur, prev in
                                  zip(rsi_like_indicator[timeperiod:], rsi_like_indicator[timeperiod - 1:-1])]
 

@@ -1,4 +1,4 @@
-import TA_tools
+from TA_tools import RSI_oversold_signal
 from utility import minutes_since
 from get_data import by_BinanceVision
 import talib
@@ -10,13 +10,13 @@ if __name__=='__main__':
                           interval='1m',
                           type='spot',
                           data='klines',
-                          delay=1_000).tail(minutes_since('28-10-2023'))
+                          delay=1_000).tail(minutes_since('28-09-2023'))
     #df.drop(columns=['Opened'], inplace=True)
     print(f'df: {df}')
 
     rsi = talib.RSI(df['Close'], timeperiod=14)
     # print(f'rsi {rsi}')
-    rsi_sig = np.array(TA_tools.RSI_like_signal(rsi.to_numpy(), 14))
+    rsi_sig = np.array(RSI_oversold_signal(rsi, 14, oversold_threshold=17.5))
     print(f'rsi_sig {rsi_sig}')
 
     # print(np.where(rsi_sig >= 1.0))

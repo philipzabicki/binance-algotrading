@@ -8,7 +8,7 @@ from collections import deque
 from time import time
 from datetime import datetime as dt
 from talib import RSI
-from TA_tools import RSI_like_signal
+from TA_tools import RSI_oversold_signal
 from definitions import SETTINGS_DIR
 from binance.enums import *
 
@@ -58,7 +58,7 @@ class TakerBot:
             self.OHLCVX_data.append(
                 list(map(float, [data_k['o'], data_k['h'], data_k['l'], data_k['c'], data_k['v']])))
             self._analyze(float(data_k['c']))
-            print(f' INFO close:{data_k["c"]:.2f} rsi:{self.rsi:.2f} signal:{self.signal} qty:{self.q} balance:{self.balance:.2f}', end=' ')
+            print(f' INFO close:{data_k["c"]} rsi:{self.rsi:.2f} signal:{self.signal} qty:{self.q} balance:{self.balance:.2f}')
             # print(f'init_balance:{self.init_balance:.2f}')
 
     def _analyze(self, close):
@@ -73,7 +73,7 @@ class TakerBot:
     def _check_signal(self, close):
         self.OHLCV0_np = array(self.OHLCVX_data)
         _rsi = RSI(self.OHLCV0_np[:, 3], timeperiod=self.settings['period'])
-        self.signal = RSI_like_signal(_rsi, self.settings['period'])[-1]
+        self.signal = RSI_oversold_signal(_rsi, self.settings['period'], self.settings['oversold_threshold'])[-1]
         self.rsi = _rsi[-1]
         # print(f'(_analyze to _check_signal: {time()-self.start_t2}s)')
 
