@@ -15,8 +15,8 @@ from definitions import SETTINGS_DIR
 
 class TakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
-        self.buy_slipp_file = SETTINGS_DIR + 'slippages_market_buy.old2.csv'
-        self.sell_slipp_file = SETTINGS_DIR + 'slippages_market_sell.old2.csv'
+        self.buy_slipp_file = SETTINGS_DIR + 'slippages_market_buy.csv'
+        self.sell_slipp_file = SETTINGS_DIR + 'slippages_market_sell.csv'
         self.stoploss_slipp_file = SETTINGS_DIR + 'slippages_StopLoss.csv'
         # sl_slipp_file = '/settings/slippages_StopLoss.csv'
         # with open(self.cwd+self.buy_slipp_file, 'a', newline='') as file: self.buy_slipp_wr = writer(file)
@@ -38,8 +38,7 @@ class TakerBot:
                                                          itv,
                                                          str(max(self.settings['slow_period'],
                                                                  self.settings['fast_period'],
-                                                                 self.settings[
-                                                                     'signal_period']) * multi) + " minutes ago UTC")
+                                                                 self.settings['signal_period']) * multi) + " minutes ago UTC")
         prev_data = array([list(map(float, candle[1:6] + [0])) for candle in prev_candles[:-1]])
         prev_data[where(prev_data[:, -2] == 0.0), -2] = 0.00000001
         self.OHLCVX_data = deque(prev_data,
@@ -68,10 +67,13 @@ class TakerBot:
         # print(f"Received: {data}")
         data_k = data['k']
         if data_k['x']:
+            self.close = float(data_k['c'])
             _volume = '0.00000001' if float(data_k['v']) <= 0.0 else data_k['v']
-            self.OHLCVX_data.append(list(map(float, [data_k['o'], data_k['h'], data_k['l'], data_k['c'], _volume, 0])))
-            self._analyze(float(data_k['c']))
-            print(f' INFO close:{data_k["c"]} macd:{self.macd[-3:]:.3f} signal_line:{self.signal_line[-3:]:.3f} balance:{self.balance:.2f} self.q:{self.q}', end=' ')
+            self.OHLCVX_data.append(list(map(float, [data_k['o'], data_k['h'], data_k['l'], self.close, _volume, 0])))
+            self._analyze()
+            print(f' INFO close:{self.close:.2f} bal:${self.balance:.2f} q:{self.q}', end=' ')
+            print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sigs:{self.signal[-3:]}', end=' ')
+            print(f'cum_pnl:${self.balance-self.init_balance}:.2f')
             # print(f'init_balance:{self.init_balance:.2f}')
         if float(data_k['l']) <= self.stoploss_price:
             _order = self.client.get_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
@@ -84,29 +86,29 @@ class TakerBot:
             else:
                 self._partialy_filled_problem()
 
-    def _analyze(self, close):
+    def _analyze(self):
         # print(f'(on_message to _analyze: {time()-self.start_t1}s)')
         self.start_t2 = time()
-        self._check_signal(close)
-        if (self.signal >= self.settings['enter_at']) and (self.balance > 1.0):
-            q = str((self.balance / close) - .00001)[:7]
+        self._check_signal()
+        if (self.signal[-1] >= self.settings['enter_at']) and (self.balance > 1.0):
+            q = str((self.balance / self.close) - .00001)[:7]
             self._market_buy(q)
-            self._report_slipp(self.buy_order, close, 'buy')
-            self.stoploss_price = round(close * (1 - self.settings['SL']), 2)
+            self._report_slipp(self.buy_order, self.close, 'buy')
+            self.stoploss_price = round(self.close * (1 - self.settings['SL']), 2)
             self._stop_loss(q, self.stoploss_price)
-        elif (self.signal <= -self.settings['close_at']) and (self.balance < 1.0):
+        elif (self.signal[-1] <= -self.settings['close_at']) and (self.balance < 1.0):
             self._cancel_all_orders()
             self._market_sell(self.q)
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
-            self._report_slipp(self.sell_order, close, 'sell')
+            self._report_slipp(self.sell_order, self.close, 'sell')
 
-    def _check_signal(self, close):
+    def _check_signal(self):
         self.OHLCV0_np = array(self.OHLCVX_data)
-        self.macd, self.signal_line = custom_MACD(self.OHLCV0_np,
-                                   fast_ma_type=self.settings['fast_ma_type'], fast_period=self.settings['fast_period'],
-                                   slow_ma_type=self.settings['slow_ma_type'], slow_period=self.settings['slow_period'],
-                                   signal_ma_type=self.settings['signal_ma_type'], signal_period=self.settings['signal_period'])
-        self.signal = MACD_cross_signal(self.macd, self.signal_line)[-1]
+        self.macd, self.signal_line = custom_MACD( self.OHLCV0_np,
+                                                   fast_ma_type=self.settings['fast_ma_type'], fast_period=self.settings['fast_period'],
+                                                   slow_ma_type=self.settings['slow_ma_type'], slow_period=self.settings['slow_period'],
+                                                   signal_ma_type=self.settings['signal_ma_type'], signal_period=self.settings['signal_period'])
+        self.signal = MACD_cross_signal(self.macd, self.signal_line)
         # print(f'(_analyze to _check_signal: {time()-self.start_t2}s)')
 
     def _report_slipp(self, order, req_price, order_type):
@@ -121,10 +123,11 @@ class TakerBot:
                 writer(file).writerow([float(order['price']) / req_price])
             return
         # print(f'REPORTING {order_type} SLIPP FROM: {order}')
-        print(f'{dt.today()} REPORTING {order_type} SLIPP')
         filled_price = self._get_filled_price(order)
+        _slipp = filled_price / req_price
         with open(file, 'a', newline='') as file:
-            writer(file).writerow([filled_price / req_price])
+            writer(file).writerow([_slipp])
+        print(f'{dt.today()} REPORTING {order_type} SLIPP {_slipp}')
 
     def _get_filled_price(self, order):
         value, quantity = 0, 0
@@ -140,10 +143,11 @@ class TakerBot:
         _order = self._market_sell(self.q)
         self.SL_placed = False
         self.stoploss_price = 0.0
-        print(f'{dt.today()} REPORTING stoploss(missed) SLIPP FROM: {_order}')
+        _slipp = self._get_filled_price(_order) / self.stoploss_price
         file = self.stoploss_slipp_file
         with open(file, 'a', newline='') as file:
-            writer(file).writerow([self._get_filled_price(_order) / self.stoploss_price])
+            writer(file).writerow([_slipp])
+        print(f'{dt.today()} REPORTING stoploss(missed) SLIPP {_slipp} FROM: {_order}')
 
     def _cancel_all_orders(self):
         try:
@@ -171,7 +175,7 @@ class TakerBot:
         try:
             self.buy_order = self.client.order_market_buy(symbol=self.symbol,
                                                           quantity=q)
-            print(f'(_analyze to _market_buy: {time() - self.start_t2}s)')
+            print(f'(_analyze to _market_buy: {(time() - self.start_t2*1_000)}ms)')
             self.q = q
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             print(f'{dt.today()} BUY_MARKET q:{q}')
@@ -185,7 +189,7 @@ class TakerBot:
             self.sell_order = self.client.order_market_sell(symbol=self.symbol,
                                                             quantity=q)
             # print(self.sell_order)
-            print(f'(_analyze to _market_sell: {time() - self.start_t2}s)')
+            print(f'(_analyze to _market_sell: {(time() - self.start_t2*1_000)}ms)')
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self.q = '0.00000'
             print(f'{dt.today()} SELL_MARKET q:{q}')
