@@ -71,9 +71,9 @@ class TakerBot:
             _volume = '0.00000001' if float(data_k['v']) <= 0.0 else data_k['v']
             self.OHLCVX_data.append(list(map(float, [data_k['o'], data_k['h'], data_k['l'], self.close, _volume, 0])))
             self._analyze()
-            print(f' INFO close:{self.close:.2f} bal:${self.balance:.2f} q:{self.q}', end=' ')
+            print(f'INFO close:{self.close:.2f} bal:${self.balance:.2f} q:{self.q}', end=' ')
             print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sigs:{self.signal[-3:]}', end=' ')
-            print(f'cum_pnl:${self.balance-self.init_balance}:.2f')
+            print(f'cum_pnl:${self.balance-self.init_balance:.2f}')
             # print(f'init_balance:{self.init_balance:.2f}')
         if float(data_k['l']) <= self.stoploss_price:
             _order = self.client.get_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
@@ -147,12 +147,12 @@ class TakerBot:
         file = self.stoploss_slipp_file
         with open(file, 'a', newline='') as file:
             writer(file).writerow([_slipp])
-        print(f'{dt.today()} REPORTING stoploss(missed) SLIPP {_slipp} FROM: {_order}')
+        print(f' {dt.today()} REPORTING stoploss(missed) SLIPP {_slipp} FROM: {_order}')
 
     def _cancel_all_orders(self):
         try:
             self.client._delete('openOrders', True, data={'symbol': self.symbol})
-            print(f'{dt.today()} DELETED ALL ORDERS')
+            print(f' {dt.today()} DELETED ALL ORDERS')
         except Exception as e:
             print(f'exception(_cancel_all_orders): {e}')
 
@@ -166,7 +166,7 @@ class TakerBot:
                                                      stopPrice=price,
                                                      price=price)
             self.SL_placed = True
-            print(f'{dt.today()} STOPLOSS_LIMIT q:{q} price:{price}')
+            print(f' {dt.today()} STOPLOSS_LIMIT q:{q} price:{price}')
             # print(self.SL_order)
         except Exception as e:
             print(f'exception at _stop_loss(): {e}')
@@ -175,10 +175,10 @@ class TakerBot:
         try:
             self.buy_order = self.client.order_market_buy(symbol=self.symbol,
                                                           quantity=q)
-            print(f'(_analyze to _market_buy: {(time() - self.start_t2*1_000)}ms)')
+            print(f'(_analyze to _market_buy: {(time() - self.start_t2)*1_000}ms)')
             self.q = q
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
-            print(f'{dt.today()} BUY_MARKET q:{q}')
+            print(f' {dt.today()} BUY_MARKET q:{q}')
             return self.buy_order
         except Exception as e:
             print(f'exception at _market_buy(): {e}')
@@ -189,10 +189,10 @@ class TakerBot:
             self.sell_order = self.client.order_market_sell(symbol=self.symbol,
                                                             quantity=q)
             # print(self.sell_order)
-            print(f'(_analyze to _market_sell: {(time() - self.start_t2*1_000)}ms)')
+            print(f'(_analyze to _market_sell: {(time() - self.start_t2)*1_000}ms)')
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self.q = '0.00000'
-            print(f'{dt.today()} SELL_MARKET q:{q}')
+            print(f' {dt.today()} SELL_MARKET q:{q}')
             return self.sell_order
         except Exception as e:
             print(f'exception at _market_sell(): {e}')
