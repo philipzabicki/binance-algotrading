@@ -6,8 +6,8 @@ from pympler import asizeof
 from definitions import ROOT_DIR
 
 def get_market_slips_stats():
-    buy = read_csv(ROOT_DIR + '/settings/slippages_market_buy.csv')
-    sell = read_csv(ROOT_DIR + '/settings/slippages_market_sell.csv')
+    buy = read_csv(ROOT_DIR + '/settings/slippages_market_buy.old2.csv')
+    sell = read_csv(ROOT_DIR + '/settings/slippages_market_sell.old2.csv')
     SL = read_csv(ROOT_DIR + '/settings/slippages_StopLoss.csv')
     slipps = {'market_buy': (buy.values.mean(), buy.values.std()),
               'market_sell': (sell.values.mean(), sell.values.std()), 'SL': (SL.values.mean(), SL.values.std())}
@@ -33,14 +33,14 @@ def get_limit_slips_stats():
 
 def get_slips_stats():
     base_path = ROOT_DIR + '\\settings\\'
-    file_names = ['slippages_market_buy.csv', 'slippages_market_sell.csv', 'slippages_StopLoss.csv']
+    file_names = ['slippages_market_buy.old2.csv', 'slippages_market_sell.old2.csv', 'slippages_StopLoss.csv']
     labels = ['market_buy', 'market_sell', 'SL']
     stats = { label:get_stats_for_file(base_path + file_name) for label,file_name in zip(labels,file_names) }
     return stats'''
 
 '''def get_slips_stats():
-    buy = read_csv(ROOT_DIR+'/settings/slippages_market_buy.csv', header=0)
-    sell = read_csv(ROOT_DIR+'/settings/slippages_market_sell.csv', header=0)
+    buy = read_csv(ROOT_DIR+'/settings/slippages_market_buy.old2.csv', header=0)
+    sell = read_csv(ROOT_DIR+'/settings/slippages_market_sell.old2.csv', header=0)
     SL = read_csv(ROOT_DIR+'/settings/slippages_StopLoss.csv', header=0)
     return {'market_buy':(float(np.mean(buy)), float(np.std(buy))),
             'market_sell':(float(np.mean(sell)), float(np.std(sell))),
@@ -48,9 +48,9 @@ def get_slips_stats():
 
 
 def get_slips_stats_advanced():
-    buy = read_csv(ROOT_DIR + '/settings/slippages_market_buy.csv')
-    sell = read_csv(ROOT_DIR + '/settings/slippages_market_buy.csv')
-    SL = read_csv(ROOT_DIR + '/settings/slippages_market_buy.csv')
+    buy = read_csv(ROOT_DIR + '/settings/slippages_market_buy.old2.csv')
+    sell = read_csv(ROOT_DIR + '/settings/slippages_market_buy.old2.csv')
+    SL = read_csv(ROOT_DIR + '/settings/slippages_market_buy.old2.csv')
     return {
         'market_buy': {
             'mean': buy.mean(),

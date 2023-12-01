@@ -15,7 +15,7 @@ from binance.enums import *
 
 class TakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
-        self.buy_slipp_file = SETTINGS_DIR + 'slippages_market_buy.csv'
+        self.buy_slipp_file = SETTINGS_DIR + 'slippages_market_buy.old2.csv'
         self.symbol = symbol
         self.settings = settings
         url = f'wss://stream.binance.com:9443/ws/{symbol.lower()}@kline_{itv}'

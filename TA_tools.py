@@ -863,7 +863,11 @@ def MGD(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     md = np.zeros_like(close)
     md[0] = close[0]
     for i in range(1, len(close)):
-        md[i] = md[i - 1] + (close[i] - md[i - 1]) / (period * np.power((close[i] / md[i - 1]), 4))
+        if md[i - 1] != 0:
+            denominator = md[i - 1]
+        else:
+            denominator = 1.0
+        md[i] = md[i - 1] + (close[i] - md[i - 1]) / (period * np.power((close[i] / denominator), 4))
     return md
 
 
@@ -989,6 +993,50 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
     return np.around(ma_types[ma_type](np_df, ma_period), 2)
+
+
+def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
+    # print(f'{np_df} {type} {MA_period}')
+    ma_types = {0: lambda c, p: RMA(c, timeperiod=p),
+                1: lambda c, p: talib.SMA(c, timeperiod=p),
+                2: lambda c, p: talib.EMA(c, timeperiod=p),
+                3: lambda c, p: talib.WMA(c, timeperiod=p),
+                4: lambda c, p: talib.KAMA(c, timeperiod=p),
+                5: lambda c, p: talib.TRIMA(close, timeperiod=p),
+                6: lambda c, p: talib.DEMA(close, timeperiod=p),
+                7: lambda c, p: talib.TEMA(close, timeperiod=p),
+                8: lambda c, p: talib.T3(close, timeperiod=p),
+                9: lambda c, p: talib.MAMA(c)[0],
+                10: lambda c, p: ti.ehma(c, p),
+                11: lambda c, p: ti.lma(c, p),
+                12: lambda c, p: ti.shmma(c, p),
+                13: lambda c, p: ti.ahma(c, p),
+                14: lambda c, p: ALMA(c, timeperiod=p),
+                15: lambda c, p: HammingMA(c, p),
+                16: lambda c, p: LSMA(c, max(3, p)),
+                17: lambda c, p: LWMA(c, p),
+                18: lambda c, p: GMA(c, p),
+                19: lambda c, p: FBA(c, p),
+                20: lambda c, p: NadarayWatsonMA(c, p, kernel=0),
+                21: lambda c, p: NadarayWatsonMA(c, p, kernel=1),
+                22: lambda c, p: NadarayWatsonMA(c, p, kernel=2),
+                23: lambda c, p: NadarayWatsonMA(c, p, kernel=3),
+                24: lambda c, p: NadarayWatsonMA(c, p, kernel=4),
+                25: lambda c, p: NadarayWatsonMA(c, p, kernel=5)}
+    # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
+    # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
+    return np.around(ma_types[ma_type](close, ma_period), 2)
+
+
+#@jit(nopython=True)
+def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
+                fast_ma_type, slow_ma_type, signal_ma_type):
+    slow = np.nan_to_num(get_MA(ohlcv, slow_ma_type, slow_period))
+    # print(f'slow {slow}')
+    fast = np.nan_to_num(get_MA(ohlcv, fast_ma_type, fast_period))
+    # print(f'fast {fast}')
+    macd = fast-slow
+    return macd, np.nan_to_num(get_1D_MA(macd, signal_ma_type, signal_period))
 
 
 def get_MA_signal(np_df: np.ndarray, type: int, MA_period: int, ATR_period: int, ATR_multi: float):

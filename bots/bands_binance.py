@@ -14,8 +14,8 @@ from definitions import SETTINGS_DIR
 
 class TakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
-        self.buy_slipp_file = SETTINGS_DIR+'slippages_market_buy.csv'
-        self.sell_slipp_file = SETTINGS_DIR+'slippages_market_sell.csv'
+        self.buy_slipp_file = SETTINGS_DIR+'slippages_market_buy.old2.csv'
+        self.sell_slipp_file = SETTINGS_DIR+'slippages_market_sell.old2.csv'
         self.stoploss_slipp_file = SETTINGS_DIR+'slippages_StopLoss.csv'
         #sl_slipp_file = '/settings/slippages_StopLoss.csv'
         #with open(self.cwd+self.buy_slipp_file, 'a', newline='') as file: self.buy_slipp_wr = writer(file)

@@ -28,7 +28,7 @@ from utility import seconds_since, minutes_since, get_market_slips_stats
 
 CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 128
-N_GEN = 150
+N_GEN = 250
 
 
 # print(SLIPP)
@@ -51,12 +51,12 @@ class MACDProblem(ElementwiseProblem):
 class MACDMixedVariableProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
         self.env = env
-        macd_variables = {"fast_period": Integer(bounds=(2, 10_000)),
-                          "slow_period": Integer(bounds=(2, 10_000)),
-                          "signal_period": Integer(bounds=(2, 10_000)),
-                          "fast_ma_type": Integer(bounds=(0, 8)),
-                          "slow_ma_type": Integer(bounds=(0, 8)),
-                          "signal_ma_type": Integer(bounds=(0, 8))}
+        macd_variables = {"fast_period": Integer(bounds=(2, 1_000)),
+                          "slow_period": Integer(bounds=(2, 1_000)),
+                          "signal_period": Integer(bounds=(2, 1_000)),
+                          "fast_ma_type": Integer(bounds=(0, 34)),
+                          "slow_ma_type": Integer(bounds=(0, 34)),
+                          "signal_ma_type": Integer(bounds=(0, 25))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
@@ -88,6 +88,7 @@ def display_callback(callback, fname):
     plt.title("Convergence")
     plt.ylabel('Mean Reward')
     plt.xlabel('Population')
+    print(f'callback.opt {callback.opt}')
     plt.plot(-1 * array(callback.opt), "--")
     plt.savefig(REPORT_DIR + 'Convergence_' + fname)
     return plt
@@ -98,7 +99,7 @@ def display_result(result, problem, fname):
     X_array = array([[entry['fast_period'], entry['slow_period'], entry['signal_period'],
                       entry['fast_ma_type'], entry['slow_ma_type'], entry['signal_ma_type']]
                      for entry in result.pop.get("X")])
-    print(X_array)
+    print(f'X_array {X_array}')
     pop_size = len(X_array)
     labels = ['fast_period', 'slow_period', 'signal_period', 'fast_ma_type', 'slow_ma_type', 'signal_ma_type']
     bounds = array([problem.vars[name].bounds for name in labels]).T
@@ -128,12 +129,18 @@ def main():
     runner = StarmapParallelization(pool.starmap)
 
     # df = by_DataClient(ticker='BTCFDUSD', interval='1s', futures=False, statements=True, delay=3_600)
-    df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=129_600)
-    df = df.drop(columns='Opened').to_numpy()[-seconds_since('11-09-2023'):, :]
+    df = by_BinanceVision(ticker='BTCFDUSD', interval='1m', type='spot', data='klines', delay=129_600)
+    df = df.drop(columns='Opened').to_numpy()[-minutes_since('11-09-2023'):, :]
     df = hstack((df, zeros((df.shape[0], 1))))
     # df = df[-seconds_since('09-01-2023'):, :]
     print(df)
-    env = MACDStratEnv(df=df, max_steps=86_400, init_balance=300, no_action_finish=inf, fee=0.0, coin_step=0.00001, slippage=get_market_slips_stats(), verbose=False)
+    env = MACDStratEnv(df=df,
+                       init_balance=300,
+                       no_action_finish=inf,
+                       fee=0.0,
+                       coin_step=0.00001,
+                       # slippage=get_market_slips_stats(),
+                       verbose=False)
     problem = MACDMixedVariableProblem(env, elementwise_runner=runner)
     # algorithm = NSGA2(pop_size=100)
     # algorithm = DNSGA2(pop_size=64)

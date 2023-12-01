@@ -2,7 +2,7 @@ from numpy import array, float64, inf, zeros, hstack
 from gym import spaces, Env
 from enviroments.single_signal import SignalExecuteEnv
 from talib import MACDEXT
-from TA_tools import MACD_cross_signal
+from TA_tools import custom_MACD, MACD_cross_signal
 from utility import minutes_since, seconds_since, get_market_slips_stats
 from get_data import by_BinanceVision
 
@@ -16,10 +16,10 @@ class MACDExecuteEnv(SignalExecuteEnv):
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
         self.signal_ma_type = signal_ma_type
-        macd, macd_signal, _ = MACDEXT(self.df[self.start_step:self.end_step, 3],
-                                       fastmatype=fast_ma_type, fastperiod=fast_period,
-                                       slowmatype=slow_ma_type, slowperiod=slow_period,
-                                       signalmatype=signal_ma_type, signalperiod=signal_period)
+        macd, macd_signal = custom_MACD(self.df[self.start_step:self.end_step, :5],
+                                           fast_ma_type=fast_ma_type, fast_period=fast_period,
+                                           slow_ma_type=slow_ma_type, slow_period=slow_period,
+                                           signal_ma_type=signal_ma_type, signal_period=signal_period)
         self.df[self.start_step:self.end_step, -1] = MACD_cross_signal(macd, macd_signal)
         # print(f'1: {count_nonzero(self.df[self.start_step:self.end_step, -1]>=1)}')
         # print(f'-1: {count_nonzero(self.df[self.start_step:self.end_step, -1]<=-1)}')
@@ -41,7 +41,7 @@ class MACDStratEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [2, 2, 2, 0, 0, 0]
-        action_upper = [10_000, 10_000, 10_000, 9, 9, 9]
+        action_upper = [10_000, 10_000, 10_000, 34, 34, 25]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -58,12 +58,13 @@ class MACDStratEnv(Env):
 
 
 if __name__ == "__main__":
-    action = [3944,1743,14,4,0,7]
-    df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=129_600)
-    dates_df = df['Opened'].to_numpy()[-seconds_since('11-09-2023'):]
-    df = df.drop(columns='Opened').to_numpy()[-seconds_since('11-09-2023'):, :]
+    action = [5, 6, 3, 23, 13, 12]
+    df = by_BinanceVision(ticker='BTCFDUSD', interval='1m', type='spot', data='klines', delay=129_600)
+    dates_df = df['Opened'].to_numpy()[-minutes_since('11-09-2023'):]
+    df = df.drop(columns='Opened').to_numpy()[-minutes_since('11-09-2023'):, :]
     df = hstack((df, zeros((df.shape[0], 1))))
     env = MACDStratEnv(df=df, dates_df=dates_df, init_balance=300, no_action_finish=inf,
-                       fee=0.0, coin_step=0.00001, slippage=get_market_slips_stats(),
+                       fee=0.0, coin_step=0.00001,
+                       # slippage=get_market_slips_stats(),
                        verbose=True, visualize=False)
     env.step(action)

@@ -276,7 +276,7 @@ class SpotBacktest(Env):
             slope_indicator = 1.000
         sharpe_ratio = (mean_pnl - risk_free_return) / stddev_pnl if stddev_pnl != 0 else -1
         sortino_ratio = (total_return - risk_free_return) / losses_stddev if losses_stddev != 0 else -1
-        self.reward = (copysign(abs(gain) ** 1.5, gain) * self.episode_orders * (PnL_trades_ratio ** 2) * sqrt(hold_ratio) * sqrt(PnL_means_ratio)) / self.total_steps
+        self.reward = (copysign(abs(gain) ** 2, gain) * self.episode_orders * sqrt(PnL_trades_ratio) * sqrt(hold_ratio) * sqrt(PnL_means_ratio)) / self.total_steps
         # self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.total_steps
         # self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
         exec_time = time() - self.creation_t
