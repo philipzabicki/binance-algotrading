@@ -273,6 +273,7 @@ def ADX_trend_signal(adx_col: list | np.ndarray,
 
 
 # @feature_timeit
+@jit(nopython=True)
 def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray) -> list[float | int]:
     """
   Calculate MACD (Moving Average Convergence Divergence) crossover signals.

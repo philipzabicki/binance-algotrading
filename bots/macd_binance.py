@@ -39,7 +39,7 @@ class TakerBot:
                                                          str(max(self.settings['slow_period'],
                                                                  self.settings['fast_period'],
                                                                  self.settings['signal_period']) * multi) + " minutes ago UTC")
-        prev_data = array([array(list(map(float, candle[1:6] + [0]))) for candle in prev_candles[:-1]])
+        prev_data = array([array(list(map(float, candle[1:6]))) for candle in prev_candles[:-1]])
         prev_data[where(prev_data[:, -2] == 0.0), -2] = 0.00000001
         self.OHLCVX_data = deque(prev_data,
                                  maxlen=len(prev_candles[:-1]))
@@ -47,9 +47,10 @@ class TakerBot:
         self.init_balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         self.balance = self.init_balance
-        self.cum_pnl = 0.0
         print(f'Initial q:{self.q}, balance:{self.balance} last_{itv}_close:{self.close}')
+        self.enter_at, self.close_at = self.settings['enter_at'], self.settings['close_at']
         self.signal = 0.0
+        self.cum_pnl = 0.0
         self.SL_placed = False
         self.stoploss_price = 0.0
         self.buy_order, self.sell_order, self.SL_order = None, None, None
@@ -64,17 +65,17 @@ class TakerBot:
         print("### WebSocket opened ###")
 
     def on_message(self, ws, message):
-        self.start_t1 = time()
-        data = loads(message)
+        # self.start_t1 = time()
         # print(f"Received: {data}")
-        data_k = data['k']
+        data_k = loads(message)['k']
         if data_k['x']:
             self.close = float(data_k['c'])
-            fixed_volume = 0.00000001 if float(data_k['v']) <= 0.0 else float(data_k['v'])
-            self.OHLCVX_data.append(array(list(map(float, [data_k['o'], data_k['h'], data_k['l']])) + [self.close, fixed_volume, 0]))
+            # Used only with smaller timeframes like 1s
+            # fixed_volume = 0.00000001 if float(data_k['v']) <= 0.0 else float(data_k['v'])
+            self.OHLCVX_data.append(array(list(map(float, [data_k['o'], data_k['h'], data_k['l'], self.close, data_k['v']]))))
             self._analyze()
             print(f'INFO close:{self.close:.2f} bal:${self.balance:.2f} q:{self.q}', end=' ')
-            print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sigs:{self.signal[-3:]}', end=' ')
+            print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sigs:{self.signal}', end=' ')
             if self.balance >= 5.01:
                 self.cum_pnl = self.balance - self.init_balance
             print(f'cum_pnl:${self.cum_pnl:.2f}')
@@ -92,15 +93,15 @@ class TakerBot:
 
     def _analyze(self):
         # print(f'(on_message to _analyze: {time()-self.start_t1}s)')
-        self.start_t2 = time()
+        self.analyze_t = time()
         self._check_signal()
-        if (self.signal[-1] >= self.settings['enter_at']) and (self.balance > 5.01):
+        if (self.signal >= self.enter_at) and (self.balance > 5.01):
             q = str((self.balance / self.close) - .00001)[:7]
             if self._market_buy(q):
                 self.stoploss_price = round(self.close * (1 - self.settings['SL']), 2)
                 self._stop_loss(q, self.stoploss_price)
                 self._report_slip(self.buy_order, self.close, 'buy')
-        elif (self.signal[-1] <= -self.settings['close_at']) and (self.balance < 5.01):
+        elif (self.signal <= -self.close_at) and (self.balance < 5.01):
             self._cancel_order(self.SL_order['orderId'])
             if self._market_sell(self.q):
                 self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
@@ -111,7 +112,7 @@ class TakerBot:
                                                    fast_ma_type=self.settings['fast_ma_type'], fast_period=self.settings['fast_period'],
                                                    slow_ma_type=self.settings['slow_ma_type'], slow_period=self.settings['slow_period'],
                                                    signal_ma_type=self.settings['signal_ma_type'], signal_period=self.settings['signal_period'])
-        self.signal = MACD_cross_signal(self.macd, self.signal_line)
+        self.signal = MACD_cross_signal(self.macd, self.signal_line)[-1]
         # print(f'(_analyze to _check_signal: {time()-self.start_t2}s)')
 
     def _report_slip(self, order, req_price, order_type):
@@ -155,14 +156,12 @@ class TakerBot:
     def _cancel_all_orders(self):
         try:
             self.client._delete('openOrders', True, data={'symbol': self.symbol})
-            print(f' {dt.today()} DELETED ALL ORDERS')
         except Exception as e:
             print(f'exception(_cancel_all_orders): {e}')
 
     def _cancel_order(self, order_id):
         try:
             self.client.cancel_order(symbol=self.symbol, orderId=order_id)
-            print(f' {dt.today()} DELETED {order_id} ORDER')
         except Exception as e:
             print(f'exception(_cancel_order): {e}')
 
@@ -186,7 +185,7 @@ class TakerBot:
         try:
             self.buy_order = self.client.order_market_buy(symbol=self.symbol,
                                                           quantity=q)
-            print(f'(_analyze to _market_buy: {(time() - self.start_t2)*1_000}ms)')
+            print(f'(_analyze to _market_buy: {(time() - self.analyze_t)*1_000}ms)')
             self.q = q
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             print(f' {dt.today()} BUY_MARKET q:{q} self.balance:{self.balance} self.q:{self.q}')
@@ -201,7 +200,7 @@ class TakerBot:
             self.sell_order = self.client.order_market_sell(symbol=self.symbol,
                                                             quantity=q)
             # print(self.sell_order)
-            print(f'(_analyze to _market_sell: {(time() - self.start_t2)*1_000}ms)')
+            print(f'(_analyze to _market_sell: {(time() - self.analyze_t)*1_000}ms)')
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self.q = '0.00000'
             print(f' {dt.today()} SELL_MARKET q:{q} self.balance:{self.balance} self.q:{self.q}')
