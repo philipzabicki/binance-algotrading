@@ -70,8 +70,8 @@ class TakerBot:
         data_k = data['k']
         if data_k['x']:
             self.close = float(data_k['c'])
-            _volume = '0.00000001' if float(data_k['v']) <= 0.0 else data_k['v']
-            self.OHLCVX_data.append(array(list(map(float, [data_k['o'], data_k['h'], data_k['l'], self.close, _volume, 0]))))
+            fixed_volume = 0.00000001 if float(data_k['v']) <= 0.0 else float(data_k['v'])
+            self.OHLCVX_data.append(array(list(map(float, [data_k['o'], data_k['h'], data_k['l']])) + [self.close, fixed_volume, 0]))
             self._analyze()
             print(f'INFO close:{self.close:.2f} bal:${self.balance:.2f} q:{self.q}', end=' ')
             print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sigs:{self.signal[-3:]}', end=' ')

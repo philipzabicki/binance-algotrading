@@ -1,9 +1,12 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
 from time import time
 from statistics import mean, stdev
 from math import copysign
 from finta import TA as finTA
+from numpy import ndarray, dtype
 from tindicators import ti
 import talib
 import ta.trend
@@ -659,7 +662,7 @@ def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
 
 # @feature_timeit
 @jit(nopython=True)
-def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int) -> list[float]:
+def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int) -> ndarray:
     """
         Calculate the Volume Weighted Moving Average (VWMA) for a given time period.
 
@@ -693,7 +696,7 @@ def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int) -> list[float]:
             cum_vol -= volume[i - timeperiod]
         vwmas.append(cum_sum / cum_vol)
         i += 1
-    return vwmas
+    return np.array(vwmas)
 
 
 # @feature_timeit

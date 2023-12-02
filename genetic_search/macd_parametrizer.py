@@ -28,7 +28,7 @@ from utility import seconds_since, minutes_since, get_market_slips_stats
 
 CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 256
-N_GEN = 500
+N_GEN = 10
 
 
 # print(SLIPP)
@@ -135,11 +135,12 @@ def main():
     # df = df[-seconds_since('09-01-2023'):, :]
     print(df)
     env = MACDStratEnv(df=df,
+                       max_steps=10_080,
                        init_balance=300,
                        no_action_finish=inf,
                        fee=0.0,
                        coin_step=0.00001,
-                       # slippage=get_market_slips_stats(),
+                       slippage=get_market_slips_stats(),
                        verbose=False)
     problem = MACDMixedVariableProblem(env, elementwise_runner=runner)
     # algorithm = NSGA2(pop_size=100)

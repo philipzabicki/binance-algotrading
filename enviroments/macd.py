@@ -58,13 +58,13 @@ class MACDStratEnv(Env):
 
 
 if __name__ == "__main__":
-    action = [5,6,3,23,13,12]
+    action = [358, 528, 364, 2, 6, 20]
     df = by_BinanceVision(ticker='BTCFDUSD', interval='1m', type='spot', data='klines', delay=129_600)
     dates_df = df['Opened'].to_numpy()[-minutes_since('11-09-2023'):]
     df = df.drop(columns='Opened').to_numpy()[-minutes_since('11-09-2023'):, :]
     df = hstack((df, zeros((df.shape[0], 1))))
     env = MACDStratEnv(df=df, dates_df=dates_df, init_balance=300, no_action_finish=inf,
                        fee=0.0, coin_step=0.00001,
-                       # slippage=get_market_slips_stats(),
+                       slippage=get_market_slips_stats(),
                        verbose=True, visualize=False)
     env.step(action)
