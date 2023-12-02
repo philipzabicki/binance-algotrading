@@ -1,7 +1,7 @@
 from websocket import WebSocketApp
 from binance.client import Client
 from json import loads
-from numpy import array, where
+from numpy import array, where, asarray
 from os import getcwd
 from csv import writer
 from collections import deque
@@ -39,7 +39,7 @@ class TakerBot:
                                                          str(max(self.settings['slow_period'],
                                                                  self.settings['fast_period'],
                                                                  self.settings['signal_period']) * multi) + " minutes ago UTC")
-        prev_data = array([list(map(float, candle[1:6] + [0])) for candle in prev_candles[:-1]])
+        prev_data = array([array(list(map(float, candle[1:6] + [0]))) for candle in prev_candles[:-1]])
         prev_data[where(prev_data[:, -2] == 0.0), -2] = 0.00000001
         self.OHLCVX_data = deque(prev_data,
                                  maxlen=len(prev_candles[:-1]))
@@ -71,7 +71,7 @@ class TakerBot:
         if data_k['x']:
             self.close = float(data_k['c'])
             _volume = '0.00000001' if float(data_k['v']) <= 0.0 else data_k['v']
-            self.OHLCVX_data.append(list(map(float, [data_k['o'], data_k['h'], data_k['l'], self.close, _volume, 0])))
+            self.OHLCVX_data.append(array(list(map(float, [data_k['o'], data_k['h'], data_k['l'], self.close, _volume, 0]))))
             self._analyze()
             print(f'INFO close:{self.close:.2f} bal:${self.balance:.2f} q:{self.q}', end=' ')
             print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sigs:{self.signal[-3:]}', end=' ')
@@ -107,8 +107,7 @@ class TakerBot:
                 self._report_slip(self.sell_order, self.close, 'sell')
 
     def _check_signal(self):
-        self.OHLCV0_np = array(self.OHLCVX_data)
-        self.macd, self.signal_line = custom_MACD( self.OHLCV0_np,
+        self.macd, self.signal_line = custom_MACD( asarray(self.OHLCVX_data),
                                                    fast_ma_type=self.settings['fast_ma_type'], fast_period=self.settings['fast_period'],
                                                    slow_ma_type=self.settings['slow_ma_type'], slow_period=self.settings['slow_period'],
                                                    signal_ma_type=self.settings['signal_ma_type'], signal_period=self.settings['signal_period'])
@@ -190,7 +189,7 @@ class TakerBot:
             print(f'(_analyze to _market_buy: {(time() - self.start_t2)*1_000}ms)')
             self.q = q
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
-            print(f' {dt.today()} BUY_MARKET q:{q}')
+            print(f' {dt.today()} BUY_MARKET q:{q} self.balance:{self.balance} self.q:{self.q}')
             return True
         except Exception as e:
             print(f'exception at _market_buy(): {e}')
@@ -205,7 +204,7 @@ class TakerBot:
             print(f'(_analyze to _market_sell: {(time() - self.start_t2)*1_000}ms)')
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self.q = '0.00000'
-            print(f' {dt.today()} SELL_MARKET q:{q}')
+            print(f' {dt.today()} SELL_MARKET q:{q} self.balance:{self.balance} self.q:{self.q}')
             return True
         except Exception as e:
             print(f'exception at _market_sell(): {e}')
