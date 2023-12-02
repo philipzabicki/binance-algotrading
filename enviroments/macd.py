@@ -58,7 +58,7 @@ class MACDStratEnv(Env):
 
 
 if __name__ == "__main__":
-    action = [5, 6, 3, 23, 13, 12]
+    action = [5,6,3,23,13,12]
     df = by_BinanceVision(ticker='BTCFDUSD', interval='1m', type='spot', data='klines', delay=129_600)
     dates_df = df['Opened'].to_numpy()[-minutes_since('11-09-2023'):]
     df = df.drop(columns='Opened').to_numpy()[-minutes_since('11-09-2023'):, :]

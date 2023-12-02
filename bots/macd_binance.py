@@ -43,10 +43,12 @@ class TakerBot:
         prev_data[where(prev_data[:, -2] == 0.0), -2] = 0.00000001
         self.OHLCVX_data = deque(prev_data,
                                  maxlen=len(prev_candles[:-1]))
+        self.close = self.OHLCVX_data[-1][3]
         self.init_balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
         self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         self.balance = self.init_balance
-        print(f'q={self.q} balance={self.balance}')
+        self.cum_pnl = 0.0
+        print(f'Initial q:{self.q}, balance:{self.balance} last_{itv}_close:{self.close}')
         self.signal = 0.0
         self.SL_placed = False
         self.stoploss_price = 0.0
@@ -73,7 +75,9 @@ class TakerBot:
             self._analyze()
             print(f'INFO close:{self.close:.2f} bal:${self.balance:.2f} q:{self.q}', end=' ')
             print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sigs:{self.signal[-3:]}', end=' ')
-            print(f'cum_pnl:${self.balance-self.init_balance:.2f}')
+            if self.balance >= 5.01:
+                self.cum_pnl = self.balance - self.init_balance
+            print(f'cum_pnl:${self.cum_pnl:.2f}')
             # print(f'init_balance:{self.init_balance:.2f}')
         if float(data_k['l']) <= self.stoploss_price:
             _order = self.client.get_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
@@ -82,7 +86,7 @@ class TakerBot:
                 self.stoploss_price = 0.0
                 self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
                 self.q = '0.00000'
-                self._report_slipp(_order, self.stoploss_price, 'stoploss')
+                self._report_slip(_order, self.stoploss_price, 'stoploss')
             else:
                 self._partialy_filled_problem()
 
@@ -90,17 +94,17 @@ class TakerBot:
         # print(f'(on_message to _analyze: {time()-self.start_t1}s)')
         self.start_t2 = time()
         self._check_signal()
-        if (self.signal[-1] >= self.settings['enter_at']) and (self.balance > 1.0):
+        if (self.signal[-1] >= self.settings['enter_at']) and (self.balance > 5.01):
             q = str((self.balance / self.close) - .00001)[:7]
-            self._market_buy(q)
-            self._report_slipp(self.buy_order, self.close, 'buy')
-            self.stoploss_price = round(self.close * (1 - self.settings['SL']), 2)
-            self._stop_loss(q, self.stoploss_price)
-        elif (self.signal[-1] <= -self.settings['close_at']) and (self.balance < 1.0):
-            self._cancel_all_orders()
-            self._market_sell(self.q)
-            self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
-            self._report_slipp(self.sell_order, self.close, 'sell')
+            if self._market_buy(q):
+                self.stoploss_price = round(self.close * (1 - self.settings['SL']), 2)
+                self._stop_loss(q, self.stoploss_price)
+                self._report_slip(self.buy_order, self.close, 'buy')
+        elif (self.signal[-1] <= -self.settings['close_at']) and (self.balance < 5.01):
+            self._cancel_order(self.SL_order['orderId'])
+            if self._market_sell(self.q):
+                self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
+                self._report_slip(self.sell_order, self.close, 'sell')
 
     def _check_signal(self):
         self.OHLCV0_np = array(self.OHLCVX_data)
@@ -111,7 +115,7 @@ class TakerBot:
         self.signal = MACD_cross_signal(self.macd, self.signal_line)
         # print(f'(_analyze to _check_signal: {time()-self.start_t2}s)')
 
-    def _report_slipp(self, order, req_price, order_type):
+    def _report_slip(self, order, req_price, order_type):
         file = self.buy_slipp_file
         if order_type == 'buy':
             file = self.buy_slipp_file
@@ -127,7 +131,7 @@ class TakerBot:
         _slipp = filled_price / req_price
         with open(file, 'a', newline='') as file:
             writer(file).writerow([_slipp])
-        print(f'{dt.today()} REPORTING {order_type} SLIPP {_slipp}')
+        print(f'{dt.today()} REPORTING {order_type} SLIP {_slipp}')
 
     def _get_filled_price(self, order):
         value, quantity = 0, 0
@@ -156,6 +160,13 @@ class TakerBot:
         except Exception as e:
             print(f'exception(_cancel_all_orders): {e}')
 
+    def _cancel_order(self, order_id):
+        try:
+            self.client.cancel_order(symbol=self.symbol, orderId=order_id)
+            print(f' {dt.today()} DELETED {order_id} ORDER')
+        except Exception as e:
+            print(f'exception(_cancel_order): {e}')
+
     def _stop_loss(self, q, price):
         try:
             self.SL_order = self.client.create_order(symbol=self.symbol,
@@ -167,9 +178,10 @@ class TakerBot:
                                                      price=price)
             self.SL_placed = True
             print(f' {dt.today()} STOPLOSS_LIMIT q:{q} price:{price}')
-            # print(self.SL_order)
+            return True
         except Exception as e:
             print(f'exception at _stop_loss(): {e}')
+            return False
 
     def _market_buy(self, q):
         try:
@@ -179,9 +191,10 @@ class TakerBot:
             self.q = q
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             print(f' {dt.today()} BUY_MARKET q:{q}')
-            return self.buy_order
+            return True
         except Exception as e:
             print(f'exception at _market_buy(): {e}')
+            return False
         # print(self.buy_order)
 
     def _market_sell(self, q):
@@ -193,9 +206,10 @@ class TakerBot:
             self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
             self.q = '0.00000'
             print(f' {dt.today()} SELL_MARKET q:{q}')
-            return self.sell_order
+            return True
         except Exception as e:
             print(f'exception at _market_sell(): {e}')
+            return False
 
     def run(self):
         self.ws.run_forever()

@@ -992,7 +992,7 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 34: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
-    return np.around(ma_types[ma_type](np_df, ma_period), 2)
+    return ma_types[ma_type](np_df, ma_period)
 
 
 def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
@@ -1025,18 +1025,18 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 25: lambda c, p: NadarayWatsonMA(c, p, kernel=5)}
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
-    return np.around(ma_types[ma_type](close, ma_period), 2)
+    return ma_types[ma_type](close, ma_period)
 
 
 #@jit(nopython=True)
 def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
                 fast_ma_type, slow_ma_type, signal_ma_type):
-    slow = np.nan_to_num(get_MA(ohlcv, slow_ma_type, slow_period))
+    slow = get_MA(ohlcv, slow_ma_type, slow_period)
     # print(f'slow {slow}')
-    fast = np.nan_to_num(get_MA(ohlcv, fast_ma_type, fast_period))
+    fast = get_MA(ohlcv, fast_ma_type, fast_period)
     # print(f'fast {fast}')
     macd = fast-slow
-    return macd, np.nan_to_num(get_1D_MA(macd, signal_ma_type, signal_period))
+    return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 
 
 def get_MA_signal(np_df: np.ndarray, type: int, MA_period: int, ATR_period: int, ATR_multi: float):

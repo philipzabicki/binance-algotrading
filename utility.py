@@ -6,8 +6,8 @@ from pympler import asizeof
 from definitions import ROOT_DIR
 
 def get_market_slips_stats():
-    buy = read_csv(ROOT_DIR + '/settings/slippages_market_buy.old2.csv')
-    sell = read_csv(ROOT_DIR + '/settings/slippages_market_sell.old2.csv')
+    buy = read_csv(ROOT_DIR + '/settings/slippages_market_buy.csv')
+    sell = read_csv(ROOT_DIR + '/settings/slippages_market_sell.csv')
     SL = read_csv(ROOT_DIR + '/settings/slippages_StopLoss.csv')
     slipps = {'market_buy': (buy.values.mean(), buy.values.std()),
               'market_sell': (sell.values.mean(), sell.values.std()), 'SL': (SL.values.mean(), SL.values.std())}

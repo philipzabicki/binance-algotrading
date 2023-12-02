@@ -27,8 +27,8 @@ from utility import seconds_since, minutes_since, get_market_slips_stats
 
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 128
-N_GEN = 250
+POP_SIZE = 256
+N_GEN = 500
 
 
 # print(SLIPP)
