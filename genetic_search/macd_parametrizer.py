@@ -27,8 +27,8 @@ from utility import seconds_since, minutes_since, get_market_slips_stats
 
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 256
-N_GEN = 10
+POP_SIZE = 128
+N_GEN = 2000
 
 
 # print(SLIPP)
@@ -135,7 +135,7 @@ def main():
     # df = df[-seconds_since('09-01-2023'):, :]
     print(df)
     env = MACDStratEnv(df=df,
-                       max_steps=10_080,
+                       # max_steps=10_080,
                        init_balance=300,
                        no_action_finish=inf,
                        fee=0.0,
@@ -156,8 +156,8 @@ def main():
                    algorithm,
                    save_history=False,
                    callback=MyCallback(),
-                   termination=('n_gen', N_GEN),
-                   # termination=("time", "09:00:00"),
+                   # termination=('n_gen', N_GEN),
+                   termination=("time", "00:30:00"),
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')

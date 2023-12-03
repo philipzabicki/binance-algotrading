@@ -15,8 +15,8 @@ from definitions import REPORT_DIR
 import cProfile
 
 CPU_CORES_COUNT = 1  # cpu_count()
-EPISODES_PER_CORE = 256
-TICKER, ITV, M_TYPE, START_DATE = 'BTCUSDT', '5m', 'um', '01-01-2018'
+EPISODES_PER_CORE = 100
+TICKER, ITV, M_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', '11-09-2023'
 ENVIRONMENT = MACDStratEnv
 SLIPP = get_market_slips_stats()
 REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{M_TYPE}{ITV}since{START_DATE}.csv'
@@ -26,9 +26,9 @@ def run_indefinitely(_, df):
     profiler = cProfile.Profile()
     profiler.enable()
 
-    env = ENVIRONMENT(df=df, max_steps=86_400, no_action_finish=inf,
+    env = ENVIRONMENT(df=df, no_action_finish=inf,
                       init_balance=1_000, fee=0.0, coin_step=0.00001,
-                      slippage=SLIPP, visualize=False, render_range=60)
+                      slippage=SLIPP, visualize=False, verbose=False, render_range=60)
     timers, results = [], []
     i, timer = 0, time()
     while len(results) < EPISODES_PER_CORE:

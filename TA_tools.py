@@ -822,44 +822,68 @@ def cosine_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
     return np.where(np.abs(x) <= 1, np.pi / 4 * np.cos(np.pi / 2 * x), 0)
 
 
+# @jit(nopython=True)
+# def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.ndarray[np.float64]:
+#     nwma = np.full_like(close, np.nan)
+#     # nwma = np.zeros_like(close)
+#     if timeperiod % 2 == 1:
+#         distances = np.concatenate((np.arange(timeperiod // 2 + 1, 0, -1), np.arange(2, timeperiod // 2 + 2)))
+#     else:
+#         distances = np.concatenate((np.arange(timeperiod // 2, 0, -1), np.arange(1, timeperiod // 2 + 1)))
+#     if kernel == 0:
+#         weights = np.ascontiguousarray(gaussian_kernel(distances / timeperiod))
+#     elif kernel == 1:
+#         weights = np.ascontiguousarray(epanechnikov_kernel(distances / timeperiod))
+#     elif kernel == 2:
+#         weights = np.ascontiguousarray(rectangular_kernel(distances / timeperiod))
+#     elif kernel == 3:
+#         weights = np.ascontiguousarray(triangular_kernel(distances / timeperiod))
+#     elif kernel == 4:
+#         weights = np.ascontiguousarray(biweight_kernel(distances / timeperiod))
+#     elif kernel == 5:
+#         weights = np.ascontiguousarray(cosine_kernel(distances / timeperiod))
+#     else:
+#         raise ValueError("kernel argument must be int from 0 to 5")
+#     for i in range(timeperiod - 1, len(close)):
+#         window_prices = np.ascontiguousarray(close[i - timeperiod + 1:i + 1])
+#         nwma[i] = (weights @ window_prices) / weights.sum()
+#     return nwma
+
 @jit(nopython=True)
 def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.ndarray[np.float64]:
-    nwma = np.full_like(close, np.nan)
+    preceding = np.zeros(timeperiod-1)
     # nwma = np.zeros_like(close)
     if timeperiod % 2 == 1:
-        distances = np.concatenate((np.arange(timeperiod // 2 + 1, 0, -1), np.arange(2, timeperiod // 2 + 2)))
+        distances = np.concatenate((np.arange(timeperiod // 2 + 1, 0, -1, dtype=close.dtype),
+                                    np.arange(2, timeperiod // 2 + 2, dtype=close.dtype)))
     else:
-        distances = np.concatenate((np.arange(timeperiod // 2, 0, -1), np.arange(1, timeperiod // 2 + 1)))
+        distances = np.concatenate((np.arange(timeperiod // 2, 0, -1, dtype=close.dtype),
+                                    np.arange(1, timeperiod // 2 + 1, dtype=close.dtype)))
     if kernel == 0:
-        weights = np.ascontiguousarray(gaussian_kernel(distances / timeperiod))
+        weights = np.exp(-0.5 * (distances / timeperiod) ** 2) / np.sqrt(2 * np.pi)
     elif kernel == 1:
-        weights = np.ascontiguousarray(epanechnikov_kernel(distances / timeperiod))
+        weights = np.where(np.abs(distances / timeperiod) <= 1, 3 / 4 * (1 - (distances / timeperiod) ** 2), 0)
     elif kernel == 2:
-        weights = np.ascontiguousarray(rectangular_kernel(distances / timeperiod))
+        weights = np.where(np.abs(distances / timeperiod) <= 1, 0.5, 0)
     elif kernel == 3:
-        weights = np.ascontiguousarray(triangular_kernel(distances / timeperiod))
+        weights = np.where(np.abs(distances / timeperiod) <= 1, 1 - np.abs(distances / timeperiod), 0)
     elif kernel == 4:
-        weights = np.ascontiguousarray(biweight_kernel(distances / timeperiod))
+        weights = np.where(np.abs(distances / timeperiod) <= 1, (15 / 16) * (1 - (distances / timeperiod) ** 2) ** 2, 0)
     elif kernel == 5:
-        weights = np.ascontiguousarray(cosine_kernel(distances / timeperiod))
+        weights = np.where(np.abs(distances / timeperiod) <= 1, np.pi / 4 * np.cos(np.pi / 2 * (distances / timeperiod)), 0)
     else:
         raise ValueError("kernel argument must be int from 0 to 5")
-    for i in range(timeperiod - 1, len(close)):
-        window_prices = np.ascontiguousarray(close[i - timeperiod + 1:i + 1])
-        nwma[i] = (weights @ window_prices) / weights.sum()
-    return nwma
+    nwma = np.array([(weights @ close[i - timeperiod + 1:i + 1]) / weights.sum() for i in range(timeperiod - 1, len(close))])
+    return np.concatenate((preceding, nwma))
 
 
-# @feature_timeit
 @jit(nopython=True)
 def LWMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
-    weights = np.arange(1, period + 1).astype(np.float64)
-    close = np.ascontiguousarray(close)
-    lwma = np.zeros_like(close)
-    for i in range(period - 1, len(close)):
-        lwma[i] = np.dot(weights, close[i - period + 1: i + 1]) / weights.sum()
-    return lwma
-
+    preceding = np.zeros(period-1)
+    weights = np.arange(1, period + 1, dtype=np.float64)
+    weights_sum = np.sum(weights)
+    lwma = np.array([np.dot(close[i - period + 1: i + 1], weights) / weights_sum for i in range(period - 1, len(close))])
+    return np.concatenate((preceding, lwma))
 
 # @feature_timeit
 @jit(nopython=True)
@@ -892,12 +916,8 @@ def VIDYA(close: np.ndarray, k: np.ndarray, period: int) -> np.ndarray[np.float6
 # @feature_timeit
 @jit(nopython=True)
 def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
-    """Compute Geometric Moving Average using logarithms for efficiency."""
-    gma = np.zeros(len(close))
-    log_close = np.log(close)
-    for i in range(period - 1, len(close)):
-        gma[i] = np.exp(np.mean(log_close[i - period + 1:i + 1]))
-    return gma
+    gma = np.array([np.prod(close[i:i + period]) ** (1 / period) for i in range(len(close) - period + 1)])
+    return np.concatenate((np.zeros(period - 1), gma))
 
 
 # @feature_timeit
@@ -1032,14 +1052,14 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     return ma_types[ma_type](close, ma_period)
 
 
-#@jit(nopython=True)
+# @jit(nopython=True)
 def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
                 fast_ma_type, slow_ma_type, signal_ma_type):
     slow = get_MA(ohlcv, slow_ma_type, slow_period)
     # print(f'slow {slow}')
     fast = get_MA(ohlcv, fast_ma_type, fast_period)
     # print(f'fast {fast}')
-    macd = np.nan_to_num(fast-slow)
+    macd = np.nan_to_num(fast - slow)
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 
 

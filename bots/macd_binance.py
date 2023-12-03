@@ -75,7 +75,7 @@ class TakerBot:
             self.OHLCVX_data.append(array(list(map(float, [data_k['o'], data_k['h'], data_k['l'], self.close, data_k['v']]))))
             self._analyze()
             print(f'INFO close:{self.close:.2f} bal:${self.balance:.2f} q:{self.q}', end=' ')
-            print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sigs:{self.signal}', end=' ')
+            print(f'macd:{self.macd[-3:]} sig_line:{self.signal_line[-3:]} sig:{self.signal}', end=' ')
             if self.balance >= 5.01:
                 self.cum_pnl = self.balance - self.init_balance
             print(f'cum_pnl:${self.cum_pnl:.2f}')
