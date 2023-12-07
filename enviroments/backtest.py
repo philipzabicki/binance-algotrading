@@ -1,13 +1,10 @@
-from collections import deque
 # from random import normalvariate
-from math import copysign, sqrt, floor
+from math import copysign, floor
 from random import randint
 from time import time
-
-import numpy as np
 from gym import spaces, Env
 from matplotlib.dates import date2num
-from numpy import array, inf, mean, std, random, hstack
+from numpy import array, inf, mean, std, random
 from visualize import TradingGraph
 
 
@@ -30,7 +27,7 @@ class SpotBacktest(Env):
             print(f'to: {dates_df[-1]}, time step: {self.time_step} (as factor of day)')
         else:
             self.visualize = False
-            print(f'    Visualize is set to false or there was no dates df provided.')
+            print(f' Visualize is set to false or there was no dates df provided.')
         self.verbose = verbose
         # This implementation uses only mean values provided by arg dict (slippage) #
         # as factor for calculation of real buy and sell prices. #
@@ -87,7 +84,7 @@ class SpotBacktest(Env):
         self.pnl = 0
         self.absolute_profit = 0.0
         self.SL_losses, self.cumulative_fees, self.liquidations = 0, 0, 0
-        self.in_position, self.position_closed, self.in_position_counter, self.episode_orders = 0, 0, 0, 0
+        self.in_position, self.position_closed, self.in_position_counter, self.episode_orders, self.with_gain_c = 0, 0, 0, 0, 1
         self.good_trades_count, self.bad_trades_count = 1, 1
         self.profit_mean, self.loss_mean = 0, 0
         self.max_drawdown, self.max_profit = 0, 0
@@ -208,6 +205,9 @@ class SpotBacktest(Env):
             self._buy(close)
         elif (not self.episode_orders) and ((self.current_step - self.start_step) > self.no_action_finish):
             self._finish_episode()
+        else:
+            if self.init_balance-self.balance >= 0:
+                self.with_gain_c += 1
         # Older version:
         # return self._next_observation(), self.reward, self.done, self.info
         return self._next_observation(), self.reward, self.done, False, self.info
@@ -276,18 +276,23 @@ class SpotBacktest(Env):
             slope_indicator = 1.000
         sharpe_ratio = (mean_pnl - risk_free_return) / stddev_pnl if stddev_pnl != 0 else -1
         sortino_ratio = (total_return - risk_free_return) / losses_stddev if losses_stddev != 0 else -1
-        self.reward = (copysign(abs(gain) ** 2, gain) * self.episode_orders * sqrt(PnL_trades_ratio) * sqrt(hold_ratio) * sqrt(PnL_means_ratio)) / self.total_steps
+        # with_gain_c is not incremented when in position and while position is being opened so we need to subtract those values from 'total_steps
+        in_gain_indicator = self.with_gain_c/(self.total_steps-self.profit_hold_counter-self.loss_hold_counter-self.episode_orders)
+        above_free = (total_return-risk_free_return)*100
+        # sl_losses_adj_gain = gain-self.SL_losses
+        self.reward = (copysign(abs(above_free) ** 2, above_free) * self.episode_orders * PnL_trades_ratio * (hold_ratio**(1/3)) * (PnL_means_ratio**(1/3)) * in_gain_indicator) / self.total_steps
         # self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.total_steps
         # self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
         exec_time = time() - self.creation_t
         if self.verbose:
-            print(f'Episode finished: gain:${gain:.2f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}')
+            print(f'Episode finished: gain:${gain:.2f}({total_return*100:.2f}%), gain/step:${gain/self.total_steps:.5f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}')
             print(f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count - 1:_}/{self.bad_trades_count - 1:_}, ', end='')
             print(f'trades_avg(profit/loss):{profits_mean * 100:.2f}%/{losses_mean * 100:.2f}%, ', end='')
             print(f'max(profit/drawdown):{self.max_profit * 100:.2f}%/{self.max_drawdown * 100:.2f}%,')
             print(f' PnL_trades_ratio:{PnL_trades_ratio:.3f}, PnL_means_ratio:{PnL_means_ratio:.3f}, ', end='')
-            print(f'hold_ratio:{hold_ratio:.3f}, PNL_mean:{mean_pnl * 100:.2f}%')
-            print(f' slope_indicator:{slope_indicator:.4f}, sharpe_ratio:{sharpe_ratio:.2f}, sortino_ratio:{sortino_ratio:.2f}')
+            print(f'hold_ratio:{hold_ratio:.3f}, PNL_mean:{mean_pnl * 100:.2f}% geo_avg_return:{((self.balance/self.init_balance)**(1/self.total_steps)-1)*100:.7f}%')
+            print(f' slope_indicator:{slope_indicator:.4f}, in_gain_indicator:{in_gain_indicator:.3f}, sharpe_ratio:{sharpe_ratio:.2f}, sortino_ratio:{sortino_ratio:.2f},', end='')
+            print(f' risk_free:{risk_free_return*100:.2f}%, above_free:{above_free:.2f}%,')
             print(f' reward:{self.reward:.8f} exec_time:{exec_time:.2f}s')
         self.info = {'gain': gain,
                      'PnL_means_ratio': PnL_means_ratio,

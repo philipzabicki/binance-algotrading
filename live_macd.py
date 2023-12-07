@@ -3,10 +3,10 @@ from credentials import binance_API_KEY, binance_SECRET_KEY
 
 SYMBOL = 'BTCFDUSD'
 stop_loss, enter_at, close_at = 0.25, 1.0, 1.0
-fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type = 5, 6, 3, 23, 13, 12
+fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type = 642, 46, 110, 10, 20, 10
 INTERVAL = '1m'
 # MA requires previous data longer than just calculation period size
-PREV_DATA_MULTIPLAYER = 150
+PREV_DATA_MULTIPLAYER = 25
 SETTINGS = {'SL': stop_loss,
             'enter_at': enter_at,
             'close_at': close_at,

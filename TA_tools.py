@@ -1,12 +1,11 @@
-from typing import Any
-
+# from typing import Any
+# from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 from time import time
 from statistics import mean, stdev
 from math import copysign
 from finta import TA as finTA
-from numpy import ndarray, dtype
 from tindicators import ti
 import talib
 import ta.trend
@@ -124,7 +123,7 @@ def linear_slope_indicator(values: list | np.ndarray) -> float:
 #                                SIGNAL GENERATORS                                   #
 ######################################################################################
 # @feature_timeit
-@jit(nopython=True)
+@jit(nopython=True, nogil=True, cache=True)
 def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: int,
                     top_bound: float = 80.0, bottom_bound: float = 20.0) -> list[float]:
     """
@@ -168,7 +167,7 @@ def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: in
                                  zip(rsi_like_indicator[timeperiod:], rsi_like_indicator[timeperiod - 1:-1])]
 
 
-@jit(nopython=True)
+@jit(nopython=True, nogil=True, cache=True)
 def RSI_oversold_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: int,
                         oversold_threshold: float = 20.0) -> list[float]:
     return [0.0] * timeperiod + [1 if (prev > oversold_threshold) and (cur <= oversold_threshold) else 0
@@ -273,7 +272,7 @@ def ADX_trend_signal(adx_col: list | np.ndarray,
 
 
 # @feature_timeit
-@jit(nopython=True)
+@jit(nopython=True, nogil=True, cache=True)
 def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray) -> list[float | int]:
     """
   Calculate MACD (Moving Average Convergence Divergence) crossover signals.
@@ -632,7 +631,7 @@ def HullMA(close: list | np.ndarray, timeperiod: int) -> pd.Series:
 
 
 # @feature_timeit
-@jit(nopython=True)
+@jit(nopython=True, nogil=True, cache=True)
 def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
     """
         Calculate the Relative Moving Average (RMA) of a given array of closing prices.
@@ -651,7 +650,7 @@ def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
     """
     alpha = 1.0 / timeperiod
     # rma = [0.0] * len(close)
-    rma = np.zeros_like(close)
+    rma = np.empty_like(close)
     # Calculating the SMA for the first 'length' values
     sma = sum(close[:timeperiod]) / timeperiod
     rma[timeperiod - 1] = sma
@@ -662,8 +661,8 @@ def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
 
 
 # @feature_timeit
-@jit(nopython=True)
-def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int) -> ndarray:
+@jit(nopython=True, nogil=True, cache=True)
+def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int) -> np.ndarray:
     """
         Calculate the Volume Weighted Moving Average (VWMA) for a given time period.
 
@@ -700,60 +699,45 @@ def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int) -> ndarray:
     return np.array(vwmas)
 
 
-# @feature_timeit
-def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 6) -> np.ndarray[np.float64]:
-    """
-    Calculate the Arnaud Legoux Moving Average (ALMA) for a given input time series.
-
-    Args:
-        close (np.ndarray): An array of closing prices.
-        timeperiod (int): The number of periods to consider for the ALMA calculation.
-        offset (float, optional): The offset factor for the ALMA calculation. Default is 0.85.
-        sigma (int, optional): The standard deviation factor for the ALMA calculation. Default is 6.
-
-    Returns:
-        np.ndarray: An array containing the ALMA values with NaN values padded at the beginning.
-
-    ALMA (Arnaud Legoux Moving Average) is a weighted moving average that is designed to reduce lag
-    in the moving average by incorporating a Gaussian distribution. This function calculates the ALMA
-    for the given input time series, with customizable parameters for the offset and sigma.
-
-    """
-    m = offset * (timeperiod - 1)
-    s = timeperiod / sigma
-    wtd = np.array([np.exp(-((i - m) ** 2) / (2 * s ** 2)) for i in range(timeperiod)])
-    wtd /= sum(wtd)
-    alma = np.convolve(close, wtd, mode='valid')
-    return np.insert(alma, 0, [np.nan] * (timeperiod - 1))
-
-
-# @feature_timeit
-def HammingMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
-    """
-        Calculate the Hamming Moving Average (HMA) of a given numpy array of closing prices.
-
-        Args:
-            close (np.ndarray): A numpy array containing the closing prices.
-            timeperiod (int): The period over which to calculate the HMA.
-
-        Returns:
-            np.ndarray[np.float64]: The Hamming Moving Average of the closing prices as a numpy array.
-
-        This function computes the HMA by applying a Hamming window to the closing prices and then
-        performing a convolution. The resulting HMA is returned as a numpy array.
-
-        The Hamming window is applied over the specified 'timeperiod', and the 'mode' is set to 'valid'.
-
-        Note:
-        - The 'close' numpy array should have at least 'timeperiod' data points.
-
-    """
-    w = np.hamming(timeperiod)
-    hma = np.convolve(close, w, mode='valid') / w.sum()
-    return np.insert(hma, 0, [np.nan] * (timeperiod - 1))
+# @jit(nopython=True, nogil=True, cache=True)
+# def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
+#     """
+#         Calculate the Least Squares Moving Average (LSMA) of a time series.
+#
+#         Args:
+#             close (np.ndarray): An array of closing prices or time series data.
+#             timeperiod (int): The time period for the LSMA calculation.
+#
+#         Returns:
+#             np.ndarray: An array containing the LSMA values of the input data.
+#
+#         This function calculates the LSMA for the given input data. LSMA is a linear
+#         regression-based moving average, which fits a linear line to 'timeperiod'
+#         data points and calculates the moving average based on the slope and
+#         intercept of the fitted line.
+#
+#         Note:
+#             - The input 'close' array should be a NumPy ndarray.
+#             - The output array will have 'np.nan' values for the first 'timeperiod - 1'
+#               elements since there are not enough data points to perform the calculation.
+#
+#     """
+#     close = np.ascontiguousarray(close)
+#     lsma = np.empty_like(close)
+#     x = np.arange(0, timeperiod)
+#     A = np.empty((timeperiod, 2))
+#     A[:, 0] = x
+#     A[:, 1] = 1
+#     AT = np.ascontiguousarray(A.T)
+#     ATA_inv = np.linalg.inv(np.dot(AT, A))
+#     for i in range(timeperiod - 1, len(close)):
+#         y = close[i - timeperiod + 1:i + 1]
+#         m, c = np.dot(ATA_inv, np.dot(AT, y))
+#         lsma[i] = m * (timeperiod - 1) + c
+#     return lsma
 
 
-@jit(nopython=True)
+@jit(nopython=True, nogil=True, cache=True)
 def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
     """
         Calculate the Least Squares Moving Average (LSMA) of a time series.
@@ -776,119 +760,215 @@ def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
               elements since there are not enough data points to perform the calculation.
 
     """
-    close = np.ascontiguousarray(close)
+    # close = np.ascontiguousarray(close)
     lsma = np.empty_like(close)
-    lsma[:timeperiod - 1] = np.nan
-    x = np.arange(0, timeperiod)
-    A = np.empty((timeperiod, 2))
-    A[:, 0] = x
-    A[:, 1] = 1
+    A = np.column_stack((np.arange(timeperiod), np.ones(timeperiod)))
     AT = np.ascontiguousarray(A.T)
     ATA_inv = np.linalg.inv(np.dot(AT, A))
     for i in range(timeperiod - 1, len(close)):
-        y = close[i - timeperiod + 1:i + 1]
-        m, c = np.dot(ATA_inv, np.dot(AT, y))
+        m, c = np.dot(ATA_inv, np.dot(AT, close[i - timeperiod + 1:i + 1]))
         lsma[i] = m * (timeperiod - 1) + c
     return lsma
 
 
-@jit(nopython=True)
-def gaussian_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
-    return np.exp(-0.5 * x ** 2) / np.sqrt(2 * np.pi)
-
-
-@jit(nopython=True)
-def epanechnikov_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
-    return np.where(np.abs(x) <= 1, 3 / 4 * (1 - x ** 2), 0)
-
-
-@jit(nopython=True)
-def rectangular_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
-    return np.where(np.abs(x) <= 1, 0.5, 0)
-
-
-@jit(nopython=True)
-def triangular_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
-    return np.where(np.abs(x) <= 1, 1 - np.abs(x), 0)
-
-
-@jit(nopython=True)
-def biweight_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
-    return np.where(np.abs(x) <= 1, (15 / 16) * (1 - x ** 2) ** 2, 0)
-
-
-@jit(nopython=True)
-def cosine_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
-    return np.where(np.abs(x) <= 1, np.pi / 4 * np.cos(np.pi / 2 * x), 0)
-
-
-# @jit(nopython=True)
-# def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.ndarray[np.float64]:
-#     nwma = np.full_like(close, np.nan)
-#     # nwma = np.zeros_like(close)
-#     if timeperiod % 2 == 1:
-#         distances = np.concatenate((np.arange(timeperiod // 2 + 1, 0, -1), np.arange(2, timeperiod // 2 + 2)))
-#     else:
-#         distances = np.concatenate((np.arange(timeperiod // 2, 0, -1), np.arange(1, timeperiod // 2 + 1)))
-#     if kernel == 0:
-#         weights = np.ascontiguousarray(gaussian_kernel(distances / timeperiod))
-#     elif kernel == 1:
-#         weights = np.ascontiguousarray(epanechnikov_kernel(distances / timeperiod))
-#     elif kernel == 2:
-#         weights = np.ascontiguousarray(rectangular_kernel(distances / timeperiod))
-#     elif kernel == 3:
-#         weights = np.ascontiguousarray(triangular_kernel(distances / timeperiod))
-#     elif kernel == 4:
-#         weights = np.ascontiguousarray(biweight_kernel(distances / timeperiod))
-#     elif kernel == 5:
-#         weights = np.ascontiguousarray(cosine_kernel(distances / timeperiod))
-#     else:
-#         raise ValueError("kernel argument must be int from 0 to 5")
-#     for i in range(timeperiod - 1, len(close)):
-#         window_prices = np.ascontiguousarray(close[i - timeperiod + 1:i + 1])
-#         nwma[i] = (weights @ window_prices) / weights.sum()
-#     return nwma
-
-@jit(nopython=True)
-def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.ndarray[np.float64]:
-    preceding = np.zeros(timeperiod-1)
-    # nwma = np.zeros_like(close)
-    if timeperiod % 2 == 1:
-        distances = np.concatenate((np.arange(timeperiod // 2 + 1, 0, -1, dtype=close.dtype),
-                                    np.arange(2, timeperiod // 2 + 2, dtype=close.dtype)))
-    else:
-        distances = np.concatenate((np.arange(timeperiod // 2, 0, -1, dtype=close.dtype),
-                                    np.arange(1, timeperiod // 2 + 1, dtype=close.dtype)))
-    if kernel == 0:
-        weights = np.exp(-0.5 * (distances / timeperiod) ** 2) / np.sqrt(2 * np.pi)
-    elif kernel == 1:
-        weights = np.where(np.abs(distances / timeperiod) <= 1, 3 / 4 * (1 - (distances / timeperiod) ** 2), 0)
-    elif kernel == 2:
-        weights = np.where(np.abs(distances / timeperiod) <= 1, 0.5, 0)
-    elif kernel == 3:
-        weights = np.where(np.abs(distances / timeperiod) <= 1, 1 - np.abs(distances / timeperiod), 0)
-    elif kernel == 4:
-        weights = np.where(np.abs(distances / timeperiod) <= 1, (15 / 16) * (1 - (distances / timeperiod) ** 2) ** 2, 0)
-    elif kernel == 5:
-        weights = np.where(np.abs(distances / timeperiod) <= 1, np.pi / 4 * np.cos(np.pi / 2 * (distances / timeperiod)), 0)
-    else:
-        raise ValueError("kernel argument must be int from 0 to 5")
-    nwma = np.array([(weights @ close[i - timeperiod + 1:i + 1]) / weights.sum() for i in range(timeperiod - 1, len(close))])
-    return np.concatenate((preceding, nwma))
-
-
-@jit(nopython=True)
-def LWMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
-    preceding = np.zeros(period-1)
-    weights = np.arange(1, period + 1, dtype=np.float64)
-    weights_sum = np.sum(weights)
-    lwma = np.array([np.dot(close[i - period + 1: i + 1], weights) / weights_sum for i in range(period - 1, len(close))])
-    return np.concatenate((preceding, lwma))
 
 # @feature_timeit
-@jit(nopython=True)
+# @jit(nopython=True, nogil=True, cache=True)
+def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 6) -> np.ndarray[np.float64]:
+    """
+    Calculate the Arnaud Legoux Moving Average (ALMA) for a given input time series.
+
+    Args:
+        close (np.ndarray): An array of closing prices.
+        timeperiod (int): The number of periods to consider for the ALMA calculation.
+        offset (float, optional): The offset factor for the ALMA calculation. Default is 0.85.
+        sigma (int, optional): The standard deviation factor for the ALMA calculation. Default is 6.
+
+    Returns:
+        np.ndarray: An array containing the ALMA values with NaN values padded at the beginning.
+
+    ALMA (Arnaud Legoux Moving Average) is a weighted moving average that is designed to reduce lag
+    in the moving average by incorporating a Gaussian distribution. This function calculates the ALMA
+    for the given input time series, with customizable parameters for the offset and sigma.
+
+    """
+    # close = np.ascontiguousarray(close)
+    m = offset * (timeperiod - 1)
+    s = timeperiod / sigma
+    denominator = (2 * s ** 2)
+    wtd = np.array([np.exp(-((i - m) ** 2) / denominator) for i in range(timeperiod)], dtype=close.dtype)
+    wtd /= wtd.sum()
+    alma = np.convolve(close, wtd, 'valid')
+    return np.concatenate((np.zeros(timeperiod - 1), alma))
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def GMAv1(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+    exponent = 1 / period
+    gma = np.array([np.prod(close[i - period:i]) ** exponent for i in range(period, len(close)+1)])
+    return np.concatenate((np.zeros(period - 1), gma))
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def GMAv2(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+    log_close = np.log(close)
+    exponent = 1 / period
+    gma = np.array([np.sum(log_close[i - period:i]) * exponent for i in range(period, len(close)+1)])
+    return np.concatenate((np.zeros(period - 1), np.exp(gma)))
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+    gma = np.empty_like(close)
+    log_close = np.log(close)
+    exponent = 1 / period
+    window_sum = np.sum(log_close[:period])
+    gma[period-1] = window_sum * exponent
+    for i in range(period, len(close)):
+        window_sum -= log_close[i-period]
+        window_sum += log_close[i]
+        gma[i] = window_sum * exponent
+    return np.exp(gma)
+
+
+# @jit(nopython=True, nogil=True, cache=True)
+# def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+#     gma = np.empty_like(close)
+#     exponent = 1 / period
+#     for i in range(period, len(close)+1):
+#         gma[i-1] = np.prod(close[i - period:i]) ** exponent
+#     return gma
+
+
+# @feature_timeit
+# @jit(nopython=True, nogil=True, cache=True)
+def HammingMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
+    """
+        Calculate the Hamming Moving Average (HMA) of a given numpy array of closing prices.
+
+        Args:
+            close (np.ndarray): A numpy array containing the closing prices.
+            timeperiod (int): The period over which to calculate the HMA.
+
+        Returns:
+            np.ndarray[np.float64]: The Hamming Moving Average of the closing prices as a numpy array.
+
+        This function computes the HMA by applying a Hamming window to the closing prices and then
+        performing a convolution. The resulting HMA is returned as a numpy array.
+
+        The Hamming window is applied over the specified 'timeperiod', and the 'mode' is set to 'valid'.
+
+        Note:
+        - The 'close' numpy array should have at least 'timeperiod' data points.
+
+    """
+    w = np.hamming(timeperiod)
+    hma = np.convolve(close, w, mode='valid') / w.sum()
+    return np.concatenate((np.zeros(timeperiod - 1), hma))
+
+
+# @jit(nopython=True, nogil=True, cache=True)
+# def gaussian_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
+#     return np.exp(-0.5 * x ** 2) / np.sqrt(2 * np.pi)
+#
+#
+# @jit(nopython=True, nogil=True, cache=True)
+# def epanechnikov_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
+#     return np.where(np.abs(x) <= 1, 3 / 4 * (1 - x ** 2), 0)
+#
+#
+# @jit(nopython=True, nogil=True, cache=True)
+# def rectangular_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
+#     return np.where(np.abs(x) <= 1, 0.5, 0)
+#
+#
+# @jit(nopython=True, nogil=True, cache=True)
+# def triangular_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
+#     return np.where(np.abs(x) <= 1, 1 - np.abs(x), 0)
+#
+#
+# @jit(nopython=True, nogil=True, cache=True)
+# def biweight_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
+#     return np.where(np.abs(x) <= 1, (15 / 16) * (1 - x ** 2) ** 2, 0)
+#
+#
+# @jit(nopython=True, nogil=True, cache=True)
+# def cosine_kernel(x: np.ndarray) -> np.ndarray[np.float64]:
+#     return np.where(np.abs(x) <= 1, np.pi / 4 * np.cos(np.pi / 2 * x), 0)
+#
+#
+# @jit(nopython=True, nogil=True, cache=True)
+# def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.ndarray[np.float64]:
+#     # nwma = np.empty_like(close)
+#     if timeperiod % 2 == 1:
+#         distances = np.concatenate((np.arange(timeperiod // 2 + 1, 0, -1, dtype=close.dtype),
+#                                     np.arange(2, timeperiod // 2 + 2, dtype=close.dtype)))
+#     else:
+#         distances = np.concatenate((np.arange(timeperiod // 2, 0, -1, dtype=close.dtype),
+#                                     np.arange(1, timeperiod // 2 + 1, dtype=close.dtype)))
+#     if kernel == 0:
+#         weights = gaussian_kernel(distances / timeperiod)
+#     elif kernel == 1:
+#         weights = epanechnikov_kernel(distances / timeperiod)
+#     elif kernel == 2:
+#         weights = rectangular_kernel(distances / timeperiod)
+#     elif kernel == 3:
+#         weights = triangular_kernel(distances / timeperiod)
+#     elif kernel == 4:
+#         weights = biweight_kernel(distances / timeperiod)
+#     elif kernel == 5:
+#         weights = cosine_kernel(distances / timeperiod)
+#     else:
+#         raise ValueError("kernel argument must be int from 0 to 5")
+#     weights_sum = weights.sum()
+#     nwma = np.array([(weights @ close[i - timeperiod + 1:i + 1]) / weights_sum for i in range(timeperiod - 1, len(close))])
+#     return np.concatenate((np.zeros(timeperiod-1), nwma))
+
+@jit(nopython=True, nogil=True, cache=True)
+def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.ndarray[np.float64]:
+    close = np.ascontiguousarray(close)
+    # nwma = np.empty_like(close)
+    if timeperiod % 2 == 1:
+        distances = np.concatenate((np.arange(timeperiod // 2 + 1, 0, -1),
+                                    np.arange(2, timeperiod // 2 + 2)))
+    else:
+        distances = np.concatenate((np.arange(timeperiod // 2, 0, -1),
+                                    np.arange(1, timeperiod // 2 + 1)))
+    if kernel == 0:
+        weights = np.ascontiguousarray(np.exp(-0.5 * (distances / timeperiod) ** 2) / np.sqrt(2 * np.pi))
+    elif kernel == 1:
+        weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1, 3 / 4 * (1 - (distances / timeperiod) ** 2), 0))
+    elif kernel == 2:
+        weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1, 0.5, 0))
+    elif kernel == 3:
+        weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1, 1 - np.abs(distances / timeperiod), 0))
+    elif kernel == 4:
+        weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1, (15 / 16) * (1 - (distances / timeperiod) ** 2) ** 2, 0))
+    elif kernel == 5:
+        weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1,
+                           np.pi / 4 * np.cos(np.pi / 2 * (distances / timeperiod)), 0))
+    else:
+        raise ValueError("kernel argument must be int from 0 to 5")
+    # weights = weights.astype(close.dtype)
+    weights_sum = weights.sum()
+    nwma = np.array(
+        [(weights @ close[i - timeperiod + 1:i + 1]) / weights_sum for i in range(timeperiod - 1, len(close))])
+    return np.concatenate((np.zeros(timeperiod - 1), nwma))
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def LWMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+    close = np.ascontiguousarray(close)
+    weights = np.ascontiguousarray(np.arange(1, period + 1, dtype=close.dtype))
+    weights_sum = weights.sum()
+    lwma = np.array([np.dot(close[i - period + 1: i + 1], weights) / weights_sum for i in range(period - 1, len(close))])
+    return np.concatenate((np.zeros(period - 1), lwma))
+
+
+# @feature_timeit
+@jit(nopython=True, nogil=True, cache=True)
 def MGD(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
-    md = np.zeros_like(close)
+    md = np.empty_like(close)
     md[0] = close[0]
     for i in range(1, len(close)):
         if md[i - 1] != 0:
@@ -901,23 +981,16 @@ def MGD(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
 
 ### It behaves differently depending on close len
 # @feature_timeit
-@jit(nopython=True)
+@jit(nopython=True, nogil=True, cache=True)
 def VIDYA(close: np.ndarray, k: np.ndarray, period: int) -> np.ndarray[np.float64]:
     alpha = 2 / (period + 1)
     # k = talib.CMO(close, period)
     k = np.abs(k) / 100
-    VIDYA = np.zeros_like(close)
+    VIDYA = np.empty_like(close)
     VIDYA[period - 1] = close[period - 1]
     for i in range(period, len(close)):
         VIDYA[i] = alpha * k[i] * close[i] + (1 - alpha * k[i]) * VIDYA[i - 1]
     return VIDYA
-
-
-# @feature_timeit
-@jit(nopython=True)
-def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
-    gma = np.array([np.prod(close[i:i + period]) ** (1 / period) for i in range(len(close) - period + 1)])
-    return np.concatenate((np.zeros(period - 1), gma))
 
 
 # @feature_timeit
@@ -1016,7 +1089,7 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 34: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
-    return ma_types[ma_type](np_df, ma_period)
+    return ma_types[ma_type](np_df.astype(np.float64), ma_period)
 
 
 def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
@@ -1049,16 +1122,19 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 25: lambda c, p: NadarayWatsonMA(c, p, kernel=5)}
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
-    return ma_types[ma_type](close, ma_period)
+    return ma_types[ma_type](close.astype(np.float64), ma_period)
 
 
-# @jit(nopython=True)
 def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
                 fast_ma_type, slow_ma_type, signal_ma_type):
     slow = get_MA(ohlcv, slow_ma_type, slow_period)
-    # print(f'slow {slow}')
     fast = get_MA(ohlcv, fast_ma_type, fast_period)
+    # print(f'slow {slow}')
     # print(f'fast {fast}')
+    # plt.plot(slow[-1_000:])
+    # plt.show()
+    # plt.plot(fast[-1_000:])
+    # plt.show()
     macd = np.nan_to_num(fast - slow)
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 

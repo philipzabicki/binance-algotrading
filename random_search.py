@@ -14,7 +14,7 @@ from utility import minutes_since, seconds_since, get_market_slips_stats
 from definitions import REPORT_DIR
 import cProfile
 
-CPU_CORES_COUNT = 1  # cpu_count()
+CPU_CORES_COUNT = 8  # cpu_count()
 EPISODES_PER_CORE = 100
 TICKER, ITV, M_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', '11-09-2023'
 ENVIRONMENT = MACDStratEnv
@@ -23,8 +23,8 @@ REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{M_TYPE}{ITV}since{START_DATE}.csv'
 
 
 def run_indefinitely(_, df):
-    profiler = cProfile.Profile()
-    profiler.enable()
+    # profiler = cProfile.Profile()
+    # profiler.enable()
 
     env = ENVIRONMENT(df=df, no_action_finish=inf,
                       init_balance=1_000, fee=0.0, coin_step=0.00001,
@@ -50,8 +50,9 @@ def run_indefinitely(_, df):
         _writer = writer(file)
         # writer.writerow(header)
         _writer.writerows(results)
-    profiler.disable()
-    profiler.print_stats(sort='tottime')
+
+    # profiler.disable()
+    # profiler.print_stats(sort='tottime')
 
 
 def main():

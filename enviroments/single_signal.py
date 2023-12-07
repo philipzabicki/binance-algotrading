@@ -21,7 +21,7 @@ class SignalExecuteEnv(SpotBacktest):
     def _finish_episode(self):
         super()._finish_episode()
         if self.verbose:
-            print(f' position_ratio={self.position_ratio}, stop_loss={self.stop_loss}', end='')
+            print(f' position_ratio={self.position_ratio}, stop_loss={self.stop_loss*100:.3f}%,', end='')
             print(f' enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}')
 
     def __call__(self, *args, **kwargs):
@@ -43,8 +43,8 @@ class SignalExecuteEnv(SpotBacktest):
             obs, _, _, _, _ = self.step(action)
             # current_step manipulation just to synchronize plot rendering
             # could be fixed by calling .render() inside .step() just before return statement
-            self.current_step -= 1
             if self.visualize:
+                self.current_step -= 1
                 self.render()
-            self.current_step += 1
+                self.current_step += 1
         return obs, self.reward, self.done, False, self.info

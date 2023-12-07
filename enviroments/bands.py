@@ -45,7 +45,7 @@ class OneRunEnv(SpotBacktest):
         self.atr_period = atr_period
         self.atr_multi = atr_multi
 
-    def reset(self, position_ratio=1.00, stop_loss=0.01, enter_at=1.000, close_at=-1.000, ma_type=0, ma_period=1,
+    def reset(self, position_ratio=1.00, stop_loss=0.01, enter_at=1.000, close_at=1.000, ma_type=0, ma_period=1,
               atr_period=1, atr_multi=1.000):
         self.stop_loss = stop_loss
         self.enter_threshold = enter_at
@@ -121,7 +121,7 @@ class BandsStratEnv(Env):
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, postition_ratio=1.0, stop_loss=0.01, enter_at=1.000, close_at=-1.000, ma_type=0, ma_period=2,
+    def reset(self, postition_ratio=1.0, stop_loss=0.01, enter_at=1.000, close_at=1.000, ma_type=0, ma_period=2,
               atr_period=2, atr_multi=1.000):
         # print(f'BandsStratEnv.reset {postition_ratio} {stop_loss} {enter_at} {close_at} {ma_type} {ma_period} {atr_period} {atr_multi}')
         return self.exec_env.reset(postition_ratio, stop_loss, enter_at, close_at, ma_type, ma_period, atr_period,

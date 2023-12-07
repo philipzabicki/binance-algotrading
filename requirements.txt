@@ -19,4 +19,4 @@ pymoo~=0.6.0.1
 python-dateutil~=2.8.2
 scipy~=1.11.3
 requests~=2.31.0
-torch~=2.1.0+cu121
+torch~=2.1.0+cu12

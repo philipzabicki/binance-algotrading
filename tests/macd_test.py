@@ -8,8 +8,7 @@ if __name__ == '__main__':
     df = by_BinanceVision(ticker='BTCFDUSD',
                           interval='1m',
                           type='spot',
-                          data='klines',
-                          delay=604_800).tail(minutes_since('11-09-2023'))
+                          data='klines').tail(minutes_since('11-09-2023'))
     df = df.drop(columns='Opened').to_numpy()
 
     for i in range(35):

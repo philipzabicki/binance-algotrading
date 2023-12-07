@@ -2,12 +2,10 @@ from websocket import WebSocketApp
 from binance.client import Client
 from json import loads
 from numpy import array, where, asarray
-from os import getcwd
 from csv import writer
 from collections import deque
 from time import time
 from datetime import datetime as dt
-from talib import ATR
 from binance.enums import *
 from TA_tools import custom_MACD, MACD_cross_signal
 from definitions import SETTINGS_DIR
@@ -87,7 +85,7 @@ class TakerBot:
                 self.stoploss_price = 0.0
                 self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
                 self.q = '0.00000'
-                self._report_slip(_order, self.stoploss_price, 'stoploss')
+                self._report_slipp(_order, self.stoploss_price, 'stoploss')
             else:
                 self._partialy_filled_problem()
 
@@ -100,12 +98,18 @@ class TakerBot:
             if self._market_buy(q):
                 self.stoploss_price = round(self.close * (1 - self.settings['SL']), 2)
                 self._stop_loss(q, self.stoploss_price)
-                self._report_slip(self.buy_order, self.close, 'buy')
+                self._report_slipp(self.buy_order, self.close, 'buy')
         elif (self.signal <= -self.close_at) and (self.balance < 5.01):
-            self._cancel_order(self.SL_order['orderId'])
+            try:
+                self._cancel_order(self.SL_order['orderId'])
+            except Exception as e:
+                self._cancel_all_orders()
+                print(f'exception at _cancel_order(): {e}')
             if self._market_sell(self.q):
-                self.balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
-                self._report_slip(self.sell_order, self.close, 'sell')
+                self._report_slipp(self.sell_order, self.close, 'sell')
+        # else:
+        #     self.init_balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
+        #     self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
 
     def _check_signal(self):
         self.macd, self.signal_line = custom_MACD( asarray(self.OHLCVX_data),
@@ -115,17 +119,14 @@ class TakerBot:
         self.signal = MACD_cross_signal(self.macd, self.signal_line)[-1]
         # print(f'(_analyze to _check_signal: {time()-self.start_t2}s)')
 
-    def _report_slip(self, order, req_price, order_type):
+    def _report_slipp(self, order, req_price, order_type):
         file = self.buy_slipp_file
         if order_type == 'buy':
             file = self.buy_slipp_file
         elif order_type == 'sell':
             file = self.sell_slipp_file
-        elif order_type == 'stoploss':
+        elif (order_type == 'stoploss') or (order_type == 'unfilled_stoploss'):
             file = self.stoploss_slipp_file
-            with open(file, 'a', newline='') as file:
-                writer(file).writerow([float(order['price']) / req_price])
-            return
         # print(f'REPORTING {order_type} SLIPP FROM: {order}')
         filled_price = self._get_filled_price(order)
         _slipp = filled_price / req_price
@@ -142,16 +143,12 @@ class TakerBot:
         return value / quantity
 
     def _partialy_filled_problem(self):
-        self.q = str(self.client.get_asset_balance(asset='BTC')['locked'])[:7]
         self._cancel_all_orders()
+        self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
         _order = self._market_sell(self.q)
+        self._report_slipp(_order, self.stoploss_price, 'unfilled_stoploss')
         self.SL_placed = False
         self.stoploss_price = 0.0
-        _slipp = self._get_filled_price(_order) / self.stoploss_price
-        file = self.stoploss_slipp_file
-        with open(file, 'a', newline='') as file:
-            writer(file).writerow([_slipp])
-        print(f' {dt.today()} REPORTING stoploss(missed) SLIPP {_slipp} FROM: {_order}')
 
     def _cancel_all_orders(self):
         try:

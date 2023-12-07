@@ -9,7 +9,7 @@ from pymoo.core.variable import Real, Integer
 from pymoo.optimize import minimize
 from pymoo.visualization.pcp import PCP
 # from pymoo.algorithms.moo.dnsga2 import DNSGA2
-from pymoo.algorithms.moo.nsga2 import NSGA2
+# from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.core.callback import Callback
 from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariableSampling, \
@@ -27,8 +27,8 @@ from utility import seconds_since, minutes_since, get_market_slips_stats
 
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 128
-N_GEN = 2000
+POP_SIZE = 1024
+N_GEN = 5
 
 
 # print(SLIPP)
@@ -51,7 +51,10 @@ class MACDProblem(ElementwiseProblem):
 class MACDMixedVariableProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
         self.env = env
-        macd_variables = {"fast_period": Integer(bounds=(2, 1_000)),
+        macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "enter_at": Real(bounds=(0.001, 1.000)),
+                          "close_at": Real(bounds=(0.001, 1.000)),
+                          "fast_period": Integer(bounds=(2, 1_000)),
                           "slow_period": Integer(bounds=(2, 1_000)),
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 34)),
@@ -60,8 +63,9 @@ class MACDMixedVariableProblem(ElementwiseProblem):
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['fast_period'], X['slow_period'], X['signal_period'], X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
+        action = [X['stop_loss'], X['enter_at'], X['close_at'], X['fast_period'], X['slow_period'], X['signal_period'], X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
         _, reward, _, _, _ = self.env.step(action)
+        # print(f'_evaluate() reward:{reward}')
         out["F"] = array([-reward])
 
 
@@ -75,8 +79,10 @@ class MyCallback(Callback):
     def notify(self, algorithm):
         avg_rew = mean(algorithm.pop.get("F"))
         # print(f'Current population: {algorithm.pop.get("F")}')
-        if (avg_rew != inf) and (avg_rew != -inf) and (avg_rew > 0):
+        if avg_rew < 0:
             self.opt.append(avg_rew)
+        else:
+            self.opt.append(0.0)
         # print(f'avg_rew {avg_rew}')
         # print(f'self.opt {self.opt}')
         # self.opt[self.idx] = avg_rew if avg_rew<0 else 0.0
@@ -96,17 +102,18 @@ def display_callback(callback, fname):
 
 
 def display_result(result, problem, fname):
-    X_array = array([[entry['fast_period'], entry['slow_period'], entry['signal_period'],
+    X_array = array([[entry['stop_loss'], entry['enter_at'], entry['close_at'],
+                      entry['fast_period'], entry['slow_period'], entry['signal_period'],
                       entry['fast_ma_type'], entry['slow_ma_type'], entry['signal_ma_type']]
                      for entry in result.pop.get("X")])
     print(f'X_array {X_array}')
     pop_size = len(X_array)
-    labels = ['fast_period', 'slow_period', 'signal_period', 'fast_ma_type', 'slow_ma_type', 'signal_ma_type']
+    labels = ['stop_loss', 'enter_at', 'close_at', 'fast_period', 'slow_period', 'signal_period', 'fast_ma_type', 'slow_ma_type', 'signal_ma_type']
     bounds = array([problem.vars[name].bounds for name in labels]).T
     plot = PCP(labels=labels, n_ticks=10)
     plot.set_axis_style(color="grey", alpha=1)
     plot.add(X_array, color="grey", alpha=0.3)
-    '''plot.add(X_array[int(pop_size * .9) + 1:], linewidth=1.9, color='#a4f0ff')
+    plot.add(X_array[int(pop_size * .9) + 1:], linewidth=1.9, color='#a4f0ff')
     plot.add(X_array[int(pop_size * .8) + 1:int(pop_size * .9)], linewidth=1.8, color='#88e7fa')
     plot.add(X_array[int(pop_size * .7) + 1:int(pop_size * .8)], linewidth=1.7, color='#60d8f3')
     plot.add(X_array[int(pop_size * .6) + 1:int(pop_size * .7)], linewidth=1.6, color='#33c5e8')
@@ -116,7 +123,7 @@ def display_result(result, problem, fname):
     plot.add(X_array[int(pop_size * .2) + 1:int(pop_size * .3)], linewidth=1.2, color='#00719f')
     plot.add(X_array[int(pop_size * .1) + 1:int(pop_size * .2)], linewidth=1.1, color='#005d89')
     plot.add(X_array[:int(pop_size * .1)], linewidth=1.0, color='#004a73')
-    plot.add(X_array[0], linewidth=1.5, color='red')'''
+    plot.add(X_array[0], linewidth=1.5, color='red')
     plot.save(REPORT_DIR + fname)
     return plot
     # plot.show()
@@ -157,18 +164,18 @@ def main():
                    save_history=False,
                    callback=MyCallback(),
                    # termination=('n_gen', N_GEN),
-                   termination=("time", "00:30:00"),
+                   termination=("time", "01:00:00"),
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')
-    print('FINAL POPULATION')
-    print(f'res.pop.get("F") {res.pop.get("F")}')
-    print(f'res.pop.get("X") {res.pop.get("X")}')
+    # print('FINAL POPULATION')
+    # print(f'res.pop.get("F") {res.pop.get("F")}')
+    # print(f'res.pop.get("X") {res.pop.get("X")}')
     with open(REPORT_DIR + 'pop' + str(POP_SIZE) + str(dt.today()).replace(':', '-')[:-7] + '.csv', 'w',
               newline='') as file:
         csv_writer = writer(file)
         for f, x in zip(res.pop.get("F"), res.pop.get("X")):
-            _row = [-1*f[0], x['fast_period'], x['slow_period'], x['signal_period'], x['fast_ma_type'], x['slow_ma_type'], x['signal_ma_type']]
+            _row = [-1*f[0], x['stop_loss'], x['enter_at'], x['close_at'], x['fast_period'], x['slow_period'], x['signal_period'], x['fast_ma_type'], x['slow_ma_type'], x['signal_ma_type']]
             csv_writer.writerow(_row)
             print(f'writing row {_row}')
     # print(f'res.pop {res.pop}')
