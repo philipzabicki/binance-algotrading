@@ -1,7 +1,8 @@
 from enviroments.backtest import SpotBacktest
+from numpy import hstack, empty
 
 
-class SignalExecuteEnv(SpotBacktest):
+class SignalExecuteSpotEnv(SpotBacktest):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'close_at' in kwargs and 'enter_at' in kwargs:
@@ -10,6 +11,7 @@ class SignalExecuteEnv(SpotBacktest):
         else:
             self.enter_threshold = 1.0
             self.close_threshold = 1.0
+        self.df = hstack((self.df, empty((self.df.shape[0], 1))))
 
     def reset(self, *args, **kwargs):
         self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.00
@@ -21,15 +23,13 @@ class SignalExecuteEnv(SpotBacktest):
     def _finish_episode(self):
         super()._finish_episode()
         if self.verbose:
-            print(f' position_ratio={self.position_ratio}, stop_loss={self.stop_loss*100:.3f}%,', end='')
+            print(f' position_ratio={self.position_ratio:.2f}, stop_loss={self.stop_loss * 100:.3f}%,', end='')
             print(f' enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}')
 
     def __call__(self, *args, **kwargs):
         obs = args[0]
         while not self.done:
-            # obs[-1] assumes that signal values are stored in last column
             signal = obs[-1]
-            # print(f'signal {signal} enter {self.enter_threshold} close {self.close_threshold}')
             action = 0
             if self.qty == 0:
                 if signal >= self.enter_threshold:
@@ -41,9 +41,9 @@ class SignalExecuteEnv(SpotBacktest):
             elif (self.qty > 0) and (signal <= -self.close_threshold):
                 action = 2
             obs, _, _, _, _ = self.step(action)
-            # current_step manipulation just to synchronize plot rendering
-            # could be fixed by calling .render() inside .step() just before return statement
             if self.visualize:
+                # current_step manipulation just to synchronize plot rendering
+                # could be fixed by calling .render() inside .step() just before return statement
                 self.current_step -= 1
                 self.render()
                 self.current_step += 1

@@ -13,18 +13,21 @@ class SpotBacktest(Env):
                  init_balance=1_000, position_ratio=1.0, stop_loss=None, fee=0.0002, coin_step=0.001,
                  slippage=None, render_range=120, verbose=True, visualize=False):
         self.creation_t = time()
+        self.df = df.to_numpy()
+        if len(self.df) < max_steps:
+            raise ValueError("max_steps larger than rows in dataframe")
         print(f'Environment created. Fee: {fee} Coin step: {coin_step}')
-        print(f' df size: {len(df)} obs sample(last row): {df[-1, exclude_cols_left:]}')
+        print(f' df size: {len(self.df)} obs sample(last row): {self.df[-1, exclude_cols_left:]}')
         print(f' slippage stats: {slippage}')
         if visualize and (dates_df is not None):
             print(f'before dates_df {dates_df}')
-            self.dates_df = date2num(dates_df)
+            self.dates_df = date2num(dates_df.to_numpy())
             print(f'after dates_df {self.dates_df}')
             self.visualize = True
             self.render_range = render_range
             self.time_step = self.dates_df[1] - self.dates_df[0]
-            print(f' Visualization started, from: {dates_df[0]}', end=' ')
-            print(f'to: {dates_df[-1]}, time step: {self.time_step} (as factor of day)')
+            print(f' Visualization started, from: {self.dates_df[0]}', end=' ')
+            print(f'to: {self.dates_df[-1]}, time step: {self.time_step} (as factor of day)')
         else:
             self.visualize = False
             print(f' Visualize is set to false or there was no dates df provided.')
@@ -34,12 +37,11 @@ class SpotBacktest(Env):
         # Generation of random numbers is too expensive computational wise. #
         # self.slippage = slippage
         if slippage is not None:
-            self.buy_factor = slippage['market_buy'][0]
-            self.sell_factor = slippage['market_sell'][0]
-            self.stop_loss_factor = slippage['SL'][0]
+            self.buy_factor = slippage['buy'][0]
+            self.sell_factor = slippage['sell'][0]
+            self.stop_loss_factor = slippage['stop_loss'][0]
         else:
             self.buy_factor, self.sell_factor, self.stop_loss_factor = 1.0, 1.0, 1.0
-        self.df = df
         self.total_steps = len(self.df)
         self.exclude_cols_left = exclude_cols_left
         self.no_action_finish = no_action_finish

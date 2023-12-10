@@ -16,7 +16,7 @@ import cProfile
 
 CPU_CORES_COUNT = 8  # cpu_count()
 EPISODES_PER_CORE = 100
-TICKER, ITV, M_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', '11-09-2023'
+TICKER, ITV, M_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', '2023-09-11'
 ENVIRONMENT = MACDStratEnv
 SLIPP = get_market_slips_stats()
 REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{M_TYPE}{ITV}since{START_DATE}.csv'
@@ -60,10 +60,8 @@ def main():
     while 1:
         start_t = time()
         # df = by_DataClient(ticker=TICKER, interval=ITV, futures=FUTURES, statements=True, delay=3_600)
-        df = by_BinanceVision(ticker=TICKER, interval=ITV, type=M_TYPE, data='klines', delay=129_600)
-        df = df.drop(columns='Opened').to_numpy()[-minutes_since(START_DATE):, :]
-        df = hstack((df, zeros((df.shape[0], 1))))
-        # df = df[-265_000:,:]
+        dates, df = by_BinanceVision(ticker=TICKER, interval=ITV, market_type=M_TYPE, data_type='klines', split=True, start_date=START_DATE, delay=129_600)
+        print(f'df {dates}')
         with Pool(processes=CPU_CORES_COUNT) as pool:
             # Each process will call 'run_indefinitely_process'
             # The list(range(num_processes)) is just to provide a different argument to each process (even though it's not used in the function)

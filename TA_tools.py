@@ -12,8 +12,8 @@ import ta.trend
 import ta.momentum
 import get_data
 from numba import jit
-
-np.seterr(divide='ignore', invalid='ignore')
+np.seterr(over='raise')
+#np.seterr(divide='ignore', invalid='ignore')
 
 
 # from scipy import stats
@@ -994,25 +994,14 @@ def VIDYA(close: np.ndarray, k: np.ndarray, period: int) -> np.ndarray[np.float6
 
 
 # @feature_timeit
-def FBA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+def FBA(close: np.ndarray, period: int) -> np.ndarray:
     fibs = []
     a, b = 1, 2
     while b <= period:
         fibs.append(b)
         a, b = b, a + b
-    # print(f'fibs {fibs}')
-    moving_averages = []
-    for i in fibs:
-        # Use np.convolve to calculate the moving average
-        moving_avg = np.convolve(close, np.ones(i), 'valid') / i
-        # Append zeros at the beginning to match the original array's size
-        moving_avg = np.concatenate((np.zeros(i - 1), moving_avg))
-        moving_averages.append(moving_avg)
-    # Calculate the average of the moving averages
-    # print(len(moving_averages))
-    moving_averages = np.array(moving_averages)
-    fma = np.mean(moving_averages, axis=0)
-    return fma
+    moving_averages = np.array([talib.EMA(close, i) for i in fibs])/100
+    return (np.sum(moving_averages, axis=0)/len(fibs))*100
 
 
 # @feature_timeit
@@ -1026,7 +1015,7 @@ def FBA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
 
 
 # @feature_timeit
-def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_multi: float = 1.000) -> np.ndarray:
+def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_multi: float = 1.0) -> np.ndarray:
     # print(np_ATR)
     return ((np_xMA - np_close) / np_ATR) / atr_multi
 
@@ -1139,10 +1128,10 @@ def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 
 
-def get_MA_signal(np_df: np.ndarray, type: int, MA_period: int, ATR_period: int, ATR_multi: float):
+def get_MA_band_signal(np_df: np.ndarray, ma_type: int, ma_period: int, atr_period: int, atr_multi: float):
     # print(hex(id(np_df)))
     # print(f' {np_df} {type} {MA_period} {ATR_period} {ATR_multi}')
-    atr = talib.ATR(np_df[:, 1], np_df[:, 2], np_df[:, 3], ATR_period)
+    atr = talib.ATR(np_df[:, 1], np_df[:, 2], np_df[:, 3], atr_period)
     # print(f'atr: {atr}')
     '''np_df[:,-1] = anyMA_sig(np_df[:,3],
                           get_MA(np_df, type, MA_period),
@@ -1151,9 +1140,9 @@ def get_MA_signal(np_df: np.ndarray, type: int, MA_period: int, ATR_period: int,
     # return np_df
     # print(f'ma {ma}')
     return anyMA_sig(np_df[:, 3],
-                     get_MA(np_df, type, MA_period),
+                     get_MA(np_df, ma_type, ma_period),
                      atr,
-                     atr_multi=ATR_multi)
+                     atr_multi)
 
 
 # @feature_timeit

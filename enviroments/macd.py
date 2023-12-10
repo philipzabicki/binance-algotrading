@@ -1,15 +1,15 @@
-from numpy import array, float64, inf, zeros, hstack
+from numpy import array, float64, inf
 from gym import spaces, Env
-from enviroments.single_signal import SignalExecuteEnv
+from enviroments.single_signal import SignalExecuteSpotEnv
 from TA_tools import custom_MACD, MACD_cross_signal
-from utility import minutes_since, seconds_since, get_market_slips_stats
+from utility import get_market_slips_stats
 from get_data import by_BinanceVision
-from matplotlib import pyplot as plt
 
-class MACDExecuteEnv(SignalExecuteEnv):
+
+class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
     def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,
               fast_period=12, slow_period=26, signal_period=9,
-              fast_ma_type=0, slow_ma_type=0, signal_ma_type=0,  **kwargs):
+              fast_ma_type=0, slow_ma_type=0, signal_ma_type=0, **kwargs):
         super().reset(*args, **kwargs)
         self.stop_loss = stop_loss
         self.enter_threshold = enter_at
@@ -25,22 +25,21 @@ class MACDExecuteEnv(SignalExecuteEnv):
                                         slow_ma_type=slow_ma_type, slow_period=slow_period,
                                         signal_ma_type=signal_ma_type, signal_period=signal_period)
         self.df[self.start_step:self.end_step, -1] = MACD_cross_signal(macd, macd_signal)
-        # print(f'1: {count_nonzero(self.df[self.start_step:self.end_step, -1]>=1)}')
-        # print(f'-1: {count_nonzero(self.df[self.start_step:self.end_step, -1]<=-1)}')
         self.obs = iter(self.df[self.start_step:self.end_step, :])
         return next(self.obs)
-        # return self.df[self.current_step, :]
 
     def _finish_episode(self):
         super()._finish_episode()
         if self.verbose:
-            # print(f' stop_loss={self.stop_loss*100:.3f}%, enter_at={self.enter_threshold:.4f}, close_at={self.close_threshold:.4f}', end='')
-            print(f' fast_period={self.fast_period}, slow_period={self.slow_period}, signal_period={self.signal_period}')
-            print(f' fast_MA_type={self.fast_ma_type}, slow_MA_type={self.slow_ma_type}, signal_MA_type={self.signal_ma_type}')
+            print(
+                f' fast_period={self.fast_period}, slow_period={self.slow_period}, signal_period={self.signal_period}')
+            print(
+                f' fast_MA_type={self.fast_ma_type}, slow_MA_type={self.slow_ma_type}, signal_MA_type={self.signal_ma_type}')
 
-class MACDStratEnv(Env):
+
+class MACDStratSpotEnv(Env):
     def __init__(self, *args, **kwargs):
-        self.exec_env = MACDExecuteEnv(*args, **kwargs)
+        self.exec_env = MACDExecuteSpotEnv(*args, **kwargs)
         obs_lower_bounds = array([-inf for _ in range(8)])
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
@@ -50,9 +49,9 @@ class MACDStratEnv(Env):
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, enter_at=1.000, close_at=1.000, fast_period=12, slow_period=26, signal_period=9,
+    def reset(self, stop_loss=None, enter_at=1.0, close_at=1.0,
+              fast_period=12, slow_period=26, signal_period=9,
               fast_ma_type=1, slow_ma_type=1, signal_ma_type=1):
-        # print(f'BandsStratEnv.reset {postition_ratio} {stop_loss} {enter_at} {close_at} {ma_type} {ma_period} {atr_period} {atr_multi}')
         return self.exec_env.reset(stop_loss=stop_loss, enter_at=enter_at, close_at=close_at,
                                    fast_period=fast_period, slow_period=slow_period, signal_period=signal_period,
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type, signal_ma_type=signal_ma_type)
@@ -64,22 +63,25 @@ class MACDStratEnv(Env):
         return self.exec_env(_reset)
 
 
+from matplotlib import pyplot as plt
 if __name__ == "__main__":
-    action = [0.01304250797182993, 0.13436531598036697, 0.8365601549979916, 473, 54, 802, 34, 23, 7]
-    df = by_BinanceVision(ticker='BTCFDUSD', interval='1m', type='spot', data='klines', delay=129_600)
-    dates_df = df['Opened'].to_numpy()[-minutes_since('11-09-2023'):]
-    df = df.drop(columns='Opened').to_numpy()[-minutes_since('11-09-2023'):, :]
-    df = hstack((df, zeros((df.shape[0], 1))))
-
-    macd, signal = custom_MACD(df, action[3], action[4], action[5], action[6], action[7], action[8])
+    action = [0.011123635861121386, 0.32212581146447883, 0.5566056106449668, 586, 810, 970, 9, 4, 23]
+    dates_df, df = by_BinanceVision(ticker='BTCFDUSD',
+                                    interval='1m',
+                                    market_type='spot',
+                                    data_type='klines',
+                                    start_date='2023-09-11 00:00:00',
+                                    split=True,
+                                    delay=129_600)
+    macd, signal = custom_MACD(df.to_numpy(), action[3], action[4], action[5], action[6], action[7], action[8])
     print(f'macd {macd}')
     print(f'signal {signal}')
-    plt.plot(macd[-10_000:])
-    plt.plot(signal[-10_000:])
+    plt.plot(macd)
+    plt.plot(signal)
     plt.show()
 
-    env = MACDStratEnv(df=df, dates_df=dates_df, init_balance=300, no_action_finish=inf,
-                       fee=0.0, coin_step=0.00001,
-                       slippage=get_market_slips_stats(),
-                       verbose=True, visualize=False)
+    env = MACDStratSpotEnv(df=df, dates_df=dates_df, init_balance=300, no_action_finish=inf,
+                           fee=0.0, coin_step=0.00001,
+                           slippage=get_market_slips_stats(),
+                           verbose=True, visualize=False)
     env.step(action)
