@@ -30,10 +30,11 @@ class MACDSpotTakerBot(SpotTakerBot):
                                                   fast_ma_type=self.fast_ma_type, fast_period=self.fast_period,
                                                   slow_ma_type=self.slow_ma_type, slow_period=self.slow_period,
                                                   signal_ma_type=self.signal_ma_type, signal_period=self.signal_period)
-        self.signals = MACD_cross_signal(self.macd, self.signal_line)
+        # We only need last 2 values of macd and signal line to get trade signals
+        self.signals = MACD_cross_signal(self.macd[-4:], self.signal_line[-4:])
         self.signal = self.signals[-1]
         print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} signals:{self.signals[-3:]}')
+        print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} trade_signals:{self.signals}')
 
 
 class BandsSpotTakerBot(SpotTakerBot):
