@@ -1,10 +1,12 @@
 import threading
-from websocket import WebSocketApp
 from json import loads, dumps
+
+from websocket import WebSocketApp
 
 SYMBOL = 'BTCUSDT'
 INTERVAL1 = '1m'
 INTERVAL2 = 'Min1'
+
 
 class ExPriceDiff:
     def __init__(self, url1, url2) -> None:
@@ -53,6 +55,7 @@ class ExPriceDiff:
         # Create two threads to run the WebSockets concurrently.
         threading.Thread(target=self.run_websocket, args=(self.ws1,)).start()
         threading.Thread(target=self.run_websocket, args=(self.ws2,)).start()
+
 
 if __name__ == '__main__':
     url1 = f'wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@kline_{INTERVAL1}'

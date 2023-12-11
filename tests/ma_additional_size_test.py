@@ -1,7 +1,7 @@
-from get_data import by_BinanceVision
-from TA_tools import get_MA
 from numpy import around
 
+from utils.get_data import by_BinanceVision
+from utils.ta_tools import get_MA
 
 if __name__ == "__main__":
     '''This test allows to check how many data points (minimal) given MA type needs

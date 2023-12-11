@@ -1,25 +1,27 @@
-from numpy import array, min, mean, max, inf
+from csv import writer
+# from pymoo.algorithms.soo.nonconvex.optuna import Optuna
+from datetime import datetime as dt
 from multiprocessing import Pool, cpu_count
-from get_data import by_BinanceVision
+
 from matplotlib import pyplot as plt
-from pymoo.core.problem import StarmapParallelization
-from pymoo.core.problem import ElementwiseProblem
-from pymoo.core.variable import Real, Integer
-# from pymoo.factory import get_sampling, get_crossover, get_mutation
-from pymoo.optimize import minimize
-from pymoo.visualization.pcp import PCP
+from numpy import array, min, mean, max, inf
 # from pymoo.algorithms.moo.dnsga2 import DNSGA2
 # from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.core.callback import Callback
-from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariableSampling, \
+from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
     MixedVariableDuplicateElimination
-# from pymoo.algorithms.soo.nonconvex.optuna import Optuna
-from datetime import datetime as dt
-from csv import writer
-from enviroments.macd_env import MACDStratSpotEnv
+from pymoo.core.problem import ElementwiseProblem
+from pymoo.core.problem import StarmapParallelization
+from pymoo.core.variable import Real, Integer
+# from pymoo.factory import get_sampling, get_crossover, get_mutation
+from pymoo.optimize import minimize
+from pymoo.visualization.pcp import PCP
+
 from definitions import REPORT_DIR
-from utility import get_slippage_stats
+from enviroments.macd_env import MACDStratSpotEnv
+from utils.get_data import by_BinanceVision
+from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 4096

@@ -1,11 +1,11 @@
-from TA_tools import  simple_rl_features_periods # , signal_features_periods, simple_rl_features
-# from utility import seconds_since, get_market_slips_stats
-from definitions import ROOT_DIR
 import matplotlib
 
+# from utility import seconds_since, get_market_slips_stats
+from definitions import ROOT_DIR
+from utils.get_data import by_BinanceVision
+from utils.ta_tools import simple_rl_features_periods  # , signal_features_periods, simple_rl_features
+
 matplotlib.use('TkAgg')
-from matplotlib import pyplot as plt
-from get_data import by_BinanceVision
 from enviroments.rl_env import SpotRL
 # from time import sleep
 import torch as th
@@ -20,11 +20,16 @@ if __name__ == "__main__":
     periods = [3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
     # periods = [3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765]
     # 1_620_000 means 150 episodes 10_800 steps each (3 hours for 1s step)
-    df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=604_800).tail(
-        108_000 + max(periods) * 3)
+    df = by_BinanceVision(ticker='BTCFDUSD',
+                          interval='1s',
+                          market_type='spot',
+                          data_type='klines',
+                          start_date='2023-09-11',
+                          split=True,
+                          delay=0).tail(108_000 + max(periods) * 3)
     df = simple_rl_features_periods(df, periods, zscore_standardization=True)
     # df = signal_features_periods(df, periods)
-    df.to_csv('C:/Users/philipz/Desktop/simple_rf_features.csv')
+    # df.to_csv('C:/Users/philipz/Desktop/simple_rf_features.csv')
 
     '''
     for col in df.columns:

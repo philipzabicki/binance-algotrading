@@ -1,13 +1,15 @@
 from collections import deque
 # from random import normalvariate
-from math import copysign, sqrt, floor
+from math import floor
 from random import randint
 from time import time
+
 import numpy as np
 # from gym import spaces, Env
 from gymnasium import Env, spaces
 from numpy import array, inf, mean, std, random
-from utility import TradingGraph
+
+from utils.visualize import TradingGraph
 
 
 class SpotRL(Env):
@@ -169,7 +171,8 @@ class SpotRL(Env):
         # print(f'BOUGHT {self.qty} at {price}')
         if self.visualize:
             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long", 'Reward': self.df[self.current_step, -1]})
+                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long",
+                                'Reward': self.df[self.current_step, -1]})
 
     def _sell(self, price, sl=False):
         # print(f'SOLD {self.qty} at {price}')
@@ -191,7 +194,7 @@ class SpotRL(Env):
         # PROFIT #
         if percentage_profit >= 0:
             if self.balance >= self.max_balance:
-                self.max_balance_bonus = self.balance-self.max_balance
+                self.max_balance_bonus = self.balance - self.max_balance
                 self.max_balance = self.balance
             self.good_trades_count += 1
             if self.max_profit == 0 or percentage_profit > self.max_profit:
@@ -216,10 +219,11 @@ class SpotRL(Env):
         self.position_closed = 1
         if self.visualize:
             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type, 'Reward': self.df[self.current_step, -1]})
+                                'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': order_type,
+                                'Reward': self.df[self.current_step, -1]})
 
     def step(self, action):
-        #print(f'action {action}')
+        # print(f'action {action}')
         # 30-day DCA, adding 222USD to balance
         # if (self.current_step-self.start_step)%43_200 == 0:
         # self.balance+=222
@@ -229,7 +233,7 @@ class SpotRL(Env):
             # print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
             self.in_position_counter += 1
             self.pnl = (close / self.enter_price) - 1
-            #print(f'pnl: {self.pnl}')
+            # print(f'pnl: {self.pnl}')
             if self.pnl > 0:
                 self.profit_hold_counter += 1
             else:
@@ -381,7 +385,7 @@ class FuturesRL(SpotRL):
                 self._buy(current_close)
                 if self.visualize: self.trades.append(
                     {'Date': Date, 'High': High, 'Low': Low, 'total': self.qty, 'type': "open_long"})
-        ## Finish episode if there was 0 orders after 7 days (24*60*7)
+        ## Finish episode if there were 0 orders after 7 days (24*60*7)
         if (not self.episode_orders) and ((self.current_step - self.start_step) > 10_080):
             print(f'(episode finished: {self.episode_orders} trades {self.current_step - self.start_step} steps)',
                   end='  ')

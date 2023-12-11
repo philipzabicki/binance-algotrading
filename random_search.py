@@ -1,24 +1,22 @@
-from numpy import isnan, hstack, zeros, inf
-from pandas import read_csv
-# import pandas as pd
-from gc import collect
-from os import getcwd
-from random import randint
 from csv import writer
-from time import time, sleep
+# import pandas as pd
+from multiprocessing import Pool
 from statistics import mean
-from multiprocessing import Pool, cpu_count
-from get_data import by_DataClient, by_BinanceVision
-from enviroments.macd_env import MACDStratEnv
-from utility import minutes_since, seconds_since, get_market_slips_stats
+from time import time
+
+from numpy import isnan, inf
+from pandas import read_csv
+
 from definitions import REPORT_DIR
-import cProfile
+from enviroments import MACDStratSpotEnv
+from utils.get_data import by_BinanceVision
+from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = 8  # cpu_count()
 EPISODES_PER_CORE = 100
 TICKER, ITV, M_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', '2023-09-11'
-ENVIRONMENT = MACDStratEnv
-SLIPP = get_market_slips_stats()
+ENVIRONMENT = MACDStratSpotEnv
+SLIPP = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
 REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{M_TYPE}{ITV}since{START_DATE}.csv'
 
 
@@ -60,7 +58,8 @@ def main():
     while 1:
         start_t = time()
         # df = by_DataClient(ticker=TICKER, interval=ITV, futures=FUTURES, statements=True, delay=3_600)
-        dates, df = by_BinanceVision(ticker=TICKER, interval=ITV, market_type=M_TYPE, data_type='klines', split=True, start_date=START_DATE, delay=129_600)
+        dates, df = by_BinanceVision(ticker=TICKER, interval=ITV, market_type=M_TYPE, data_type='klines', split=True,
+                                     start_date=START_DATE, delay=129_600)
         print(f'df {dates}')
         with Pool(processes=CPU_CORES_COUNT) as pool:
             # Each process will call 'run_indefinitely_process'
@@ -75,7 +74,6 @@ def main():
         print(f'POOL exec time: {exec_time:.2f}s EpisodesPerSecond: {eps:.3f}')
         # sleep(10000)
         break
-        collect()
 
 
 if __name__ == "__main__":

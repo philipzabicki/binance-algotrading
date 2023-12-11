@@ -1,9 +1,8 @@
-from numpy import array, float64, inf
 from gym import spaces, Env
-from enviroments.single_signal import SignalExecuteSpotEnv
+from numpy import array, float64, inf
+
+from enviroments import SignalExecuteSpotEnv
 from utils.ta_tools import custom_MACD, MACD_cross_signal
-from utils.utility import get_slippage_stats
-from utils.get_data import by_BinanceVision
 
 
 class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -61,27 +60,3 @@ class MACDStratSpotEnv(Env):
                             fast_period=int(action[3]), slow_period=int(action[4]), signal_period=int(action[5]),
                             fast_ma_type=int(action[6]), slow_ma_type=int(action[7]), signal_ma_type=int(action[8]))
         return self.exec_env(_reset)
-
-
-from matplotlib import pyplot as plt
-if __name__ == "__main__":
-    action = [0.011123635861121386, 0.32212581146447883, 0.5566056106449668, 586, 810, 970, 9, 4, 23]
-    dates_df, df = by_BinanceVision(ticker='BTCFDUSD',
-                                    interval='1m',
-                                    market_type='spot',
-                                    data_type='klines',
-                                    start_date='2023-09-11 00:00:00',
-                                    split=True,
-                                    delay=129_600)
-    macd, signal = custom_MACD(df.to_numpy(), action[3], action[4], action[5], action[6], action[7], action[8])
-    print(f'macd {macd}')
-    print(f'signal {signal}')
-    plt.plot(macd)
-    plt.plot(signal)
-    plt.show()
-
-    env = MACDStratSpotEnv(df=df, dates_df=dates_df, init_balance=300, no_action_finish=inf,
-                           fee=0.0, coin_step=0.00001,
-                           slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                           verbose=True, visualize=False)
-    env.step(action)

@@ -1,9 +1,11 @@
-from pandas import read_csv
 import datetime as dt
+from os import path
+
 from dateutil.parser import parse
+from pandas import read_csv
 # from scipy.stats import skew, kurtosis
 from pympler import asizeof
-from os import path
+
 from definitions import SLIPPAGE_DIR
 
 
@@ -26,7 +28,6 @@ def get_slippage_stats(market_type, ticker, interval, order_type='market'):
         print(f'USING {slippages} INSTEAD')
     # print(slipps)
     return slippages
-
 
 
 '''def get_stats_for_file(file_path):

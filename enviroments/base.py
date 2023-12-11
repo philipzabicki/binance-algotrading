@@ -2,9 +2,11 @@
 from math import copysign, floor
 from random import randint
 from time import time
+
 from gym import spaces, Env
 from matplotlib.dates import date2num
 from numpy import array, inf, mean, std, hstack, empty
+
 from utils.visualize import TradingGraph
 
 

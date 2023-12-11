@@ -1,21 +1,20 @@
-from websocket import WebSocketApp
-from binance.client import Client
-from json import loads
-from numpy import array, where
-from os import getcwd
-from csv import writer
 from collections import deque
-from time import time
+from csv import writer
 from datetime import datetime as dt
+from json import loads
+
+from binance.client import Client
+from numpy import array
 from talib import RSI
-from TA_tools import RSI_oversold_signal
-from definitions import SETTINGS_DIR
-from binance.enums import *
+from websocket import WebSocketApp
+
+from definitions import SLIPPAGE_DIR
+from utils.ta_tools import RSI_oversold_signal
 
 
 class TakerBot:
     def __init__(self, symbol, itv, settings, API_KEY, SECRET_KEY, multi=25):
-        self.buy_slipp_file = SETTINGS_DIR + 'slippages_market_buy.old2.csv'
+        self.buy_slipp_file = SLIPPAGE_DIR + 'slippages_market_buy.old2.csv'
         self.symbol = symbol
         self.settings = settings
         url = f'wss://stream.binance.com:9443/ws/{symbol.lower()}@kline_{itv}'
@@ -52,13 +51,14 @@ class TakerBot:
     def on_message(self, ws, message):
         # self.start_t1 = time()
         data = loads(message)
-        #print(f"Received: {data}")
+        # print(f"Received: {data}")
         data_k = data['k']
         if data_k['x']:
             self.OHLCVX_data.append(
                 list(map(float, [data_k['o'], data_k['h'], data_k['l'], data_k['c'], data_k['v']])))
             self._analyze(float(data_k['c']))
-            print(f' INFO close:{data_k["c"]} rsi:{self.rsi:.2f} signal:{self.signal} qty:{self.q} balance:{self.balance:.2f}')
+            print(
+                f' INFO close:{data_k["c"]} rsi:{self.rsi:.2f} signal:{self.signal} qty:{self.q} balance:{self.balance:.2f}')
             # print(f'init_balance:{self.init_balance:.2f}')
 
     def _analyze(self, close):

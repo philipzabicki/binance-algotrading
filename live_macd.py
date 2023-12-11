@@ -1,12 +1,13 @@
-from bots.macd_binance import TakerBot
+from bots import MACDSpotTakerBot
 from credentials import binance_API_KEY, binance_SECRET_KEY
 
-SYMBOL = 'BTCFDUSD'
+BASE_TICKER = 'BTC'
+QUOTE_TICKER = 'FDUSD'
 MARKET = 'spot'
 INTERVAL = '1m'
 stop_loss, enter_at, close_at = 0.011123635861121386, 0.32212581146447883, 0.5566056106449668
 fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type = 586, 810, 970, 9, 4, 23
-# MA requires previous data longer than just calculation period size
+# MAs require previous data longer than just calculation period size
 PREV_DATA_MULTIPLAYER = 25
 SETTINGS = {'stop_loss': stop_loss,
             'enter_at': enter_at,
@@ -19,11 +20,12 @@ SETTINGS = {'stop_loss': stop_loss,
             'signal_ma_type': signal_ma_type}
 
 if __name__ == '__main__':
-    bot = TakerBot(SYMBOL,
-                   MARKET,
-                   INTERVAL,
-                   SETTINGS,
-                   binance_API_KEY,
-                   binance_SECRET_KEY,
-                   PREV_DATA_MULTIPLAYER)
+    bot = MACDSpotTakerBot(base=BASE_TICKER,
+                           quote=QUOTE_TICKER,
+                           market=MARKET,
+                           itv=INTERVAL,
+                           settings=SETTINGS,
+                           API_KEY=binance_API_KEY,
+                           SECRET_KEY=binance_SECRET_KEY,
+                           multi=PREV_DATA_MULTIPLAYER)
     bot.run()

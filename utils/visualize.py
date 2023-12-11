@@ -1,8 +1,9 @@
-from numpy import array, where, max, min, fromstring, uint8
 from collections import deque
+
+from cv2 import cvtColor, imshow, waitKey, destroyAllWindows, COLOR_RGB2BGR
 from matplotlib import dates as mpl_dates, pyplot as plt
 from mplfinance.original_flavor import candlestick_ohlc
-from cv2 import cvtColor, imshow, waitKey, destroyAllWindows, COLOR_RGB2BGR
+from numpy import array, where, max, min, fromstring, uint8
 
 
 class TradingGraph:
@@ -149,20 +150,20 @@ class TradingGraph:
         # print(f'idx {idx}')
         for i in idx:
             # print(f'i: {i} self.trades_arr[i]: {self.trades_arr[i]}')
-            annotate_text = '$'+self.trades_arr[i, 1] if self.trades_arr[i, 1] != '0.0' else ''
+            annotate_text = '$' + self.trades_arr[i, 1] if self.trades_arr[i, 1] != '0.0' else ''
             x_position = self.render_arr[i, 0]
-            if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i,0] == 'close_short':
+            if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i, 0] == 'close_short':
                 high_low = self.render_arr[i, 3] - RANGE * 0.02
                 ycoords = self.render_arr[i, 3] - RANGE * 0.08
                 self.ax1.scatter(x_position, high_low, c='green', label='green', s=120, edgecolors='none',
                                  marker="^")
-                self.ax1.annotate(annotate_text, (x_position - 2*self.time_step, high_low*0.9999), c='black')
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.9999), c='black')
             else:
                 high_low = self.render_arr[i, 2] + RANGE * 0.02
                 ycoords = self.render_arr[i, 2] + RANGE * 0.06
                 self.ax1.scatter(x_position, high_low, c='red', label='red', s=120, edgecolors='none',
                                  marker="v")
-                self.ax1.annotate(annotate_text, (x_position - 2*self.time_step, high_low*1.0001), c='black')
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.0001), c='black')
             '''try:
                 self.ax1.annotate('{0:.2f}'.format(self.render_arr[i, 5]), (self.render_arr[i, 0] - 0.02, high_low),
                                   xytext=(self.render_arr[i, 0] - 0.02, ycoords),

@@ -1,24 +1,24 @@
 # from typing import Any
 # from matplotlib import pyplot as plt
+from math import copysign
+from statistics import mean, stdev
+from time import time
+
 import numpy as np
 import pandas as pd
-from time import time
-from statistics import mean, stdev
-from math import copysign
-from finta import TA as finTA
-from tindicators import ti
-import talib
-import ta.trend
 import ta.momentum
-import get_data
+import ta.trend
+import talib
+from finta import TA as finTA
 from numba import jit
+from tindicators import ti
+
+from utils import get_data
 
 np.seterr(over='raise')
 
 
 # np.seterr(divide='ignore', invalid='ignore')
-
-
 # from scipy import stats
 # config.THREADING_LAYER = 'safe'
 # import MAs
@@ -665,8 +665,8 @@ def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
 
 @jit(nopython=True, nogil=True, cache=True)
 def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int):
-    vwma = np.array([np.sum(close[i-timeperiod:i]*volume[i-timeperiod:i])/np.sum(volume[i-timeperiod:i])
-                     for i in range(timeperiod, len(close)+1)])
+    vwma = np.array([np.sum(close[i - timeperiod:i] * volume[i - timeperiod:i]) / np.sum(volume[i - timeperiod:i])
+                     for i in range(timeperiod, len(close) + 1)])
     return np.concatenate((np.zeros(timeperiod - 1), vwma))
 
 

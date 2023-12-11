@@ -1,25 +1,27 @@
-from numpy import array, min, mean, max, inf
+from csv import writer
+# from pymoo.algorithms.soo.nonconvex.optuna import Optuna
+from datetime import datetime as dt
 from multiprocessing import Pool, cpu_count
+
 from matplotlib import pyplot as plt
-from pymoo.core.problem import StarmapParallelization
+from numpy import array, min, mean, max, inf
+# from pymoo.algorithms.moo.dnsga2 import DNSGA2
+from pymoo.algorithms.soo.nonconvex.ga import GA
+from pymoo.core.callback import Callback
+from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
+    MixedVariableDuplicateElimination
 from pymoo.core.problem import ElementwiseProblem
+from pymoo.core.problem import StarmapParallelization
 from pymoo.core.variable import Real, Integer
 # from pymoo.factory import get_sampling, get_crossover, get_mutation
 from pymoo.optimize import minimize
 from pymoo.visualization.pcp import PCP
-# from pymoo.algorithms.moo.dnsga2 import DNSGA2
-from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.algorithms.soo.nonconvex.ga import GA
-from pymoo.core.callback import Callback
-from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariableSampling, \
-    MixedVariableDuplicateElimination
-# from pymoo.algorithms.soo.nonconvex.optuna import Optuna
-from datetime import datetime as dt
-from csv import writer
-from get_data import by_BinanceVision
-from utility import get_slippage_stats
-from enviroments.bands_env import BandsStratSpotEnv
+
 from definitions import REPORT_DIR
+from enviroments.bands_env import BandsStratSpotEnv
+from utils.get_data import by_BinanceVision
+from utils.utility import get_slippage_stats
+
 # from time import time
 # import cProfile
 # from gc import collect
@@ -199,5 +201,5 @@ if __name__ == '__main__':
     # profiler = cProfile.Profile()
     # profiler.enable()
     main()
-    # profiler.disable()  # Zakończ profilowanie
+    # profiler.disable()
     # profiler.print_stats(sort='tottime')

@@ -1,22 +1,30 @@
-from enviroments.bands_env import BandsStratEnv
-import get_data
-from stable_baselines3.common.env_checker import check_env
+from numpy import inf
 from stable_baselines3 import DDPG
-from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
-from stable_baselines3.common.env_util import make_vec_env
-from sb3_contrib import RecurrentPPO
-from stable_baselines3.common.evaluation import evaluate_policy
-from sb3_contrib import ARS
 
-if __name__=="__main__":
-    slippages = {'market_buy':(1.000026, 0.000032), 'market_sell':(0.999971, 0.000029), 'SL':(1.0, 0.0)}
+from enviroments import BandsStratSpotEnv
+from utils.get_data import by_BinanceVision
+from utils.utility import get_slippage_stats
+
+if __name__ == "__main__":
+    slippages = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
     # Parallel environments
-    df = get_data(ticker='BTCTUSD', interval_list=['1m'], type='backtest', futures=False, indicator=None, period=None)
-    dates_df = df['Opened'].to_numpy()
-    df = df.drop(columns='Opened').to_numpy()
-    env = BandsStratEnv(df=df[-136_304:,:], init_balance=1_000, fee=0.0, slippage=slippages, dates_df=False, visualize=False, Render_range=60, write_to_csv=False)
-    #check_env(env)
-    #env = make_vec_env(env, n_envs=10)
+    _, df = by_BinanceVision(ticker='BTCFDUSD',
+                             interval='1m',
+                             market_type='spot',
+                             data_type='klines',
+                             start_date='2023-09-11 00:00:00',
+                             split=True,
+                             delay=0)
+    env = BandsStratSpotEnv(df=df,
+                            # max_steps=259_200,
+                            init_balance=300,
+                            no_action_finish=inf,
+                            fee=0.0,
+                            coin_step=0.00001,
+                            slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+                            verbose=False)
+    # check_env(env)
+    # env = make_vec_env(env, n_envs=10)
 
     '''from sb3_contrib import TQC
 
@@ -40,23 +48,23 @@ if __name__=="__main__":
     model = DDPG("MlpPolicy", env, verbose=1, device='cuda', learning_rate=0.001)
     model.learn(total_timesteps=10000, log_interval=5)
     model.save("ddpg_parametrizer")
-    #env = model.get_env()
+    # env = model.get_env()
 
-    del model # remove to demonstrate saving and loading
+    del model  # remove to demonstrate saving and loading
 
     model = DDPG.load("ddpg_parametrizer")
 
-    env.visualize=True
+    env.visualize = True
     obs = env.reset()
     while True:
         action, _states = model.predict(obs)
         obs, rewards, dones, info = env.step(action)
         env.render()
-    '''model = A2C("MlpPolicy", env, verbose=1)
-    model.learn(total_timesteps=25000)
-
-    obs = env.reset()
-    while True:
-        action, _states = model.predict(obs)
-        obs, rewards, dones, info = env.step(action)
-        env.render()      '''
+    # model = A2C("MlpPolicy", env, verbose=1)
+    # model.learn(total_timesteps=25000)
+    #
+    # obs = env.reset()
+    # while True:
+    #     action, _states = model.predict(obs)
+    #     obs, rewards, dones, info = env.step(action)
+    #     env.render()

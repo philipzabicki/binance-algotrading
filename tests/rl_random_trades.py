@@ -1,21 +1,15 @@
-from TA_tools import simple_rl_features
-from utility import seconds_since, get_market_slips_stats
-from matplotlib import pyplot as plt
-from get_data import by_BinanceVision
 from enviroments.rl_env import SpotRL
-from stable_baselines3.common.env_checker import check_env
-
-from stable_baselines3 import DQN
+from utils.get_data import by_BinanceVision
+from utils.utility import get_slippage_stats
 
 if __name__ == "__main__":
-    df = by_BinanceVision(ticker='BTCFDUSD', interval='1s', type='spot', data='klines', delay=129_600)
-    #df = simple_rl_features(df)
-    '''for col in df.columns:
-        print(col)
-        plt.plot(df[col])
-        plt.show()'''
-    dates_df = df['Opened'].to_numpy()[-seconds_since('09-01-2023'):]
-    df = df.drop(columns='Opened').to_numpy()[-seconds_since('09-01-2023'):, :]
+    dates_df, df = by_BinanceVision(ticker='BTCFDUSD',
+                                    interval='1s',
+                                    market_type='spot',
+                                    data_type='klines',
+                                    start_date='2023-09-11',
+                                    split=True,
+                                    delay=0)
 
     trading_env = SpotRL(df=df,
                          dates_df=dates_df,
@@ -24,7 +18,7 @@ if __name__ == "__main__":
                          init_balance=1_000,
                          fee=0.0,
                          coin_step=0.001,
-                         slippage=get_market_slips_stats(),
+                         slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
                          render_range=120,
                          visualize=True)
 

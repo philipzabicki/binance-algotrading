@@ -1,14 +1,16 @@
 # import pandas as pd
-from os import path, listdir
-from definitions import DATA_DIR
-import requests
+from datetime import date
 from io import BytesIO
-from zipfile import ZipFile, BadZipFile
-from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta
-import pandas as pd
-from binance_data import DataClient
+from os import path, listdir
 from time import time
+from zipfile import ZipFile, BadZipFile
+
+import pandas as pd
+import requests
+from binance_data import DataClient
+from dateutil.relativedelta import relativedelta
+
+from definitions import DATA_DIR
 
 LAST_DATA_POINT_DELAY = 86_400  # in seconds
 ITV_ALIASES = {'1m': '1T', '3m': '3T', '5m': '5T', '15m': '15T', '30m': '30T'}
@@ -29,7 +31,7 @@ def fix_and_fill_df(df, itv):
     if len(fixed_dates_df) > len(df):
         df = fixed_dates_df.merge(df, on='Opened', how='left')
         df.ffill(inplace=True)
-    ### Replacing 0 volume with really small one to make some TAcalculations possible
+    ### Replacing 0 volume with the smallest one to make some TAcalculations possible
     df.iloc[:, -1] = df.iloc[:, -1].replace(0.0, .00000001)
     return df
 
