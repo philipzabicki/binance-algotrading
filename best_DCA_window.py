@@ -1,4 +1,4 @@
-from enviroments.dca import DCAEnv
+from enviroments.dca_env import DCAEnv
 import TA_tools    
 
 if __name__=="__main__":

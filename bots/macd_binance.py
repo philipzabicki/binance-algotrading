@@ -87,7 +87,7 @@ class TakerBot:
                 self._partially_filled_problem()
 
     def _analyze(self):
-        print(f'(on_message to _analyze: {(time()-self.on_message_t/1_000)}ms)')
+        print(f'(on_message to _analyze: {(time()-self.on_message_t)/1_000}ms)')
         self.analyze_t = time()
         self._check_signal()
         if (self.signal >= self.enter_at) and (self.balance > 5.01):

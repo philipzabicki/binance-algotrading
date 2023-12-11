@@ -4,7 +4,7 @@ from get_data import by_BinanceVision
 from numpy import hstack, zeros
 
 from utility import seconds_since, get_market_slips_stats
-from enviroments.bands import BandsStratEnv
+from enviroments.bands_env import BandsStratEnv
 SLIPP = get_market_slips_stats()
 
 data = pd.read_csv(getcwd()+'/reports/pop10242023-10-08 16-58-34.csv')

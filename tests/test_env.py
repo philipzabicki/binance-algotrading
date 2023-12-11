@@ -5,7 +5,7 @@ from dateutil.parser import parse
 
 import TA_tools
 from utility import minutes_since, get_slips_stats
-from enviroments.backtest import BacktestEnvSpot
+from enviroments.base import BacktestEnvSpot
 
 if __name__=='__main__':
     #df = TA_tools.get_combined_intervals_df(ticker='BTCUSDT', interval_list=['5m'], type='um', data='klines', template='basic')

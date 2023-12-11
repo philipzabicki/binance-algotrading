@@ -9,7 +9,7 @@ from time import time, sleep
 from statistics import mean
 from multiprocessing import Pool, cpu_count
 from get_data import by_DataClient, by_BinanceVision
-from enviroments.macd import MACDStratEnv
+from enviroments.macd_env import MACDStratEnv
 from utility import minutes_since, seconds_since, get_market_slips_stats
 from definitions import REPORT_DIR
 import cProfile

@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 from get_data import by_BinanceVision
-from enviroments.rl import SpotRL
+from enviroments.rl_env import SpotRL
 # from time import sleep
 import torch as th
 # from stable_baselines3.common.env_checker import check_env

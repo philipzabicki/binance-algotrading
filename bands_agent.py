@@ -1,4 +1,4 @@
-from enviroments.bands import BandsStratEnv
+from enviroments.bands_env import BandsStratEnv
 import get_data
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import DDPG

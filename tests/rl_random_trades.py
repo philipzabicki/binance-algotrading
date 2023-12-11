@@ -2,7 +2,7 @@ from TA_tools import simple_rl_features
 from utility import seconds_since, get_market_slips_stats
 from matplotlib import pyplot as plt
 from get_data import by_BinanceVision
-from enviroments.rl import SpotRL
+from enviroments.rl_env import SpotRL
 from stable_baselines3.common.env_checker import check_env
 
 from stable_baselines3 import DQN

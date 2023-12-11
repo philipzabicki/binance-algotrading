@@ -18,7 +18,7 @@ from datetime import datetime as dt
 from csv import writer
 from get_data import by_BinanceVision
 from utility import get_slippage_stats
-from enviroments.bands import BandsStratSpotEnv
+from enviroments.bands_env import BandsStratSpotEnv
 from definitions import REPORT_DIR
 # from time import time
 # import cProfile

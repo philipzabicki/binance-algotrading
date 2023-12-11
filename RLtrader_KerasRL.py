@@ -2,7 +2,7 @@ from fileinput import filename
 import os
 import pandas as pd
 import numpy as np
-from enviroments.rl import RLEnvSpot
+from enviroments.rl_env import RLEnvSpot
 import random
 import tensorflow as tf
 from tensorflow.keras.optimizers.legacy import Adam
@@ -11,7 +11,7 @@ from rl.policy import EpsGreedyQPolicy, BoltzmannQPolicy
 from rl.memory import SequentialMemory
 from sklearn import preprocessing
 
-from enviroments.rl import RLEnv
+from enviroments.rl_env import RLEnv
 import TA_tools
 
 def build_model(states, actions, layers_set, window_length):

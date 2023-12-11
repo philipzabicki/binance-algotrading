@@ -1,9 +1,9 @@
 from numpy import array, float64, inf
 from gym import spaces, Env
-from enviroments.single_signal import SignalExecuteSpotEnv
-from TA_tools import get_MA_band_signal
-from get_data import by_BinanceVision
-from utility import get_slippage_stats
+from enviroments import SignalExecuteSpotEnv
+from utils.TA_tools import get_MA_band_signal
+from utils.get_data import by_BinanceVision
+from utils.utility import get_slippage_stats
 
 class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
     def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,

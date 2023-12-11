@@ -1,4 +1,4 @@
-from enviroments.backtest import BacktestEnv
+from enviroments.base import BacktestEnv
 
 class DCAEnv(BacktestEnv):
   def __init__(self, df, excluded_left=0, init_balance=28.5, position_ratio=1.0, leverage=1, fee=0.0, slippage=0.001, max_steps=0, lookback_window_size=1, Render_range=120, visualize=False):

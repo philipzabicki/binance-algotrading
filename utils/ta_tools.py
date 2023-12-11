@@ -12,8 +12,11 @@ import ta.trend
 import ta.momentum
 import get_data
 from numba import jit
+
 np.seterr(over='raise')
-#np.seterr(divide='ignore', invalid='ignore')
+
+
+# np.seterr(divide='ignore', invalid='ignore')
 
 
 # from scipy import stats
@@ -133,21 +136,21 @@ def RSI_like_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod: in
       top_bound:
       bottom_bound:
       rsi_like_indicator (np.ndarray or List[float]): An array or list of RSI like values [0,100].
-      timeperiod (int): The time period for calculating the macd.py.
+      timeperiod (int): The time period for calculating the macd_env.py.
 
   Returns:
       List[float]: A list of signals corresponding to the input values [-1,1].
 
   Input values interpretation:
     >=90, singal: -0.75, extremely overbought
-    >=75, macd.py: -0.5, overbought
-    >=65, macd.py: -0.25, somewhat overbought
-    <=10, macd.py: 0.75, extremely oversold
-    <=25, macd.py: 0.5, oversold
-    <=35, macd.py: 0.25, somewhat oversold
+    >=75, macd_env.py: -0.5, overbought
+    >=65, macd_env.py: -0.25, somewhat overbought
+    <=10, macd_env.py: 0.75, extremely oversold
+    <=25, macd_env.py: 0.5, oversold
+    <=35, macd_env.py: 0.25, somewhat oversold
     For 80/20 line crosses:
-    80.0 line cross from above, macd.py: -1, bearish cross
-    20.0 line cross from below, macd.py: 1, bullish cross
+    80.0 line cross from above, macd_env.py: -1, bearish cross
+    20.0 line cross from below, macd_env.py: 1, bullish cross
 
   Example:
       >>> rsi_values = [60.0, 55.0, 45.0, 35.0, 19.0, 40.0, 75.0, 85.0]
@@ -229,7 +232,7 @@ def ADX_trend_signal(adx_col: list | np.ndarray,
                      minus_di: list | np.ndarray,
                      plus_di: list | np.ndarray) -> list[float | int]:
     """
-  Calculates the ADX trend macd.py based on the given ADX, minus DI, and plus DI values.
+  Calculates the ADX trend macd_env.py based on the given ADX, minus DI, and plus DI values.
 
   Args:
       adx_col (np.ndarray or List[float]): An array or list of ADX values.
@@ -249,7 +252,7 @@ def ADX_trend_signal(adx_col: list | np.ndarray,
           0: No clear trend.
 
   Note:
-      The function calculates the trend macd.py for each set of corresponding ADX, minus DI, and plus DI values
+      The function calculates the trend macd_env.py for each set of corresponding ADX, minus DI, and plus DI values
       in the input arrays or lists.
 
   Example:
@@ -279,13 +282,13 @@ def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray
 
   Args:
       macd_col (np.ndarray or List[float]): An array or list containing MACD values.
-      signal_col (np.ndarray or List[float]): An array or list containing macd.py line values.
+      signal_col (np.ndarray or List[float]): An array or list containing macd_env.py line values.
 
   Returns:
       List[float]: A list of crossover signals with values 1, -1, 0.5, or -0.5.
 
-  The function calculates crossover signals based on the provided MACD and macd.py data. It compares
-  the current MACD and macd.py values with the previous values and assigns a macd.py.
+  The function calculates crossover signals based on the provided MACD and macd_env.py data. It compares
+  the current MACD and macd_env.py values with the previous values and assigns a macd_env.py.
 
   Note:
   The input arrays or lists should have the same length.
@@ -353,7 +356,7 @@ def MACD_zerocross_signal(macd_col: list | np.ndarray, signal_col: list | np.nda
 
   Args:
       macd_col (np.ndarray or List[float]): An array or list containing MACD values.
-      signal_col (np.ndarray or List[float]): An array or list containing macd.py line values.
+      signal_col (np.ndarray or List[float]): An array or list containing macd_env.py line values.
 
   Returns:
       List[Union[float, int]]: A list of zero crossing singals [-1,1]
@@ -371,8 +374,8 @@ def MACD_zerocross_signal(macd_col: list | np.ndarray, signal_col: list | np.nda
 
   Examples:
       >>> macd = [1.0, 0.5, -0.2, -0.7, 0.9]
-      >>> macd.py = [0.5, 0.1, -0.3, -0.6, 0.8]
-      >>> MACD_zerocross_signal(macd, macd.py)
+      >>> macd_env.py = [0.5, 0.1, -0.3, -0.6, 0.8]
+      >>> MACD_zerocross_signal(macd, macd_env.py)
       [0, 0.5, -0.5, 0, 1]
 
   """
@@ -391,7 +394,7 @@ def BB_signal(close: list | np.ndarray,
               mid: list | np.ndarray,
               lower_band: list | np.ndarray) -> list[float]:
     """
-  Calculate Bollinger Bands macd.py based on the provided data.
+  Calculate Bollinger Bands macd_env.py based on the provided data.
 
   Args:
       close (np.ndarray or List[float]): A one-dimensional array of closing prices.
@@ -660,81 +663,11 @@ def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
     return rma
 
 
-# @feature_timeit
 @jit(nopython=True, nogil=True, cache=True)
-def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int) -> np.ndarray:
-    """
-        Calculate the Volume Weighted Moving Average (VWMA) for a given time period.
-
-        Args:
-            close (np.ndarray): An array of closing prices.
-            volume (np.ndarray): An array of corresponding trading volumes.
-            timeperiod (int): The time period for calculating the VWMA.
-
-        Returns:
-            List[float]: A list of VWMA values for each data point.
-
-        Raises:
-            ValueError: If the input arrays 'close' and 'volume' have different lengths.
-
-        Note:
-            VWMA is a weighted moving average that takes into account the trading volume
-            along with the price. It is computed by summing the product of closing prices
-            and trading volumes over a specified time period and dividing it by the sum
-            of the trading volumes within that same period.
-    """
-    cum_sum = 0
-    cum_vol = 0
-    vwmas = []
-    cv_list = close * volume
-    i = 0
-    while i < len(close):
-        cum_sum += cv_list[i]
-        cum_vol += volume[i]
-        if i >= timeperiod:
-            cum_sum -= cv_list[i - timeperiod]
-            cum_vol -= volume[i - timeperiod]
-        vwmas.append(cum_sum / cum_vol)
-        i += 1
-    return np.array(vwmas)
-
-
-# @jit(nopython=True, nogil=True, cache=True)
-# def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
-#     """
-#         Calculate the Least Squares Moving Average (LSMA) of a time series.
-#
-#         Args:
-#             close (np.ndarray): An array of closing prices or time series data.
-#             timeperiod (int): The time period for the LSMA calculation.
-#
-#         Returns:
-#             np.ndarray: An array containing the LSMA values of the input data.
-#
-#         This function calculates the LSMA for the given input data. LSMA is a linear
-#         regression-based moving average, which fits a linear line to 'timeperiod'
-#         data points and calculates the moving average based on the slope and
-#         intercept of the fitted line.
-#
-#         Note:
-#             - The input 'close' array should be a NumPy ndarray.
-#             - The output array will have 'np.nan' values for the first 'timeperiod - 1'
-#               elements since there are not enough data points to perform the calculation.
-#
-#     """
-#     close = np.ascontiguousarray(close)
-#     lsma = np.empty_like(close)
-#     x = np.arange(0, timeperiod)
-#     A = np.empty((timeperiod, 2))
-#     A[:, 0] = x
-#     A[:, 1] = 1
-#     AT = np.ascontiguousarray(A.T)
-#     ATA_inv = np.linalg.inv(np.dot(AT, A))
-#     for i in range(timeperiod - 1, len(close)):
-#         y = close[i - timeperiod + 1:i + 1]
-#         m, c = np.dot(ATA_inv, np.dot(AT, y))
-#         lsma[i] = m * (timeperiod - 1) + c
-#     return lsma
+def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int):
+    vwma = np.array([np.sum(close[i-timeperiod:i]*volume[i-timeperiod:i])/np.sum(volume[i-timeperiod:i])
+                     for i in range(timeperiod, len(close)+1)])
+    return np.concatenate((np.zeros(timeperiod - 1), vwma))
 
 
 @jit(nopython=True, nogil=True, cache=True)
@@ -771,7 +704,6 @@ def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
     return lsma
 
 
-
 # @feature_timeit
 # @jit(nopython=True, nogil=True, cache=True)
 def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 6) -> np.ndarray[np.float64]:
@@ -803,41 +735,17 @@ def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 
 
 
 @jit(nopython=True, nogil=True, cache=True)
-def GMAv1(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
-    exponent = 1 / period
-    gma = np.array([np.prod(close[i - period:i]) ** exponent for i in range(period, len(close)+1)])
-    return np.concatenate((np.zeros(period - 1), gma))
-
-
-@jit(nopython=True, nogil=True, cache=True)
-def GMAv2(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
-    log_close = np.log(close)
-    exponent = 1 / period
-    gma = np.array([np.sum(log_close[i - period:i]) * exponent for i in range(period, len(close)+1)])
-    return np.concatenate((np.zeros(period - 1), np.exp(gma)))
-
-
-@jit(nopython=True, nogil=True, cache=True)
 def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     gma = np.empty_like(close)
     log_close = np.log(close)
     exponent = 1 / period
     window_sum = np.sum(log_close[:period])
-    gma[period-1] = window_sum * exponent
+    gma[period - 1] = window_sum * exponent
     for i in range(period, len(close)):
-        window_sum -= log_close[i-period]
+        window_sum -= log_close[i - period]
         window_sum += log_close[i]
         gma[i] = window_sum * exponent
     return np.exp(gma)
-
-
-# @jit(nopython=True, nogil=True, cache=True)
-# def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
-#     gma = np.empty_like(close)
-#     exponent = 1 / period
-#     for i in range(period, len(close)+1):
-#         gma[i-1] = np.prod(close[i - period:i]) ** exponent
-#     return gma
 
 
 # @feature_timeit
@@ -937,16 +845,19 @@ def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.n
     if kernel == 0:
         weights = np.ascontiguousarray(np.exp(-0.5 * (distances / timeperiod) ** 2) / np.sqrt(2 * np.pi))
     elif kernel == 1:
-        weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1, 3 / 4 * (1 - (distances / timeperiod) ** 2), 0))
+        weights = np.ascontiguousarray(
+            np.where(np.abs(distances / timeperiod) <= 1, 3 / 4 * (1 - (distances / timeperiod) ** 2), 0))
     elif kernel == 2:
         weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1, 0.5, 0))
     elif kernel == 3:
-        weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1, 1 - np.abs(distances / timeperiod), 0))
+        weights = np.ascontiguousarray(
+            np.where(np.abs(distances / timeperiod) <= 1, 1 - np.abs(distances / timeperiod), 0))
     elif kernel == 4:
-        weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1, (15 / 16) * (1 - (distances / timeperiod) ** 2) ** 2, 0))
+        weights = np.ascontiguousarray(
+            np.where(np.abs(distances / timeperiod) <= 1, (15 / 16) * (1 - (distances / timeperiod) ** 2) ** 2, 0))
     elif kernel == 5:
         weights = np.ascontiguousarray(np.where(np.abs(distances / timeperiod) <= 1,
-                           np.pi / 4 * np.cos(np.pi / 2 * (distances / timeperiod)), 0))
+                                                np.pi / 4 * np.cos(np.pi / 2 * (distances / timeperiod)), 0))
     else:
         raise ValueError("kernel argument must be int from 0 to 5")
     # weights = weights.astype(close.dtype)
@@ -961,7 +872,8 @@ def LWMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     close = np.ascontiguousarray(close)
     weights = np.ascontiguousarray(np.arange(1, period + 1, dtype=close.dtype))
     weights_sum = weights.sum()
-    lwma = np.array([np.dot(close[i - period + 1: i + 1], weights) / weights_sum for i in range(period - 1, len(close))])
+    lwma = np.array(
+        [np.dot(close[i - period + 1: i + 1], weights) / weights_sum for i in range(period - 1, len(close))])
     return np.concatenate((np.zeros(period - 1), lwma))
 
 
@@ -1000,18 +912,8 @@ def FBA(close: np.ndarray, period: int) -> np.ndarray:
     while b <= period:
         fibs.append(b)
         a, b = b, a + b
-    moving_averages = np.array([talib.EMA(close, i) for i in fibs])/100
-    return (np.sum(moving_averages, axis=0)/len(fibs))*100
-
-
-# @feature_timeit
-# @njit
-'''def VAMA(close: np.ndarray, volume: np.ndarray, period: int) -> np.ndarray[np.float64]:
-    volume_weights = close * volume
-    volume_weights_sum = np.convolve(volume_weights.astype(np.float64), np.ones(period).astype(np.float64), mode='valid')
-    volume_sum = np.convolve(volume, np.ones(period), 'valid')
-    vama_values = volume_weights_sum / volume_sum
-    return np.concatenate((np.full(period - 1, np.nan), vama_values))'''
+    moving_averages = np.array([talib.EMA(close, i) for i in fibs]) / 100
+    return (np.sum(moving_averages, axis=0) / len(fibs)) * 100
 
 
 # @feature_timeit
@@ -1124,7 +1026,7 @@ def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
     # plt.show()
     # plt.plot(fast[-1_000:])
     # plt.show()
-    macd = np.nan_to_num(fast - slow)
+    macd = fast - slow
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 
 

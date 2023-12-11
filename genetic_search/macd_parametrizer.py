@@ -17,12 +17,12 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableGA, MixedVariable
 # from pymoo.algorithms.soo.nonconvex.optuna import Optuna
 from datetime import datetime as dt
 from csv import writer
-from enviroments.macd import MACDStratSpotEnv
+from enviroments.macd_env import MACDStratSpotEnv
 from definitions import REPORT_DIR
 from utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 2048
+POP_SIZE = 4096
 N_GEN = 500
 
 

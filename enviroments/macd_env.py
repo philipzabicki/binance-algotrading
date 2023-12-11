@@ -1,9 +1,9 @@
 from numpy import array, float64, inf
 from gym import spaces, Env
 from enviroments.single_signal import SignalExecuteSpotEnv
-from TA_tools import custom_MACD, MACD_cross_signal
-from utility import get_market_slips_stats
-from get_data import by_BinanceVision
+from utils.ta_tools import custom_MACD, MACD_cross_signal
+from utils.utility import get_slippage_stats
+from utils.get_data import by_BinanceVision
 
 
 class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -82,6 +82,6 @@ if __name__ == "__main__":
 
     env = MACDStratSpotEnv(df=df, dates_df=dates_df, init_balance=300, no_action_finish=inf,
                            fee=0.0, coin_step=0.00001,
-                           slippage=get_market_slips_stats(),
+                           slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
                            verbose=True, visualize=False)
     env.step(action)
