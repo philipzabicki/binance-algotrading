@@ -1,8 +1,8 @@
 from gym import spaces, Env
 from numpy import array, float64, inf
 
-from enviroments import SignalExecuteSpotEnv
 from utils.ta_tools import custom_MACD, MACD_cross_signal
+from .base import SignalExecuteSpotEnv
 
 
 class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -23,7 +23,7 @@ class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
                                         slow_ma_type=slow_ma_type, slow_period=slow_period,
                                         signal_ma_type=signal_ma_type, signal_period=signal_period)
-        self.df[self.start_step:self.end_step, -1] = MACD_cross_signal(macd, macd_signal)
+        self.signals = MACD_cross_signal(macd, macd_signal)
         self.obs = iter(self.df[self.start_step:self.end_step, :])
         return next(self.obs)
 
@@ -44,7 +44,7 @@ class MACDStratSpotEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.001, 0.001, 2, 2, 2, 0, 0, 0]
-        action_upper = [0.0150, 1.000, 1.000, 10_000, 10_000, 10_000, 34, 34, 25]
+        action_upper = [0.0150, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 

@@ -24,22 +24,29 @@ from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 4096
-N_GEN = 500
+POP_SIZE = 1024
+N_GEN = 10
 
 
 class MACDMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, env, **kwargs):
-        self.env = env
+    def __init__(self, df, **kwargs):
+        self.env = MACDStratSpotEnv(df=df,
+                                    # max_steps=259_200,
+                                    init_balance=300,
+                                    no_action_finish=inf,
+                                    fee=0.0,
+                                    coin_step=0.00001,
+                                    slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+                                    verbose=False)
         macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
                           "fast_period": Integer(bounds=(2, 1_000)),
                           "slow_period": Integer(bounds=(2, 1_000)),
                           "signal_period": Integer(bounds=(2, 1_000)),
-                          "fast_ma_type": Integer(bounds=(0, 34)),
-                          "slow_ma_type": Integer(bounds=(0, 34)),
-                          "signal_ma_type": Integer(bounds=(0, 25))}
+                          "fast_ma_type": Integer(bounds=(0, 37)),
+                          "slow_ma_type": Integer(bounds=(0, 37)),
+                          "signal_ma_type": Integer(bounds=(0, 26))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -57,14 +64,16 @@ class MyCallback(Callback):
         self.opt = []
 
     def notify(self, algorithm):
+        # print(f'algorithm.pop.get("F") {algorithm.pop.get("F")}')
         avg_rew = mean(algorithm.pop.get("F"))
-        min_rew = min(algorithm.pop.get("F"))
-        max_rew = max(algorithm.pop.get("F"))
         if avg_rew < 0:
+            min_rew = min(algorithm.pop.get("F"))
+            max_rew = max(algorithm.pop.get("F"))
             self.opt.append([min_rew, avg_rew, max_rew])
+            # self.opt.append([avg_rew])
         else:
             self.opt.append([0.0, 0.0, 0.0])
-        print(self.opt)
+        # print(self.opt)
 
 
 def display_callback(callback, fname):
@@ -110,21 +119,21 @@ def main():
                              interval='1m',
                              market_type='spot',
                              data_type='klines',
-                             start_date='2023-09-11 00:00:00',
+                             start_date='2023-09-11',
                              split=True,
                              delay=0)
-    env = MACDStratSpotEnv(df=df,
-                           # max_steps=259_200,
-                           init_balance=300,
-                           no_action_finish=inf,
-                           fee=0.0,
-                           coin_step=0.00001,
-                           slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                           verbose=False)
+    # env = MACDStratSpotEnv(df=df,
+    #                        # max_steps=259_200,
+    #                        init_balance=300,
+    #                        no_action_finish=inf,
+    #                        fee=0.0,
+    #                        coin_step=0.00001,
+    #                        slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+    #                        verbose=False)
 
     pool = Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)
-    problem = MACDMixedVariableProblem(env, elementwise_runner=runner)
+    problem = MACDMixedVariableProblem(df, elementwise_runner=runner)
 
     # algorithm = NSGA2(pop_size=100)
     # algorithm = DNSGA2(pop_size=64)
@@ -140,7 +149,7 @@ def main():
                    save_history=False,
                    callback=MyCallback(),
                    # termination=('n_gen', N_GEN),
-                   termination=("time", "08:00:00"),
+                   termination=("time", "02:0:00"),
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')

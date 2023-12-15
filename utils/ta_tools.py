@@ -6,6 +6,7 @@ from time import time
 
 import numpy as np
 import pandas as pd
+import pandas_ta as p_ta
 import ta.momentum
 import ta.trend
 import talib
@@ -71,6 +72,7 @@ def scale_columns(df: pd.DataFrame, scaler: callable) -> pd.DataFrame:
 
 
 @feature_timeit
+@jit(nopython=True, nogil=True, cache=True)
 def zscore_standardize(values: list | np.ndarray) -> np.ndarray:
     """
     (...)
@@ -80,6 +82,7 @@ def zscore_standardize(values: list | np.ndarray) -> np.ndarray:
 
 # Calculates and returns linear regression slope but predictor variable(X) are natural numbers from 1 to len of dependent variable(Y)
 # Y are supposed to be balance divided by initial balance ratios per every env step
+@jit(nopython=True, nogil=True, cache=True)
 def linear_reg_slope(Y):
     Y = np.array(Y)
     n = len(Y)
@@ -91,6 +94,7 @@ def linear_reg_slope(Y):
     return Sxy / Sxx
 
 
+@jit(nopython=True, nogil=True, cache=True)
 def linear_slope_indicator(values: list | np.ndarray) -> float:
     """
       Computes a linear slope indicator based on a subset of values.
@@ -120,6 +124,18 @@ def linear_slope_indicator(values: list | np.ndarray) -> float:
     slope_avg = percentile25
     # return slope_avg
     return copysign(abs(slope_avg) ** (1 / 4), slope_avg)
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def fib_to(n, normalization=True):
+    fibs = np.empty(n)
+    fibs[0], fibs[1] = 1, 2
+    for i in range(2, n):
+        fibs[i] = fibs[i - 1] + fibs[i - 2]
+    if normalization:
+        return (fibs - np.min(fibs)) / (np.max(fibs) - np.min(fibs))
+    else:
+        return fibs
 
 
 ######################################################################################
@@ -630,7 +646,8 @@ def daily_seasonality(df: pd.DataFrame) -> list[float]:
 
 # @feature_timeit
 def HullMA(close: list | np.ndarray, timeperiod: int) -> pd.Series:
-    return talib.WMA((talib.WMA(close, timeperiod // 2) * 2) - (talib.WMA(close, timeperiod)), int(np.sqrt(timeperiod)))
+    return talib.WMA((talib.WMA(close, max(timeperiod // 2, 2)) * 2) - (talib.WMA(close, timeperiod)),
+                     max(int(np.sqrt(timeperiod)), 2))
 
 
 # @feature_timeit
@@ -653,21 +670,14 @@ def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
     """
     alpha = 1.0 / timeperiod
     # rma = [0.0] * len(close)
-    rma = np.empty_like(close)
+    rma = np.zeros_like(close)
     # Calculating the SMA for the first 'length' values
-    sma = sum(close[:timeperiod]) / timeperiod
+    sma = np.sum(close[:timeperiod]) / timeperiod
     rma[timeperiod - 1] = sma
     # Calculating the rma for the rest of the values
     for i in range(timeperiod, len(close)):
-        rma[i] = alpha * close[i] + (1 - alpha) * rma[i - 1]
+        rma[i] = (alpha * close[i]) + ((1 - alpha) * rma[i - 1])
     return rma
-
-
-@jit(nopython=True, nogil=True, cache=True)
-def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int):
-    vwma = np.array([np.sum(close[i - timeperiod:i] * volume[i - timeperiod:i]) / np.sum(volume[i - timeperiod:i])
-                     for i in range(timeperiod, len(close) + 1)])
-    return np.concatenate((np.zeros(timeperiod - 1), vwma))
 
 
 @jit(nopython=True, nogil=True, cache=True)
@@ -693,7 +703,7 @@ def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
               elements since there are not enough data points to perform the calculation.
 
     """
-    # close = np.ascontiguousarray(close)
+    close = np.ascontiguousarray(close)
     lsma = np.empty_like(close)
     A = np.column_stack((np.arange(timeperiod), np.ones(timeperiod)))
     AT = np.ascontiguousarray(A.T)
@@ -706,7 +716,7 @@ def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
 
 # @feature_timeit
 # @jit(nopython=True, nogil=True, cache=True)
-def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 6) -> np.ndarray[np.float64]:
+def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 6) -> np.ndarray:
     """
     Calculate the Arnaud Legoux Moving Average (ALMA) for a given input time series.
 
@@ -746,6 +756,30 @@ def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
         window_sum += log_close[i]
         gma[i] = window_sum * exponent
     return np.exp(gma)
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def VWMAv1(close: np.ndarray, volume: np.ndarray, timeperiod: int):
+    close = np.ascontiguousarray(close)
+    volume = np.ascontiguousarray(volume)
+    vwma = np.array([np.sum(close[i - timeperiod:i] * volume[i - timeperiod:i]) / np.sum(volume[i - timeperiod:i])
+                     for i in range(timeperiod, len(close) + 1)])
+    return np.concatenate((np.zeros(timeperiod - 1), vwma))
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int):
+    vwma = np.zeros_like(close)
+    window_sum_volume = np.sum(volume[:timeperiod])
+    window_sum_cxv = np.sum(close[:timeperiod] * volume[:timeperiod])
+    vwma[timeperiod - 1] = window_sum_cxv / window_sum_volume
+    for i in range(timeperiod, len(close)):
+        window_sum_volume -= volume[i - timeperiod]
+        window_sum_volume += volume[i]
+        window_sum_cxv -= close[i - timeperiod] * volume[i - timeperiod]
+        window_sum_cxv += close[i] * volume[i]
+        vwma[i] = window_sum_cxv / window_sum_volume
+    return vwma
 
 
 # @feature_timeit
@@ -916,6 +950,29 @@ def FBA(close: np.ndarray, period: int) -> np.ndarray:
     return (np.sum(moving_averages, axis=0) / len(fibs)) * 100
 
 
+#@jit(nopython=True, nogil=True, cache=True)
+def CWMA(close, weights, period):
+    """Custom Weighted Moving Average"""
+    cwma = np.zeros_like(close)
+    window_weight_sum = np.sum(weights)
+    window_prod_sum = np.sum(close[:period] * weights)
+    cwma[period - 1] = window_prod_sum / window_weight_sum
+    for i in range(period, len(close)):
+        # print(f'window_weight_sum {window_weight_sum}')
+        # print(f'window_prod_sum {window_prod_sum}')
+        window_prod_sum = np.sum(close[i - period:i] * weights)
+        cwma[i] = window_prod_sum / window_weight_sum
+        # print(f'cwma {cwma[i]}')
+    return cwma
+
+
+# @jit(nopython=True, nogil=True, cache=True)
+def FWMA(close, period):
+    """Fibonacci Weighted Moving Average"""
+    print(f'fibs {fib_to(period+1, normalization=True)[1:]}')
+    return CWMA(close, fib_to(period+1, normalization=True)[1:], period)
+
+
 # @feature_timeit
 def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_multi: float = 1.0) -> np.ndarray:
     # print(np_ATR)
@@ -929,55 +986,63 @@ def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_
 # @feature_timeit
 def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     # print(f'{np_df} {type} {MA_period}')
-    ma_types = {0: lambda ohlcv_array, period: RMA(ohlcv_array[:, 3], timeperiod=period),
-                1: lambda ohlcv_array, period: talib.SMA(ohlcv_array[:, 3], timeperiod=period),
-                2: lambda ohlcv_array, period: talib.EMA(ohlcv_array[:, 3], timeperiod=period),
-                3: lambda ohlcv_array, period: talib.WMA(ohlcv_array[:, 3], timeperiod=period),
-                4: lambda ohlcv_array, period: VWMA(ohlcv_array[:, 3], ohlcv_array[:, 4], timeperiod=period),
-                5: lambda ohlcv_array, period: talib.KAMA(ohlcv_array[:, 3], timeperiod=period),
-                6: lambda ohlcv_array, period: talib.TRIMA(ohlcv_array[:, 3], timeperiod=period),
-                7: lambda ohlcv_array, period: talib.DEMA(ohlcv_array[:, 3], timeperiod=period),
-                8: lambda ohlcv_array, period: talib.TEMA(ohlcv_array[:, 3], timeperiod=period),
-                9: lambda ohlcv_array, period: talib.T3(ohlcv_array[:, 3], timeperiod=period),
-                10: lambda ohlcv_array, period: talib.MAMA(ohlcv_array[:, 3])[0],
-                11: lambda ohlcv_array, period: finTA.SMM(
+    ma_types = {0: lambda ohlcv_array, period: talib.SMA(ohlcv_array[:, 3], timeperiod=period),
+                1: lambda ohlcv_array, period: talib.EMA(ohlcv_array[:, 3], timeperiod=period),
+                2: lambda ohlcv_array, period: talib.WMA(ohlcv_array[:, 3], timeperiod=period),
+                3: lambda ohlcv_array, period: talib.KAMA(ohlcv_array[:, 3], timeperiod=period),
+                4: lambda ohlcv_array, period: talib.TRIMA(ohlcv_array[:, 3], timeperiod=period),
+                5: lambda ohlcv_array, period: talib.DEMA(ohlcv_array[:, 3], timeperiod=period),
+                6: lambda ohlcv_array, period: talib.TEMA(ohlcv_array[:, 3], timeperiod=period),
+                7: lambda ohlcv_array, period: talib.T3(ohlcv_array[:, 3], timeperiod=period),
+                8: lambda ohlcv_array, period: talib.MAMA(ohlcv_array[:, 3])[0],
+                9: lambda ohlcv_array, period: talib.LINEARREG(ohlcv_array[:, 3], timeperiod=period),
+                10: lambda ohlcv_array, period: finTA.SMM(
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     period).to_numpy(),
-                12: lambda ohlcv_array, period: finTA.SSMA(
+                11: lambda ohlcv_array, period: finTA.SSMA(
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     period).to_numpy(),
-                13: lambda ohlcv_array, period: finTA.VAMA(
+                12: lambda ohlcv_array, period: finTA.VAMA(
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     period).to_numpy(),
-                14: lambda ohlcv_array, period: finTA.ZLEMA(
+                13: lambda ohlcv_array, period: finTA.ZLEMA(
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     max(4, period)).to_numpy(),
-                15: lambda ohlcv_array, period: finTA.EVWMA(
+                14: lambda ohlcv_array, period: finTA.EVWMA(
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     period).to_numpy(),
-                16: lambda ohlcv_array, period: finTA.SMMA(
+                15: lambda ohlcv_array, period: finTA.SMMA(
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     period).to_numpy(),
-                17: lambda ohlcv_array, period: finTA.HMA(
-                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
-                    period).to_numpy(),
-                18: lambda ohlcv_array, period: ti.ehma(ohlcv_array[:, 3], period),
-                19: lambda ohlcv_array, period: ti.lma(ohlcv_array[:, 3], period),
-                20: lambda ohlcv_array, period: ti.shmma(ohlcv_array[:, 3], period),
-                21: lambda ohlcv_array, period: ti.ahma(ohlcv_array[:, 3], period),
-                22: lambda ohlcv_array, period: ALMA(ohlcv_array[:, 3], timeperiod=period),
-                23: lambda ohlcv_array, period: HammingMA(ohlcv_array[:, 3], period),
-                24: lambda ohlcv_array, period: LSMA(ohlcv_array[:, 3], max(3, period)),
-                25: lambda ohlcv_array, period: LWMA(ohlcv_array[:, 3], period),
-                26: lambda ohlcv_array, period: MGD(ohlcv_array[:, 3], period),
-                27: lambda ohlcv_array, period: GMA(ohlcv_array[:, 3], period),
-                28: lambda ohlcv_array, period: FBA(ohlcv_array[:, 3], period),
-                29: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=0),
-                30: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=1),
-                31: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=2),
-                32: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=3),
-                33: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=4),
-                34: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
+                16: lambda ohlcv_array, period: p_ta.vwma(pd.Series(ohlcv_array[:, 3]),
+                                                          pd.Series(ohlcv_array[:, 3]),
+                                                          length=period).to_numpy(),
+                17: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
+                                                          length=period,
+                                                          asc=True).to_numpy(),
+                18: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
+                                                          length=period,
+                                                          asc=False).to_numpy(),
+                19: lambda ohlcv_array, period: ti.ehma(ohlcv_array[:, 3], period),
+                20: lambda ohlcv_array, period: ti.lma(ohlcv_array[:, 3], period),
+                21: lambda ohlcv_array, period: ti.shmma(ohlcv_array[:, 3], period),
+                22: lambda ohlcv_array, period: ti.ahma(ohlcv_array[:, 3], period),
+                23: lambda ohlcv_array, period: HullMA(ohlcv_array[:, 3], period),
+                24: lambda ohlcv_array, period: VWMA(ohlcv_array[:, 3], ohlcv_array[:, 4], timeperiod=period),
+                25: lambda ohlcv_array, period: RMA(ohlcv_array[:, 3], timeperiod=period),
+                26: lambda ohlcv_array, period: ALMA(ohlcv_array[:, 3], timeperiod=period),
+                27: lambda ohlcv_array, period: HammingMA(ohlcv_array[:, 3], period),
+                28: lambda ohlcv_array, period: LWMA(ohlcv_array[:, 3], period),
+                29: lambda ohlcv_array, period: MGD(ohlcv_array[:, 3], period),
+                30: lambda ohlcv_array, period: GMA(ohlcv_array[:, 3], period),
+                31: lambda ohlcv_array, period: FBA(ohlcv_array[:, 3], period),
+                #32: lambda ohlcv_array, period: FWMA(ohlcv_array[:, 3], period),
+                32: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=0),
+                33: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=1),
+                34: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=2),
+                35: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=3),
+                36: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=4),
+                37: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
     return ma_types[ma_type](np_df.astype(np.float64), ma_period)
@@ -985,32 +1050,34 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
 
 def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     # print(f'{np_df} {type} {MA_period}')
-    ma_types = {0: lambda c, p: RMA(c, timeperiod=p),
-                1: lambda c, p: talib.SMA(c, timeperiod=p),
-                2: lambda c, p: talib.EMA(c, timeperiod=p),
-                3: lambda c, p: talib.WMA(c, timeperiod=p),
-                4: lambda c, p: talib.KAMA(c, timeperiod=p),
-                5: lambda c, p: talib.TRIMA(close, timeperiod=p),
-                6: lambda c, p: talib.DEMA(close, timeperiod=p),
-                7: lambda c, p: talib.TEMA(close, timeperiod=p),
-                8: lambda c, p: talib.T3(close, timeperiod=p),
-                9: lambda c, p: talib.MAMA(c)[0],
+    ma_types = {0: lambda c, p: talib.SMA(c, timeperiod=p),
+                1: lambda c, p: talib.EMA(c, timeperiod=p),
+                2: lambda c, p: talib.WMA(c, timeperiod=p),
+                3: lambda c, p: talib.KAMA(c, timeperiod=p),
+                4: lambda c, p: talib.TRIMA(close, timeperiod=p),
+                5: lambda c, p: talib.DEMA(close, timeperiod=p),
+                6: lambda c, p: talib.TEMA(close, timeperiod=p),
+                7: lambda c, p: talib.T3(close, timeperiod=p),
+                8: lambda c, p: talib.MAMA(c)[0],
+                9: lambda c, p: talib.LINEARREG(c, timeperiod=p),
                 10: lambda c, p: ti.ehma(c, p),
                 11: lambda c, p: ti.lma(c, p),
                 12: lambda c, p: ti.shmma(c, p),
                 13: lambda c, p: ti.ahma(c, p),
-                14: lambda c, p: ALMA(c, timeperiod=p),
-                15: lambda c, p: HammingMA(c, p),
-                16: lambda c, p: LSMA(c, max(3, p)),
-                17: lambda c, p: LWMA(c, p),
-                18: lambda c, p: GMA(c, p),
-                19: lambda c, p: FBA(c, p),
-                20: lambda c, p: NadarayWatsonMA(c, p, kernel=0),
-                21: lambda c, p: NadarayWatsonMA(c, p, kernel=1),
-                22: lambda c, p: NadarayWatsonMA(c, p, kernel=2),
-                23: lambda c, p: NadarayWatsonMA(c, p, kernel=3),
-                24: lambda c, p: NadarayWatsonMA(c, p, kernel=4),
-                25: lambda c, p: NadarayWatsonMA(c, p, kernel=5)}
+                14: lambda c, p: RMA(c, timeperiod=p),
+                15: lambda c, p: HullMA(c, p),
+                16: lambda c, p: ALMA(c, timeperiod=p),
+                17: lambda c, p: HammingMA(c, p),
+                18: lambda c, p: LWMA(c, p),
+                19: lambda c, p: GMA(c, p),
+                20: lambda c, p: FBA(c, p),
+                # 21: lambda c, p: FWMA(c, p),
+                21: lambda c, p: NadarayWatsonMA(c, p, kernel=0),
+                22: lambda c, p: NadarayWatsonMA(c, p, kernel=1),
+                23: lambda c, p: NadarayWatsonMA(c, p, kernel=2),
+                24: lambda c, p: NadarayWatsonMA(c, p, kernel=3),
+                25: lambda c, p: NadarayWatsonMA(c, p, kernel=4),
+                26: lambda c, p: NadarayWatsonMA(c, p, kernel=5)}
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
     return ma_types[ma_type](close.astype(np.float64), ma_period)

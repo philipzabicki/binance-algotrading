@@ -5,8 +5,8 @@ BASE_TICKER = 'BTC'
 QUOTE_TICKER = 'FDUSD'
 MARKET = 'spot'
 INTERVAL = '1m'
-stop_loss, enter_at, close_at = 0.011123635861121386, 0.32212581146447883, 0.5566056106449668
-fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type = 586, 810, 970, 9, 4, 23
+stop_loss, enter_at, close_at = 0.012128312331444244, 0.3468497701455136, 0.91450356736722
+fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type = 359, 877, 975, 26, 14, 13
 # MAs require previous data longer than just calculation period size
 PREV_DATA_MULTIPLAYER = 25
 SETTINGS = {'stop_loss': stop_loss,

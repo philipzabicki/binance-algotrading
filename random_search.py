@@ -13,7 +13,7 @@ from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = 8  # cpu_count()
-EPISODES_PER_CORE = 100
+EPISODES_PER_CORE = 1024
 TICKER, ITV, M_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', '2023-09-11'
 ENVIRONMENT = MACDStratSpotEnv
 SLIPP = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
@@ -50,7 +50,7 @@ def run_indefinitely(_, df):
         _writer.writerows(results)
 
     # profiler.disable()
-    # profiler.print_stats(sort='tottime')
+    # profiler.print_stats(sort='cumtime')
 
 
 def main():
@@ -60,18 +60,18 @@ def main():
         # df = by_DataClient(ticker=TICKER, interval=ITV, futures=FUTURES, statements=True, delay=3_600)
         dates, df = by_BinanceVision(ticker=TICKER, interval=ITV, market_type=M_TYPE, data_type='klines', split=True,
                                      start_date=START_DATE, delay=129_600)
-        print(f'df {dates}')
+        print(f'df {df}')
         with Pool(processes=CPU_CORES_COUNT) as pool:
             # Each process will call 'run_indefinitely_process'
             # The list(range(num_processes)) is just to provide a different argument to each process (even though it's not used in the function)
             pool.starmap(run_indefinitely, [(i, df) for i in range(CPU_CORES_COUNT)])
             # pool.map(run_indefinitely, range(CPU_CORES_COUNT))
-        df = read_csv(REPORT_FULL_PATH)
-        df.sort_values(df.columns[0], inplace=True)
-        df.to_csv(REPORT_FULL_PATH, index=False)
+        report_df = read_csv(REPORT_FULL_PATH)
+        report_df.sort_values(report_df.columns[0], inplace=True)
+        report_df.to_csv(REPORT_FULL_PATH, index=False)
         exec_time = time() - start_t
         eps = (CPU_CORES_COUNT * EPISODES_PER_CORE) / exec_time
-        print(f'POOL exec time: {exec_time:.2f}s EpisodesPerSecond: {eps:.3f}')
+        print(f'POOL exec time: {exec_time:.2f}s EpisodesPerSecond: {eps:.3f} StepsPerSecond: {eps*len(df):_.0f}')
         # sleep(10000)
         break
 

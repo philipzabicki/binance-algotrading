@@ -65,7 +65,7 @@ class SpotTakerBot:
         print("### WebSocket opened ###")
 
     def on_message(self, ws, message):
-        self.on_message_t = time()
+        # self.on_message_t = time()
         data_k = loads(message)['k']
         if data_k['x']:
             self.close = float(data_k['c'])
@@ -90,7 +90,7 @@ class SpotTakerBot:
                 self._partially_filled_problem()
 
     def _analyze(self):
-        print(f'(on_message to _analyze: {(time() - self.on_message_t) / 1_000}ms)')
+        # print(f'(on_message to _analyze: {(time() - self.on_message_t) / 1_000}ms)')
         self.analyze_t = time()
         self._check_signal()
         if (self.signal >= self.enter_at) and (self.balance > 5.01):
@@ -178,9 +178,10 @@ class SpotTakerBot:
 
     def _market_buy(self, q):
         try:
+            order_t = time()
             self.buy_order = self.client.order_market_buy(symbol=self.symbol,
                                                           quantity=q)
-            print(f'(_analyze to _market_buy: {(time() - self.analyze_t) * 1_000}ms)')
+            print(f'(sending buy order: {(time() - order_t) * 1_000}ms)')
             self.q = q
             self.balance = float(self.client.get_asset_balance(asset=self.quote)['free'])
             print(f' {dt.today()} BUY_MARKET q:{q} self.balance:{self.balance} self.q:{self.q}')
@@ -192,9 +193,10 @@ class SpotTakerBot:
 
     def _market_sell(self, q):
         try:
+            order_t = time()
             self.sell_order = self.client.order_market_sell(symbol=self.symbol,
                                                             quantity=q)
-            # print(self.sell_order)
+            print(f'(sending sell order: {(time() - order_t) * 1_000}ms)')
             print(f'(_analyze to _market_sell: {(time() - self.analyze_t) * 1_000}ms)')
             self.balance = float(self.client.get_asset_balance(asset=self.quote)['free'])
             self.q = '0.00000'

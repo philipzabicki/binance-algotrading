@@ -1,8 +1,8 @@
 from gym import spaces, Env
 from numpy import array, float64, inf
 
-from enviroments import SignalExecuteSpotEnv
 from utils.ta_tools import get_MA_band_signal
+from .base import SignalExecuteSpotEnv
 
 
 class BandsExecuteSpotEnv(SignalExecuteSpotEnv):

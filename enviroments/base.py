@@ -125,11 +125,11 @@ class SpotBacktest(Env):
         self.episode_orders += 1
         self.enter_price = adj_price
         # When there is no fee, subtract 1 just to be sure balance can buy this amount #
-        step_adj_qty = floor((self.position_size * (1 - 2 * self.fee)) / (adj_price * self.coin_step))
+        step_adj_qty = floor(self.position_size / (adj_price * self.coin_step))
         if step_adj_qty == 0:
             self._finish_episode()
-        self.qty = round(step_adj_qty * self.coin_step, 5)
-        self.position_size = round(self.qty * adj_price, 2)
+        self.qty = step_adj_qty * self.coin_step
+        self.position_size = self.qty * adj_price
         self.prev_bal = self.balance
         self.balance -= self.position_size
         fee = (self.position_size * self.fee)
@@ -140,17 +140,18 @@ class SpotBacktest(Env):
 
     def _sell(self, price, sl=False):
         if sl:
-            '''price = self._random_factor(price, 'SL')
-        while price>self.enter_price:
-          price = self._random_factor(price, 'SL')'''
+            # price = self._random_factor(price, 'SL')
+            # while price>self.enter_price:
+            #     price = self._random_factor(price, 'SL')
             adj_price = price * self.stop_loss_factor
             self.last_order_type = 'open_short'
         else:
-            '''price = self._random_factor(price, 'market_sell')'''
+            # price = self._random_factor(price, 'market_sell')
             adj_price = price * self.sell_factor
             self.last_order_type = 'close_long'
-        self.balance += round(self.qty * adj_price, 2)
-        fee = abs(adj_price * self.qty * self.fee)
+        _value = self.qty * adj_price
+        self.balance += round(_value, 2)
+        fee = _value * self.fee
         self.balance -= fee
         self.cumulative_fees += fee
         percentage_profit = (self.balance / self.prev_bal) - 1
@@ -169,7 +170,7 @@ class SpotBacktest(Env):
             if self.max_drawdown == 0 or percentage_profit < self.max_drawdown:
                 self.max_drawdown = percentage_profit
             if sl:
-                self.SL_losses += self.prev_bal - self.balance
+                self.SL_losses += self.absolute_profit
         self.PLs_and_ratios.append((percentage_profit, self.good_trades_count / self.bad_trades_count))
         self.position_size = (self.balance * self.position_ratio)
         # If balance minus position_size and fee is less or eq 0 #
@@ -312,6 +313,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
         self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
         self.close_threshold = kwargs['close_at'] if 'close_at' in kwargs else 1.0
+        self.signals = empty(self.total_steps)
         return super().reset()
 
     def _finish_episode(self):
@@ -321,18 +323,16 @@ class SignalExecuteSpotEnv(SpotBacktest):
             print(f' enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}')
 
     def __call__(self, *args, **kwargs):
-        obs = args[0]
         while not self.done:
-            signal = obs[-1]
             action = 0
             if self.qty == 0:
-                if signal >= self.enter_threshold:
+                if self.signals[self.current_step] >= self.enter_threshold:
                     action = 1
-                elif signal <= -self.enter_threshold:
+                elif self.signals[self.current_step] <= -self.enter_threshold:
                     action = 2
-            elif (self.qty < 0) and (signal >= self.close_threshold):
+            elif (self.qty < 0) and (self.signals[self.current_step] >= self.close_threshold):
                 action = 1
-            elif (self.qty > 0) and (signal <= -self.close_threshold):
+            elif (self.qty > 0) and (self.signals[self.current_step] <= -self.close_threshold):
                 action = 2
             obs, _, _, _, _ = self.step(action)
             if self.visualize:
