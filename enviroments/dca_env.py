@@ -1,4 +1,4 @@
-from enviroments import SpotBacktest
+from enviroments.base import SpotBacktest
 
 
 class DCAEnv(SpotBacktest):

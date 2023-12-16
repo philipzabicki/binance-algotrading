@@ -28,8 +28,8 @@ from utils.utility import get_slippage_stats
 
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 64
-N_GEN = 200
+POP_SIZE = 4096
+N_GEN = 50
 
 
 class CustomProblem(ElementwiseProblem):
@@ -50,10 +50,10 @@ class CustomProblem(ElementwiseProblem):
 class BandsMixedVariableProblem(ElementwiseProblem):
     def __init__(self, env, **kwargs):
         self.env = env
-        bands_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
+        bands_variables = {"stop_loss": Real(bounds=(0.0001, 0.0500)),
                            "enter_at": Real(bounds=(0.001, 1.000)),
                            "close_at": Real(bounds=(0.001, 1.000)),
-                           "ma_type": Integer(bounds=(0, 34)),
+                           "ma_type": Integer(bounds=(0, 37)),
                            "ma_period": Integer(bounds=(2, 1_000)),
                            "atr_period": Integer(bounds=(1, 1_000)),
                            "atr_multi": Real(bounds=(0.001, 15.000))}
@@ -79,7 +79,7 @@ class MyCallback(Callback):
             self.opt.append([min_rew, avg_rew, max_rew])
         else:
             self.opt.append([0.0, 0.0, 0.0])
-        print(self.opt)
+        # print(self.opt)
 
 
 def display_callback(callback, fname):
@@ -126,7 +126,7 @@ def main():
                              interval='1m',
                              market_type='spot',
                              data_type='klines',
-                             start_date='2023-09-11 00:00:00',
+                             start_date='2023-09-11',
                              split=True,
                              delay=0)
     env = BandsStratSpotEnv(df=df,
@@ -154,8 +154,8 @@ def main():
                    algorithm,
                    save_history=False,
                    callback=MyCallback(),
-                   termination=('n_gen', N_GEN),
-                   # termination=("time", "09:00:00"),
+                   # termination=('n_gen', N_GEN),
+                   termination=("time", "00:30:00"),
                    verbose=True)
 
     print('Exec time:', res.exec_time)

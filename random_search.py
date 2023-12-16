@@ -71,7 +71,7 @@ def main():
         report_df.to_csv(REPORT_FULL_PATH, index=False)
         exec_time = time() - start_t
         eps = (CPU_CORES_COUNT * EPISODES_PER_CORE) / exec_time
-        print(f'POOL exec time: {exec_time:.2f}s EpisodesPerSecond: {eps:.3f} StepsPerSecond: {eps*len(df):_.0f}')
+        print(f'POOL exec time: {exec_time:.2f}s EpisodesPerSecond: {eps:.3f} StepsPerSecond: {eps * len(df):_.0f}')
         # sleep(10000)
         break
 

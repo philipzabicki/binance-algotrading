@@ -28,8 +28,8 @@ if __name__ == "__main__":
                              delay=0)
     df = df.to_numpy()
 
-    print(f'{test_speed(LINEARREG, df[:, 3], 1000)/1_000}ms')
-    print(f'{test_speed(LSMA, df[:, 3], 1000)/1_000}ms')
+    print(f'{test_speed(LINEARREG, df[:, 3], 1000) / 1_000}ms')
+    print(f'{test_speed(LSMA, df[:, 3], 1000) / 1_000}ms')
 
     print(f'LSMA-37: {LSMA(df[:, 3], 37)}')
     print(f'LINEARREG-37: {LINEARREG(df[:, 3], 37)}')

@@ -44,7 +44,7 @@ class MACDStratSpotEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.001, 0.001, 2, 2, 2, 0, 0, 0]
-        action_upper = [0.0150, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26]
+        action_upper = [0.0500, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 

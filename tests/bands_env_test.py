@@ -8,7 +8,7 @@ from utils.utility import get_slippage_stats
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
-    action = [0.010263476023283948, 0.19505459912279557, 0.733417664265096, 10, 224, 917, 6.808980697510462]
+    action = [0.03568069167245792, 0.003006891123941202, 0.5101507449452755, 8, 723, 903, 11.126713604052402]
 
     dates_df, df = by_BinanceVision(ticker=ticker,
                                     interval=interval,

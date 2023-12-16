@@ -16,9 +16,9 @@ class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
         self.ma_period = ma_period
         self.atr_period = atr_period
         self.atr_multi = atr_multi
-        self.df[self.start_step:self.end_step, -1] = get_MA_band_signal(self.df[self.start_step:self.end_step, :5],
-                                                                        self.ma_type, self.ma_period,
-                                                                        self.atr_period, self.atr_multi)
+        self.signals = get_MA_band_signal(self.df[self.start_step:self.end_step, :5],
+                                          self.ma_type, self.ma_period,
+                                          self.atr_period, self.atr_multi)
         self.obs = iter(self.df[self.start_step:self.end_step, :])
         return next(self.obs)
 
@@ -37,7 +37,7 @@ class BandsStratSpotEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.001, 0.001, 0, 2, 1, 0.001]
-        action_upper = [0.0150, 1.000, 1.000, 35, 1_000, 1_000, 15.0]
+        action_upper = [0.0500, 1.000, 1.000, 37, 1_000, 1_000, 15.0]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 

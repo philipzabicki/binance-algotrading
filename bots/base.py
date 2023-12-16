@@ -128,7 +128,7 @@ class SpotTakerBot:
         _slipp = filled_price / req_price
         with open(file, 'a', newline='') as file:
             writer(file).writerow([_slipp])
-        print(f'{dt.today()} REPORTING {order_type} SLIP {_slipp}')
+        print(f' {dt.today()} REPORTING {order_type} SLIP {_slipp}')
 
     def _get_filled_price(self, order):
         value, quantity = 0, 0

@@ -19,40 +19,45 @@ from pymoo.optimize import minimize
 from pymoo.visualization.pcp import PCP
 
 from definitions import REPORT_DIR
-from enviroments.macd_env import MACDStratSpotEnv
+from enviroments.macdrsi_env import MACDRSIStratSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
-POP_SIZE = 4096
+POP_SIZE = 1024
 N_GEN = 50
 
 
-class MACDMixedVariableProblem(ElementwiseProblem):
+class MACDRSIMixedVariableProblem(ElementwiseProblem):
     def __init__(self, df, **kwargs):
-        self.env = MACDStratSpotEnv(df=df,
-                                    # max_steps=259_200,
-                                    init_balance=300,
-                                    no_action_finish=inf,
-                                    fee=0.0,
-                                    coin_step=0.00001,
-                                    slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                                    verbose=False)
+        self.env = MACDRSIStratSpotEnv(df=df,
+                                       # max_steps=259_200,
+                                       init_balance=300,
+                                       no_action_finish=inf,
+                                       fee=0.0,
+                                       coin_step=0.00001,
+                                       slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+                                       verbose=False)
         macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "enter_at": Real(bounds=(0.001, 1.000)),
-                          "close_at": Real(bounds=(0.001, 1.000)),
+                          "enter_at1": Real(bounds=(0.001, 1.000)),
+                          "close_at1": Real(bounds=(0.001, 1.000)),
+                          "enter_at2": Real(bounds=(0.001, 1.000)),
+                          "close_at2": Real(bounds=(0.001, 1.000)),
                           "fast_period": Integer(bounds=(2, 1_000)),
                           "slow_period": Integer(bounds=(2, 1_000)),
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 26))}
+                          "signal_ma_type": Integer(bounds=(0, 26)),
+                          "rsi_period": Integer(bounds=(2, 25))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['stop_loss'], X['enter_at'], X['close_at'], X['fast_period'], X['slow_period'], X['signal_period'],
-                  X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
+        action = [X['stop_loss'], X['enter_at1'], X['close_at1'], X['enter_at2'], X['close_at2'],
+                  X['fast_period'], X['slow_period'], X['signal_period'],
+                  X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type'],
+                  X['rsi_period']]
         _, reward, _, _, _ = self.env.step(action)
         # print(f'_evaluate() reward:{reward}')
         out["F"] = array([-reward])
@@ -92,13 +97,17 @@ def display_callback(callback, fname):
 
 def display_result(result, problem, fname):
     # print(f'display_result() result.pop.get("X") {result.pop.get("X")}')
-    X_array = array([[entry['stop_loss'], entry['enter_at'], entry['close_at'],
+    X_array = array([[entry['stop_loss'], entry['enter_at1'], entry['close_at1'],
+                      entry['enter_at2'], entry['close_at2'],
                       entry['fast_period'], entry['slow_period'], entry['signal_period'],
-                      entry['fast_ma_type'], entry['slow_ma_type'], entry['signal_ma_type']]
+                      entry['fast_ma_type'], entry['slow_ma_type'], entry['signal_ma_type'],
+                      entry['rsi_period']]
                      for entry in result])
     pop_size = len(X_array)
-    labels = ['stop_loss', 'enter_at', 'close_at', 'fast_period', 'slow_period', 'signal_period', 'fast_ma_type',
-              'slow_ma_type', 'signal_ma_type']
+    labels = ['stop_loss', 'enter_at1', 'close_at1', 'enter_at2', 'close_at2',
+              'fast_period', 'slow_period', 'signal_period', 'fast_ma_type',
+              'slow_ma_type', 'signal_ma_type',
+              'rsi_period']
     bounds = array([problem.vars[name].bounds for name in labels]).T
     plot = PCP(labels=labels, bounds=bounds, n_ticks=10)
     plot.set_axis_style(color="grey", alpha=1)
@@ -138,7 +147,7 @@ def main():
 
     pool = Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)
-    problem = MACDMixedVariableProblem(df, elementwise_runner=runner)
+    problem = MACDRSIMixedVariableProblem(df, elementwise_runner=runner)
 
     # algorithm = NSGA2(pop_size=100)
     # algorithm = DNSGA2(pop_size=64)
@@ -153,8 +162,8 @@ def main():
                    algorithm,
                    save_history=False,
                    callback=MyCallback(problem),
-                   # termination=('n_gen', N_GEN),
-                   termination=("time", "09:00:00"),
+                   termination=('n_gen', N_GEN),
+                   # termination=("time", "04:00:00"),
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')
@@ -165,8 +174,10 @@ def main():
               newline='') as file:
         csv_writer = writer(file)
         for f, x in zip(res.pop.get("F"), res.pop.get("X")):
-            _row = [-1 * f[0], x['stop_loss'], x['enter_at'], x['close_at'], x['fast_period'], x['slow_period'],
-                    x['signal_period'], x['fast_ma_type'], x['slow_ma_type'], x['signal_ma_type']]
+            _row = [-1 * f[0], x['stop_loss'], x['enter_at1'], x['close_at1'], x['enter_at2'], x['close_at2'],
+                    x['fast_period'], x['slow_period'], x['signal_period'], x['fast_ma_type'], x['slow_ma_type'],
+                    x['signal_ma_type'],
+                    x['rsi_period']]
             csv_writer.writerow(_row)
             print(f'writing row {_row}')
     # print(f'res.pop {res.pop}')

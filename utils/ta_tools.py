@@ -950,7 +950,7 @@ def FBA(close: np.ndarray, period: int) -> np.ndarray:
     return (np.sum(moving_averages, axis=0) / len(fibs)) * 100
 
 
-#@jit(nopython=True, nogil=True, cache=True)
+# @jit(nopython=True, nogil=True, cache=True)
 def CWMA(close, weights, period):
     """Custom Weighted Moving Average"""
     cwma = np.zeros_like(close)
@@ -969,8 +969,8 @@ def CWMA(close, weights, period):
 # @jit(nopython=True, nogil=True, cache=True)
 def FWMA(close, period):
     """Fibonacci Weighted Moving Average"""
-    print(f'fibs {fib_to(period+1, normalization=True)[1:]}')
-    return CWMA(close, fib_to(period+1, normalization=True)[1:], period)
+    print(f'fibs {fib_to(period + 1, normalization=True)[1:]}')
+    return CWMA(close, fib_to(period + 1, normalization=True)[1:], period)
 
 
 # @feature_timeit
@@ -1036,7 +1036,7 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 29: lambda ohlcv_array, period: MGD(ohlcv_array[:, 3], period),
                 30: lambda ohlcv_array, period: GMA(ohlcv_array[:, 3], period),
                 31: lambda ohlcv_array, period: FBA(ohlcv_array[:, 3], period),
-                #32: lambda ohlcv_array, period: FWMA(ohlcv_array[:, 3], period),
+                # 32: lambda ohlcv_array, period: FWMA(ohlcv_array[:, 3], period),
                 32: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=0),
                 33: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=1),
                 34: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=2),
