@@ -646,8 +646,8 @@ def daily_seasonality(df: pd.DataFrame) -> list[float]:
 
 # @feature_timeit
 def HullMA(close: list | np.ndarray, timeperiod: int) -> pd.Series:
-    return talib.WMA((talib.WMA(close, max(timeperiod // 2, 2)) * 2) - (talib.WMA(close, timeperiod)),
-                     max(int(np.sqrt(timeperiod)), 2))
+    return talib.WMA(np.nan_to_num((talib.WMA(close, timeperiod // 2) * 2) - talib.WMA(close, timeperiod)),
+                     int(np.sqrt(timeperiod)))
 
 
 # @feature_timeit
@@ -1015,7 +1015,7 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     period).to_numpy(),
                 16: lambda ohlcv_array, period: p_ta.vwma(pd.Series(ohlcv_array[:, 3]),
-                                                          pd.Series(ohlcv_array[:, 3]),
+                                                          pd.Series(ohlcv_array[:, 4]),
                                                           length=period).to_numpy(),
                 17: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
                                                           length=period,
@@ -1027,7 +1027,7 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 20: lambda ohlcv_array, period: ti.lma(ohlcv_array[:, 3], period),
                 21: lambda ohlcv_array, period: ti.shmma(ohlcv_array[:, 3], period),
                 22: lambda ohlcv_array, period: ti.ahma(ohlcv_array[:, 3], period),
-                23: lambda ohlcv_array, period: HullMA(ohlcv_array[:, 3], period),
+                23: lambda ohlcv_array, period: HullMA(ohlcv_array[:, 3], max(period, 4)),
                 24: lambda ohlcv_array, period: VWMA(ohlcv_array[:, 3], ohlcv_array[:, 4], timeperiod=period),
                 25: lambda ohlcv_array, period: RMA(ohlcv_array[:, 3], timeperiod=period),
                 26: lambda ohlcv_array, period: ALMA(ohlcv_array[:, 3], timeperiod=period),
@@ -1065,7 +1065,7 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 12: lambda c, p: ti.shmma(c, p),
                 13: lambda c, p: ti.ahma(c, p),
                 14: lambda c, p: RMA(c, timeperiod=p),
-                15: lambda c, p: HullMA(c, p),
+                15: lambda c, p: HullMA(c, max(p, 4)),
                 16: lambda c, p: ALMA(c, timeperiod=p),
                 17: lambda c, p: HammingMA(c, p),
                 18: lambda c, p: LWMA(c, p),
@@ -1093,7 +1093,7 @@ def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
     # plt.show()
     # plt.plot(fast[-1_000:])
     # plt.show()
-    macd = fast - slow
+    macd = np.nan_to_num(fast - slow)
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 
 

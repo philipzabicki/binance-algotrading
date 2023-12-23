@@ -155,7 +155,7 @@ def main():
                    save_history=False,
                    callback=MyCallback(),
                    # termination=('n_gen', N_GEN),
-                   termination=("time", "00:30:00"),
+                   termination=("time", "09:30:00"),
                    verbose=True)
 
     print('Exec time:', res.exec_time)

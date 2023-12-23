@@ -3,7 +3,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 
-from enviroments import MACDStratSpotEnv
+from enviroments import MACDStratSpotEnv, MACDStratFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
 from utils.utility import get_slippage_stats
@@ -20,8 +20,8 @@ def sig_map(value):
 
 
 if __name__ == "__main__":
-    ticker, interval, market_type, data_type, start_date = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
-    action = [0.011390771445130654, 0.3809476211638482, 0.886006724642176, 368, 824, 639, 32, 14, 13]
+    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '1m', 'um', 'klines', '2021-01-01'
+    action = [0.237301530184998, 49, 0.008003904526431523, 0.9387914260463776, 0.8418214053338323, 971, 844, 834, 32, 26, 13]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,
@@ -29,15 +29,22 @@ if __name__ == "__main__":
                           data_type=data_type,
                           start_date=start_date,
                           split=False,
-                          delay=129_600)
-    macd, signal = custom_MACD(df.iloc[:, 1:6].to_numpy(), action[3], action[4], action[5], action[6], action[7],
-                               action[8])
+                          delay=259_200)
+    _, df_mark = by_BinanceVision(ticker='BTCFDUSD',
+                                  interval='1m',
+                                  market_type='spot',
+                                  data_type='klines',
+                                  start_date='2023-09-11',
+                                  split=True,
+                                  delay=0)
+    macd, signal = custom_MACD(df.iloc[:, 1:6].to_numpy(), action[5], action[6], action[7], action[8], action[9],
+                               action[10])
     signals = MACD_cross_signal(macd, signal)
     df['MACD'] = macd
     df['signal'] = signal
     df['signals'] = signals
     df.index = pd.DatetimeIndex(df['Opened'])
-    df_plot = df.tail(10_000)
+    df_plot = df.tail(500)
 
     fig = plt.figure(figsize=(21, 9))
     gs = fig.add_gridspec(3, 1, height_ratios=[2, 1, 1])
@@ -67,8 +74,9 @@ if __name__ == "__main__":
     #
     # plt.show()
 
-    env = MACDStratSpotEnv(df=df.iloc[:, 1:6], dates_df=df['Opened'], init_balance=300, no_action_finish=inf,
-                           fee=0.0, coin_step=0.00001,
-                           slippage=get_slippage_stats(market_type, ticker, interval, 'market'),
-                           verbose=True, visualize=False)
+    env = MACDStratSpotEnv(df=df.iloc[:, 1:6], df_mark=df_mark, dates_df=df['Opened'],
+                              max_steps=259_200, init_balance=350, no_action_finish=inf,
+                              fee=0.0, coin_step=0.00001, slipp_std=0,
+                              # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+                              verbose=True, visualize=False, write_to_file=True)
     env.step(action)

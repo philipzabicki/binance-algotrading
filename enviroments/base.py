@@ -2,46 +2,56 @@
 from math import copysign, floor
 from random import randint
 from time import time
+from csv import writer
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
-from numpy import array, inf, mean, std, hstack, empty
+from numpy import array, inf, mean, std
+from datetime import datetime as dt
 
 from utils.visualize import TradingGraph
+from definitions import REPORT_DIR
 
 
 class SpotBacktest(Env):
     def __init__(self, df, dates_df=None, max_steps=0, exclude_cols_left=0, no_action_finish=2_880,
                  init_balance=1_000, position_ratio=1.0, stop_loss=None, fee=0.0002, coin_step=0.001,
-                 slippage=None, render_range=120, verbose=True, visualize=False):
+                 slippage=None, slipp_std=0, render_range=120, verbose=True, visualize=False,
+                 write_to_file=False, *args, **kwargs):
         self.creation_t = time()
         self.df = df.to_numpy()
         if len(self.df) < max_steps:
             raise ValueError("max_steps larger than rows in dataframe")
-        print(f'Environment created. Fee: {fee} Coin step: {coin_step}')
-        print(f' df size: {len(self.df)} obs sample(last row): {self.df[-1, exclude_cols_left:]}')
-        print(f' slippage stats: {slippage}')
+        print(f'Environment({self.__class__.__name__}) created. Fee: {fee} Coin step: {coin_step}')
+        print(f' df_size: {len(self.df)} obs_sample(last row): {self.df[-1, exclude_cols_left:]}')
+        print(f' slippage statistics (avg, stddev): {slippage}')
         if visualize and (dates_df is not None):
-            print(f'before dates_df {dates_df}')
             self.dates_df = date2num(dates_df.to_numpy())
-            print(f'after dates_df {self.dates_df}')
             self.visualize = True
             self.render_range = render_range
             self.time_step = self.dates_df[1] - self.dates_df[0]
-            print(f' Visualization started, from: {self.dates_df[0]}', end=' ')
-            print(f'to: {self.dates_df[-1]}, time step: {self.time_step} (as factor of day)')
+            print(f' Visualization enabled, time step: {self.time_step} (as factor of day)')
         else:
             self.visualize = False
             print(f' Visualize is set to false or there was no dates df provided.')
+        if write_to_file:
+            self.write_to_file = True
+            self.filename = f'{REPORT_DIR}/envs/{self.__class__.__name__}_{str(dt.today()).replace(":", "-")[:-7]}.csv'
+            with open(self.filename, 'w') as f:
+                header = ['trade_id', 'trade_type', 'position_size', 'quantity', 'balance', 'profit', 'fee']
+                writer(f).writerow(header)
+            self.to_file = []
+        else:
+            self.write_to_file = False
         self.verbose = verbose
         # This implementation uses only mean values provided by arg dict (slippage) #
         # as factor for calculation of real buy and sell prices. #
         # Generation of random numbers is too expensive computational wise. #
         # self.slippage = slippage
         if slippage is not None:
-            self.buy_factor = slippage['buy'][0]
-            self.sell_factor = slippage['sell'][0]
-            self.stop_loss_factor = slippage['stop_loss'][0]
+            self.buy_factor = slippage['buy'][0] + slippage['buy'][1] * slipp_std
+            self.sell_factor = slippage['sell'][0] - slippage['sell'][1] * slipp_std
+            self.stop_loss_factor = slippage['stop_loss'][0] - slippage['stop_loss'][1] * slipp_std
         else:
             self.buy_factor, self.sell_factor, self.stop_loss_factor = 1.0, 1.0, 1.0
         self.total_steps = len(self.df)
@@ -60,11 +70,10 @@ class SpotBacktest(Env):
         self.action_space = spaces.Discrete(3)
         # Observation space #
         # none_df_obs_count are observations like current PnL, account balance, asset quantity etc. #
-        other_obs_count = 0
-        obs_space_dims = len(self.df[0, exclude_cols_left:]) + other_obs_count
-        obs_lower_bounds = array([-inf for _ in range(obs_space_dims)])
-        obs_upper_bounds = array([inf for _ in range(obs_space_dims)])
-        self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
+        # obs_space_dims = len(self.df[0, exclude_cols_left:])
+        # obs_lower_bounds = array([-inf for _ in range(obs_space_dims)])
+        # obs_upper_bounds = array([inf for _ in range(obs_space_dims)])
+        # self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
 
     # Reset the state of the environment to an initial state
     def reset(self, **kwargs):
@@ -75,6 +84,12 @@ class SpotBacktest(Env):
         self.output = False
         if self.visualize:
             self.visualization = TradingGraph(self.render_range, self.time_step)
+        if self.write_to_file:
+            self.to_file = []
+            with open(self.filename, 'w', newline='') as f:
+                header = ['trade_id', 'trade_type', 'position_size', 'quantity', 'balance', 'profit', 'fees',
+                          'sl_losses']
+                writer(f).writerow(header)
         self.last_order_type = ''
         self.info = {}
         self.PLs_and_ratios = []
@@ -105,29 +120,31 @@ class SpotBacktest(Env):
         # return self.df[self.current_step, self.exclude_cols_left:]
         return next(self.obs)
 
-    '''def _next_observation(self):
-      self.current_step += 1
-      if self.current_step==self.end_step-1:
-        self._finish_episode()
-      return next(self.obs)'''
-
-    '''def _random_factor(self, price, trade_type):
-      return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)'''
+    # def _next_observation(self):
+    #   self.current_step += 1
+    #   if self.current_step==self.end_step-1:
+    #     self._finish_episode()
+    #   return next(self.obs)
+    #
+    # def _random_factor(self, price, trade_type):
+    #   return round(price*float(normalvariate(self.slippage[trade_type][0], self.slippage[trade_type][1])), 2)
 
     def _buy(self, price):
-        self.last_order_type = 'open_long'
         if self.stop_loss is not None:
             self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
         # Considering random factor as in real world scenario #
         # price = self._random_factor(price, 'market_buy')
         adj_price = price * self.buy_factor
-        self.in_position = 1
-        self.episode_orders += 1
-        self.enter_price = adj_price
         # When there is no fee, subtract 1 just to be sure balance can buy this amount #
         step_adj_qty = floor(self.position_size / (adj_price * self.coin_step))
         if step_adj_qty == 0:
             self._finish_episode()
+            return
+        self.last_order_type = 'open_long'
+        self.in_position = 1
+        self.position_closed = 0
+        self.episode_orders += 1
+        self.enter_price = adj_price
         self.qty = step_adj_qty * self.coin_step
         self.position_size = self.qty * adj_price
         self.prev_bal = self.balance
@@ -136,6 +153,8 @@ class SpotBacktest(Env):
         self.position_size -= fee
         self.cumulative_fees += fee
         self.absolute_profit = fee
+        if self.write_to_file:
+            self._write_to_file()
         # print(f'BOUGHT {self.qty} at {price}({adj_price})')
 
     def _sell(self, price, sl=False):
@@ -144,7 +163,7 @@ class SpotBacktest(Env):
             # while price>self.enter_price:
             #     price = self._random_factor(price, 'SL')
             adj_price = price * self.stop_loss_factor
-            self.last_order_type = 'open_short'
+            self.last_order_type = 'stop_loss'
         else:
             # price = self._random_factor(price, 'market_sell')
             adj_price = price * self.sell_factor
@@ -178,8 +197,11 @@ class SpotBacktest(Env):
             self._finish_episode()
         self.qty = 0
         self.in_position = 0
+        self.position_closed = 1
         self.in_position_counter = 0
         self.stop_loss_price = 0
+        if self.write_to_file:
+            self._write_to_file()
 
     def _next_observation(self):
         try:
@@ -226,8 +248,9 @@ class SpotBacktest(Env):
         self.PNL_arrays = array(self.PLs_and_ratios)
         gain = self.balance - self.init_balance
         total_return = (self.balance / self.init_balance) - 1
-        risk_free_return = (self.df[-1, 3] / self.df[0, 3]) - 1
-        hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 1 and self.profit_hold_counter > 1 else 0.0
+        risk_free_return = (self.df[self.end_step, 3] / self.df[self.start_step, 3]) - 1
+        above_free = (total_return - risk_free_return) * 100
+        hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 1 and self.profit_hold_counter > 1 else 1.0
         if len(self.PNL_arrays) > 1:
             mean_pnl, stddev_pnl = mean(self.PNL_arrays[:, 0]), std(self.PNL_arrays[:, 0])
             profits = self.PNL_arrays[:, 0][self.PNL_arrays[:, 0] > 0]
@@ -236,42 +259,52 @@ class SpotBacktest(Env):
             losses_mean = mean(losses) if len(losses) > 1 else 0.0
             losses_stddev = std(losses) if len(losses) > 1 else 0.0
             PnL_trades_ratio = mean(self.PNL_arrays[:, 1])
-            PnL_means_ratio = abs(profits_mean / losses_mean) if profits_mean != 0 and losses_mean != 0 else 0.0
+            PnL_means_ratio = abs(profits_mean / losses_mean) if profits_mean != 0 and losses_mean != 0 else 1.0
             # slope_indicator = linear_slope_indicator(PnL_trades_ratio)
             slope_indicator = 1.000
+            in_gain_indicator = self.with_gain_c / (
+                    self.total_steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
+            self.reward = (copysign(abs(above_free) ** 2, above_free) * self.episode_orders * PnL_trades_ratio * (
+                    hold_ratio ** (1 / 3)) * (PnL_means_ratio ** (1 / 3)) * in_gain_indicator) / self.total_steps
         else:
             mean_pnl, stddev_pnl = 0.0, 0.0
             profits_mean, losses_mean, losses_stddev = 0.0, 0.0, 0.0
             PnL_trades_ratio, PnL_means_ratio = 0.0, 0.0
-            slope_indicator = 1.000
+            in_gain_indicator = 0.0
+            slope_indicator = 0.000
+            self.reward = -inf
+
         sharpe_ratio = (mean_pnl - risk_free_return) / stddev_pnl if stddev_pnl != 0 else -1
         sortino_ratio = (total_return - risk_free_return) / losses_stddev if losses_stddev != 0 else -1
         # with_gain_c is not incremented when in position and while position is being opened, so we need to subtract those values from 'total_steps
-        in_gain_indicator = self.with_gain_c / (
-                self.total_steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
-        above_free = (total_return - risk_free_return) * 100
         # sl_losses_adj_gain = gain-self.SL_losses
-        self.reward = (copysign(abs(above_free) ** 2, above_free) * self.episode_orders * PnL_trades_ratio * (
-                hold_ratio ** (1 / 3)) * (PnL_means_ratio ** (1 / 3)) * in_gain_indicator) / self.total_steps
         # self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.total_steps
         # self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
         exec_time = time() - self.creation_t
         if self.verbose:
             print(
-                f'Episode finished: gain:${gain:.2f}({total_return * 100:.2f}%), gain/step:${gain / self.total_steps:.5f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}')
+                f'Episode finished: gain:${gain:.2f}({total_return * 100:.2f}%), gain/step:${gain / (self.end_step - self.start_step):.5f}, ',
+                end='')
+            print(f'cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}')
             print(
-                f' episode_orders:{self.episode_orders:_}, trades_count(profit/loss):{self.good_trades_count - 1:_}/{self.bad_trades_count - 1:_}, ',
+                f' trades:{self.episode_orders:_}, trades_with(profit/loss):{self.good_trades_count - 1:_}/{self.bad_trades_count - 1:_}, ',
                 end='')
             print(f'trades_avg(profit/loss):{profits_mean * 100:.2f}%/{losses_mean * 100:.2f}%, ', end='')
             print(f'max(profit/drawdown):{self.max_profit * 100:.2f}%/{self.max_drawdown * 100:.2f}%,')
             print(f' PnL_trades_ratio:{PnL_trades_ratio:.3f}, PnL_means_ratio:{PnL_means_ratio:.3f}, ', end='')
             print(
-                f'hold_ratio:{hold_ratio:.3f}, PNL_mean:{mean_pnl * 100:.2f}% geo_avg_return:{((self.balance / self.init_balance) ** (1 / self.total_steps) - 1) * 100:.7f}%')
+                f'hold_ratio:{hold_ratio:.3f}, PNL_mean:{mean_pnl * 100:.2f}%, ', end='')
+            print(
+                f'geo_avg_return:{((self.balance / self.init_balance) ** (1 / (self.end_step - self.start_step)) - 1) * 100:.7f}%')
             print(
                 f' slope_indicator:{slope_indicator:.4f}, in_gain_indicator:{in_gain_indicator:.3f}, sharpe_ratio:{sharpe_ratio:.2f}, sortino_ratio:{sortino_ratio:.2f},',
                 end='')
             print(f' risk_free:{risk_free_return * 100:.2f}%, above_free:{above_free:.2f}%,')
             print(f' reward:{self.reward:.8f} exec_time:{exec_time:.2f}s')
+        if self.write_to_file:
+            with open(self.filename, 'a', newline='') as f:
+                for row in self.to_file:
+                    writer(f).writerow(row)
         self.info = {'gain': gain,
                      'PnL_means_ratio': PnL_means_ratio,
                      'PnL_trades_ratio': PnL_trades_ratio,
@@ -280,334 +313,280 @@ class SpotBacktest(Env):
                      'slope_indicator': slope_indicator,
                      'exec_time': exec_time}
 
-    def render(self, visualize=False, *args, **kwargs):
+    def render(self, indicator_or_reward=None, visualize=False, *args, **kwargs):
         if visualize or self.visualize:
             if self.in_position:
                 _pnl = self.df[self.current_step, 3] / self.enter_price - 1
                 _balance = self.balance + (self.position_size + (self.position_size * _pnl))
             else:
                 _balance = self.balance
+            if indicator_or_reward is None:
+                indicator_or_reward = self.df[self.current_step, -1]
             render_row = [self.dates_df[self.current_step],
                           *self.df[self.current_step, 0:4],
-                          self.df[self.current_step, -1],
+                          indicator_or_reward,
                           _balance]
             trade_info = [self.last_order_type, round(self.absolute_profit, 2)]
             #   print(f'trade_info {trade_info}')
             self.visualization.append(render_row, trade_info)
             self.visualization.render()
 
+    def _write_to_file(self):
+        _row = [self.episode_orders, self.last_order_type, round(self.position_size, 2),
+                round(self.qty, 8), round(self.balance, 2), round(self.absolute_profit, 2),
+                round(self.cumulative_fees, 2), round(self.SL_losses, 2)]
+        self.to_file.append(_row)
 
-class SignalExecuteSpotEnv(SpotBacktest):
+
+class FuturesBacktest(SpotBacktest):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'close_at' in kwargs and 'enter_at' in kwargs:
-            self.enter_threshold = kwargs['enter_at']
-            self.close_threshold = kwargs['close_at']
+        # https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin
+        self.POSITION_TIER = {1: (125, .0040, 0), 2: (100, .005, 50),
+                              3: (50, .01, 2_550), 4: (20, .025, 122_550),
+                              5: (10, .05, 1_372_550), 6: (5, .10, 5_372_550),
+                              7: (4, .125, 7_872_550), 8: (3, .15, 10_872_550),
+                              9: (2, .25, 30_872_550), 10: (1, .50, 105_872_550)}
+        if 'leverage' in kwargs:
+            self.leverage = kwargs['leverage']
         else:
-            self.enter_threshold = 1.0
-            self.close_threshold = 1.0
-        self.df = hstack((self.df, empty((self.df.shape[0], 1))))
+            self.leverage = 1
+        self.df_mark = kwargs['df_mark'].to_numpy()
+        # BTCUSDTperp last 1Y mean=6.09e-05 stdev=6.52e-05, mean+2*stedv covers ~95,4% of variance
+        # self.funding_rate = 0.01912 * (1/100)
+        self.funding_rate = 0.01 * (1 / 100)
 
-    def reset(self, *args, **kwargs):
-        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.00
-        self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
-        self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
-        self.close_threshold = kwargs['close_at'] if 'close_at' in kwargs else 1.0
-        self.signals = empty(self.total_steps)
+    def reset(self, **kwargs):
+        self.margin = 0
+        self.liquidation_price = 0
+        self.tier = 0
+        # self.stop_loss /= self.leverage
+        self.liquidations = 0
         return super().reset()
 
+    def _check_tier(self):
+        # print('_check_tier')
+        if self.position_size < 50_000:
+            self.tier = 1
+        elif 50_000 < self.position_size < 500_000:
+            self.tier = 2
+        elif 500_000 < self.position_size < 8_000_000:
+            self.tier = 3
+        elif 8_000_000 < self.position_size < 50_000_000:
+            self.tier = 4
+        elif 50_000_000 < self.position_size < 80_000_000:
+            self.tier = 5
+        elif 80_000_000 < self.position_size < 100_000_000:
+            self.tier = 6
+        elif 100_000_000 < self.position_size < 120_000_000:
+            self.tier = 7
+        elif 120_000_000 < self.position_size < 200_000_000:
+            self.tier = 8
+        elif 200_000_000 < self.position_size < 300_000_000:
+            self.tier = 9
+        elif 300_000_000 < self.position_size < 500_000_000:
+            self.tier = 10
+
+    # def _check_margin(self):
+    #   #print('_check_margin')
+    #   if self.qty>0:
+    #     min_price = self.df[self.current_step, 2]
+    #   elif self.qty<0:
+    #     min_price = self.df[self.current_step, 1]
+    #   else:
+    #     pass
+    #     #print('co Ty tu robisz?')
+    #   position_value = abs(self.qty*min_price)
+    #   unrealized_PNL = abs(self.qty*self.enter_price/self.leverage)*self._get_pnl(min_price)
+    #   # 1.25% Liquidation Clearance
+    #   margin_balance = self.margin + unrealized_PNL - (position_value*0.0125) - (position_value*self.fee)
+    #   maintenance_margin = position_value*self.POSITION_TIER[self.tier][1]-self.POSITION_TIER[self.tier][2]
+    #   print(f'min_price:{min_price:.2f} position_value:{position_value:.2f} unrealized_PNL:{unrealized_PNL:.2f} Clearance:{(position_value*0.0125)} fee:{(position_value*self.fee)} margin:{self.margin} margin_balance:{margin_balance:.2f} maintenance_margin:{maintenance_margin:.2f} margin_ratio:{maintenance_margin/margin_balance*100}')
+    #   if maintenance_margin>margin_balance:
+    #     return True
+    #   else:
+    #     return False
+
+    def _check_margin(self):
+        # print('_check_margin')
+        self.liquidation_price = (self.margin - self.qty * self.enter_price) / (
+                abs(self.qty) * self.POSITION_TIER[self.tier][1] - self.qty)
+        # print(f'liquidation_price:{self.liquidation_price} (margin:{self.margin} qty:{self.qty} enter_price:{self.enter_price})')
+        if self.qty > 0:
+            min_price = self.df_mark[self.current_step, 2]
+            if self.liquidation_price >= min_price: return True
+        elif self.qty < 0:
+            max_price = self.df_mark[self.current_step, 1]
+            if self.liquidation_price <= max_price: return True
+        else:
+            return False
+
+    def _get_pnl(self, price, update=False):
+        _pnl = (((price / self.enter_price) - 1) * self.leverage) * copysign(1, self.qty)
+        if update:
+            self.pnl = _pnl
+            if self.pnl < 0:
+                self.loss_hold_counter += 1
+            elif self.pnl > 0:
+                self.profit_hold_counter += 1
+        elif not self.in_position:
+            self.pnl = 0
+        return _pnl
+
+    def _open_position(self, side, price):
+        if side == 'long':
+            adj_price = price * self.buy_factor
+            self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
+            self.last_order_type = 'open_long'
+        elif side == 'short':
+            adj_price = price * self.sell_factor
+            self.stop_loss_price = round((1 + self.stop_loss) * price, 2)
+            self.last_order_type = 'open_short'
+        else:
+            raise RuntimeError('side should be "long" or "short"')
+        # print(f'OPENING x{self.leverage} {side} at price {price} ')
+        self._check_tier()
+        if self.leverage > self.POSITION_TIER[self.tier][0]:
+            print(
+                f' Leverage exceeds tier {self.tier} max, changing from {self.leverage} to {self.POSITION_TIER[self.tier][0]} (Balance: ${self.balance})')
+            # print(f'Balance: {self.balance}')
+            self.leverage = self.POSITION_TIER[self.tier][0]
+        adj_qty = floor(self.position_size * self.leverage / (adj_price * self.coin_step))
+        if adj_qty == 0:
+            adj_qty = 1
+            # print('Forcing adj_qty to 1. Calculated quantity possible to buy with given postion_size and coin_step equals 0')
+        self.margin = (adj_qty * self.coin_step * adj_price) / self.leverage
+        # print(f'  (position size {self.position_size} qty {adj_qty})')
+        if self.margin > self.balance:
+            self._finish_episode()
+            return
+        self.in_position = 1
+        self.episode_orders += 1
+        self.enter_price = price
+        self.prev_bal = self.balance
+        self.balance -= self.margin
+        fee = (self.margin * self.fee * self.leverage)
+        # print(f'  (fee {fee:.8f})')
+        self.margin -= fee
+        # print(f'OPENING POSITION fee:{fee:.2f} Margin:{self.margin:.2f} Balance:{self.balance+self.margin:.2f}')
+        self.cumulative_fees += fee
+        # print(f' balance(minus position size and fee) {self.balance}')
+        if side == 'long':
+            self.qty = adj_qty * self.coin_step
+        elif side == 'short':
+            self.qty = -1 * adj_qty * self.coin_step
+        if self.write_to_file:
+            self._write_to_file()
+        # print(f'OPENING x{self.leverage} {side} at price:{price:.2f}({adj_price:.2f}) qty:{self.qty:.8f} fee:{fee:.2f}')
+        # sleep(2)
+
+    def _close_position(self, price, liquidated=False, SL=False):
+        if SL:
+            adj_price = price * self.stop_loss_factor
+            self.last_order_type = 'stop_loss'
+        else:
+            if self.qty > 0:
+                adj_price = price * self.sell_factor
+                self.last_order_type = 'close_long'
+            elif self.qty < 0:
+                adj_price = price * self.buy_factor
+                self.last_order_type = 'close_short'
+        # print(f'CLOSING position at price {price} liquidated:{liquidated} SL:{SL} SL_price:{self.stop_loss_price}')
+        _position_value = abs(self.qty) * adj_price
+        _fee = (_position_value * self.fee)
+        if liquidated:
+            margin_balance = 0
+        else:
+            unrealized_PNL = (abs(self.qty) * self.enter_price / self.leverage) * self._get_pnl(adj_price)
+            margin_balance = self.margin + unrealized_PNL - _fee
+        # print(f'CLOSING POSITION fee:{_fee:.2f} UPNL:{unrealized_PNL:.2f} MarginBalance:{margin_balance:.2f} Balance:{self.balance:.2f}')
+        self.cumulative_fees += _fee
+        self.balance += margin_balance
+        self.margin = 0
+        percentage_profit = (self.balance / self.prev_bal) - 1
+        self.absolute_profit = self.balance - self.prev_bal
+        ### PROFIT
+        if percentage_profit > 0:
+            if self.balance >= self.max_balance:
+                self.max_balance = self.balance
+                if self.balance > 1_000_000:
+                    print(f'$$ {self.balance:_.2f} $$')
+                elif self.balance > 100_000:
+                    print(f'$$$$$$$$ {self.balance:_.2f} $$$$$$$$')
+            self.good_trades_count += 1
+            if self.max_profit == 0 or percentage_profit > self.max_profit:
+                self.max_profit = percentage_profit
+        ### LOSS
+        elif percentage_profit < 0:
+            if self.balance <= self.min_balance: self.min_balance = self.balance
+            self.bad_trades_count += 1
+            if self.max_drawdown == 0 or percentage_profit < self.max_drawdown:
+                self.max_drawdown = percentage_profit
+            if SL:
+                self.SL_losses += (self.balance - self.prev_bal)
+        self.PLs_and_ratios.append((percentage_profit, self.good_trades_count / self.bad_trades_count))
+        self.position_size = (self.balance * self.position_ratio)
+        self.qty = 0
+        self.in_position = 0
+        self.in_position_counter = 0
+        self.stop_loss_price = 0
+        self.pnl = 0
+        if self.write_to_file:
+            self._write_to_file()
+        # print(f'CLOSING x{self.leverage} at price:{price:.2f}({adj_price:.2f}) qty:{self.qty:.8f} fee:{_fee:.2f} profit:{self.absolute_profit}')
+        # sleep(2)
+
+    # Execute one time step within the environment
+    def step(self, action):
+        self.last_order_type = ''
+        self.absolute_profit = 0.0
+        if self.in_position:
+            high, low, close = self.df[self.current_step, 1:4]
+            mark_close = self.df_mark[self.current_step, 3]
+            self.in_position_counter += 1
+            if self.in_position_counter % 480 == 0:
+                self.margin -= (abs(self.qty) * close * self.funding_rate)
+            self._get_pnl(mark_close, update=True)
+            if ((low <= self.stop_loss_price) and (self.qty > 0)) or (
+                    (high >= self.stop_loss_price) and (self.qty < 0)):
+                self._close_position(self.stop_loss_price, SL=True)
+            elif self._check_margin():
+                self.liquidations += 1
+                self._close_position(mark_close, liquidated=True)
+            elif (action == 1 and self.qty < 0) or (action == 2 and self.qty > 0):
+                self._close_position(close)
+        elif action == 1:
+            close = self.df[self.current_step, 3]
+            self._open_position('long', close)
+        elif action == 2:
+            close = self.df[self.current_step, 3]
+            self._open_position('short', close)
+        info = {'action': action,
+                'reward': 0,
+                'step': self.current_step,
+                'exec_time': time() - self.creation_t}
+        return self._next_observation(), self.reward, self.done, False, self.info
+
     def _finish_episode(self):
+        if self.in_position:
+            self._close_position(self.enter_price)
         super()._finish_episode()
         if self.verbose:
-            print(f' position_ratio={self.position_ratio:.2f}, stop_loss={self.stop_loss * 100:.3f}%,', end='')
-            print(f' enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}')
+            print(f'Liquidations: {self.liquidations}')
 
-    def __call__(self, *args, **kwargs):
-        while not self.done:
-            action = 0
-            if self.qty == 0:
-                if self.signals[self.current_step] >= self.enter_threshold:
-                    action = 1
-                elif self.signals[self.current_step] <= -self.enter_threshold:
-                    action = 2
-            elif (self.qty < 0) and (self.signals[self.current_step] >= self.close_threshold):
-                action = 1
-            elif (self.qty > 0) and (self.signals[self.current_step] <= -self.close_threshold):
-                action = 2
-            obs, _, _, _, _ = self.step(action)
-            if self.visualize:
-                # current_step manipulation just to synchronize plot rendering
-                # could be fixed by calling .render() inside .step() just before return statement
-                self.current_step -= 1
-                self.render()
-                self.current_step += 1
-        return obs, self.reward, self.done, False, self.info
-
-# class FuturesBacktest(SpotBacktest):
-#     def __init__(self, df, dates_df=None, df_mark=None, excluded_left=0, init_balance=1_000, position_ratio=1.0,
-#                  leverage=1, StopLoss=0.0, fee=0.0002, coin_step=0.001,
-#                  slippage={'market_buy': (1.0, 0.0), 'market_sell': (1.0, 0.0), 'SL': (1.0, 0.0)}, max_steps=0,
-#                  lookback_window_size=0, render_range=120, visualize=False):
-#         super().__init__(df=df, dates_df=dates_df, excluded_left=excluded_left, init_balance=init_balance,
-#                          position_ratio=position_ratio, StopLoss=StopLoss, fee=fee, coin_step=coin_step,
-#                          slippage=slippage, max_steps=max_steps, lookback_window_size=lookback_window_size,
-#                          render_range=render_range, visualize=visualize)
-#         # https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin
-#         self.POSITION_TIER = {1: (125, .0040, 0), 2: (105, .005, 50),
-#                               3: (50, .01, 1_300), 4: (20, .025, 46_300),
-#                               5: (10, .05, 546_300), 6: (5, .10, 2_546_300),
-#                               7: (4, .125, 5_046_300), 8: (3, .15, 8_046_300),
-#                               9: (2, .25, 28_046_300), 10: (1, .50, 103_046_300)}
-#         self.leverage = leverage
-#         self.df_mark = df_mark
-#         # BTCUSDTperp last 1Y mean=6.09e-05 stdev=6.52e-05, mean+2*stedv covers ~95,4% of variance
-#         # self.funding_rate = 0.01912 * (1/100)
-#         self.funding_rate = 0.01 * (1 / 100)
-#
-#     def reset(self, **kwargs):
-#         self.margin = 0
-#         self.liquidation_price = 0
-#         self.tier = 0
-#         # self.stop_loss /= self.leverage
-#         self.liquidations = 0
-#         return super().reset()
-#         '''for i in reversed(range(self.lookback_window_size)):
-#             current_step = self.current_step - i
-#             #self.orders_history.append([self.position_size, self.balance, self.in_position, copysign(1, self.qty), self.df[current_step, 4]-self.enter_price])
-#             self.market_history.append(self.df[self.current_step, self.exclude_count:])
-#         # backtest #
-#         return self.market_history.pop()
-#         #return np.concatenate((self.market_history, self.orders_history), axis=1)'''
-#
-#     def _check_tier(self):
-#         # print('_check_tier')
-#         if self.position_size < 50_000:
-#             self.tier = 1
-#         elif 50_000 < self.position_size < 250_000:
-#             self.tier = 2
-#         elif 250_000 < self.position_size < 3_000_000:
-#             self.tier = 3
-#         elif 3_000_000 < self.position_size < 15_000_000:
-#             self.tier = 4
-#         elif 15_000_000 < self.position_size < 30_000_000:
-#             self.tier = 5
-#         elif 30_000_000 < self.position_size < 80_000_000:
-#             self.tier = 6
-#         elif 80_000_000 < self.position_size < 100_000_000:
-#             self.tier = 7
-#         elif 100_000_000 < self.position_size < 200_000_000:
-#             self.tier = 8
-#         elif 200_000_000 < self.position_size < 300_000_000:
-#             self.tier = 9
-#         elif 300_000_000 < self.position_size < 500_000_000:
-#             self.tier = 10
-#
-#     '''def _check_margin(self):
-#       #print('_check_margin')
-#       if self.qty>0:
-#         min_price = self.df[self.current_step, 2]
-#       elif self.qty<0:
-#         min_price = self.df[self.current_step, 1]
-#       else:
-#         pass
-#         #print('co Ty tu robisz?')
-#       position_value = abs(self.qty*min_price)
-#       unrealized_PNL = abs(self.qty*self.enter_price/self.leverage)*self._get_pnl(min_price)
-#       # 1.25% Liquidation Clearance
-#       margin_balance = self.margin + unrealized_PNL - (position_value*0.0125) - (position_value*self.fee)
-#       maintenance_margin = position_value*self.POSITION_TIER[self.tier][1]-self.POSITION_TIER[self.tier][2]
-#       print(f'min_price:{min_price:.2f} position_value:{position_value:.2f} unrealized_PNL:{unrealized_PNL:.2f} Clearance:{(position_value*0.0125)} fee:{(position_value*self.fee)} margin:{self.margin} margin_balance:{margin_balance:.2f} maintenance_margin:{maintenance_margin:.2f} margin_ratio:{maintenance_margin/margin_balance*100}')
-#       if maintenance_margin>margin_balance:
-#         return True
-#       else:
-#         return False'''
-#
-#     def _check_margin(self):
-#         # print('_check_margin')
-#         self.liquidation_price = (self.margin - self.qty * self.enter_price) / (
-#                     abs(self.qty) * self.POSITION_TIER[self.tier][1] - self.qty)
-#         # print(f'liquidation_price:{self.liquidation_price} (margin:{self.margin} qty:{self.qty} enter_price:{self.enter_price})')
-#         if self.qty > 0:
-#             min_price = self.df_mark[self.current_step, 2]
-#             if self.liquidation_price >= min_price: return True
-#         elif self.qty < 0:
-#             max_price = self.df_mark[self.current_step, 1]
-#             if self.liquidation_price <= max_price: return True
-#         else:
-#             return False
-#
-#     def _get_pnl(self, price, update=False):
-#         _pnl = (((price / self.enter_price) - 1) * self.leverage) * copysign(1, self.qty)
-#         if update:
-#             self.pnl = _pnl
-#         elif not self.in_position:
-#             self.pnl = 0
-#         return _pnl
-#
-#     def _open_position(self, side, price):
-#         if side == 'long':
-#             if self.visualize:
-#                 self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-#                                     'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_long", 'Reward': 0})
-#                 print(f'OPENING LONG at {price}')
-#             rnd_factor = random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], 1)[0]
-#             price = round(price * rnd_factor, 2)
-#             self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
-#         elif side == 'short':
-#             if self.visualize:
-#                 self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-#                                     'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': "open_short", 'Reward': 0})
-#                 print(f'OPENING SHORT at {price}')
-#             rnd_factor = random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1], 1)[0]
-#             price = round(price * rnd_factor, 2)
-#             self.stop_loss_price = round((1 + self.stop_loss) * price, 2)
-#         # print(f'OPENING x{self.leverage} {side} at price {price} ')
-#         self.in_position = 1
-#         self.episode_orders += 1
-#         self.enter_price = price
-#         self._check_tier()
-#         if self.leverage > self.POSITION_TIER[self.tier][0]:
-#             print(
-#                 f' Leverage exceeds tier {self.tier} max, changing from {self.leverage} to {self.POSITION_TIER[self.tier][0]} (Balance: ${self.balance})')
-#             # print(f'Balance: {self.balance}')
-#             self.leverage = self.POSITION_TIER[self.tier][0]
-#         adj_qty = floor(self.position_size * self.leverage / (price * self.coin_step))
-#         if adj_qty == 0:
-#             adj_qty = 1
-#             # print('Forcing adj_qty to 1. Calculated quantity possible to buy with given postion_size and coin_step equals 0')
-#         self.margin = (adj_qty * self.coin_step * price) / self.leverage
-#         # print(f'  (position size {self.position_size} qty {adj_qty})')
-#         if self.margin > self.balance: return self._finish_episode()
-#         self.prev_bal = self.balance
-#         self.balance -= self.margin
-#         fee = (self.margin * self.fee * self.leverage)
-#         # print(f'  (fee {fee:.8f})')
-#         self.margin -= fee
-#         # print(f'OPENING POSITION fee:{fee:.2f} Margin:{self.margin:.2f} Balance:{self.balance+self.margin:.2f}')
-#         self.cumulative_fees += fee
-#         # print(f' balance(minus position size and fee) {self.balance}')
-#         if side == 'long':
-#             self.qty = adj_qty * self.coin_step
-#         elif side == 'short':
-#             self.qty = -1 * adj_qty * self.coin_step
-#         # sleep(2)
-#
-#     def _close_position(self, price, liquidated=False, SL=False):
-#         if SL:
-#             rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1], 1)[0]
-#             if self.qty > 0:
-#                 while price * rnd_factor > self.enter_price:
-#                     rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1], 1)[0]
-#             elif self.qty < 0:
-#                 while price * rnd_factor < self.enter_price:
-#                     rnd_factor = random.normal(self.slippage['SL'][0], self.slippage['SL'][1], 1)[0]
-#         else:
-#             if self.qty > 0:
-#                 rnd_factor = random.normal(self.slippage['market_sell'][0], self.slippage['market_sell'][1], 1)[0]
-#             elif self.qty < 0:
-#                 rnd_factor = random.normal(self.slippage['market_buy'][0], self.slippage['market_buy'][1], 1)[0]
-#         if self.visualize:
-#             if self.qty > 0:
-#                 if SL:
-#                     trade_type = "SL_long"
-#                 elif liquidated:
-#                     trade_type = "liquidate_long"
-#                 else:
-#                     trade_type = "close_long"
-#                 print(f'CLOSING LONG at {price} liquidated:{liquidated} SL:{SL} SL_price:{self.stop_loss_price}')
-#             elif self.qty < 0:
-#                 if SL:
-#                     trade_type = "SL_short"
-#                 elif liquidated:
-#                     trade_type = "liquidate_short"
-#                 else:
-#                     trade_type = "close_short"
-#                 print(f'CLOSING SHORT at {price} liquidated:{liquidated} SL:{SL} SL_price:{self.stop_loss_price}')
-#             self.trades.append({'Date': self.dates_df[self.current_step], 'High': self.df[self.current_step, 1],
-#                                 'Low': self.df[self.current_step, 2], 'total': self.qty, 'type': trade_type})
-#         price = round(price * rnd_factor, 2)
-#         # print(f'CLOSING position at price {price} liquidated:{liquidated} SL:{SL} SL_price:{self.stop_loss_price}')
-#         _position_value = abs(self.qty) * price
-#         _fee = (_position_value * self.fee)
-#         if liquidated:
-#             margin_balance = 0
-#         else:
-#             unrealized_PNL = (abs(self.qty) * self.enter_price / self.leverage) * self.pnl
-#             margin_balance = self.margin + unrealized_PNL - _fee
-#         # print(f'CLOSING POSITION fee:{_fee:.2f} UPNL:{unrealized_PNL:.2f} MarginBalance:{margin_balance:.2f} Balance:{self.balance:.2f}')
-#         self.cumulative_fees += _fee
-#         self.balance += margin_balance
-#         self.margin = 0
-#         percentage_profit = (self.balance / self.prev_bal) - 1
-#         ### PROFIT
-#         if percentage_profit > 0:
-#             if self.balance >= self.max_balance:
-#                 self.max_balance = self.balance
-#                 if self.balance > 1_000_000:
-#                     print(f'$$$$$$$$ {self.balance} $$$$$$$$')
-#             self.good_trades_count += 1
-#             if self.max_profit == 0 or percentage_profit > self.max_profit:
-#                 self.max_profit = percentage_profit
-#         ### LOSS
-#         elif percentage_profit < 0:
-#             if self.balance <= self.min_balance: self.min_balance = self.balance
-#             self.bad_trades_count += 1
-#             if self.max_drawdown == 0 or percentage_profit < self.max_drawdown:
-#                 self.max_drawdown = percentage_profit
-#             if SL:
-#                 self.SL_losses += (self.balance - self.prev_bal)
-#         self.PL_ratios_and_PNLs.append((percentage_profit, self.good_trades_count / self.bad_trades_count))
-#         self.position_size = (self.balance * self.position_ratio)
-#         self.qty = 0
-#         self.in_position = 0
-#         self.in_position_counter = 0
-#         self.stop_loss_price = 0
-#         self.pnl = 0
-#         # sleep(2)
-#
-#     # Execute one time step within the environment
-#     def step(self, action):
-#         # print(f'current_step:{self.current_step} start_step:{self.start_step} end_step:{self.end_step} margin:{self.margin} balance:{self.balance}')
-#         close = self.df[self.current_step, 3]
-#         if self.current_step == self.end_step:
-#             if self.in_position: self._close_position(close)
-#             return self._finish_episode()
-#         if not self.in_position:
-#             if action == 0:
-#                 if ((self.current_step - self.start_step) > 10_080) and (not self.episode_orders):
-#                     # print(f'(episode finished: {self.episode_orders} trades {self.current_step-self.start_step} steps)')
-#                     return self._finish_episode()
-#             elif self.position_size <= ((close * self.coin_step) / self.leverage) + (
-#                     (close * self.coin_step) * self.fee):
-#                 return self._finish_episode()
-#             elif action == 1:
-#                 self._open_position('long', close)
-#             elif action == 2:
-#                 self._open_position('short', close)
-#         elif self.in_position:
-#             self.in_position_counter += 1
-#             if self.in_position_counter % 480 == 0:
-#                 self.margin -= (abs(self.qty) * close * self.funding_rate)
-#             self._get_pnl(close, update=True)
-#             if self.pnl < 0:
-#                 self.loss_hold_counter += 1
-#             elif self.pnl > 0:
-#                 self.profit_hold_counter += 1
-#             if (self.df[self.current_step, 2] <= self.stop_loss_price and self.qty > 0) or (
-#                     self.df[self.current_step, 1] >= self.stop_loss_price and self.qty < 0):
-#                 self._close_position(self.stop_loss_price, SL=True)
-#             elif self._check_margin():
-#                 self.liquidations += 1
-#                 self._close_position(close, liquidated=True)
-#             else:
-#                 if action == 0:
-#                     pass
-#                 elif (action == 1 and self.qty < 0) or (action == 2 and self.qty > 0):
-#                     self._close_position(close)
-#         info = {'action': action,
-#                 'reward': 0,
-#                 'step': self.current_step,
-#                 'exec_time': time() - self.creation_t}
-#         self.current_step += 1
-#         # sleep(0.1)
-#         return self._next_observation(), 0, self.done, info
+    def render(self, indicator_or_reward=None, visualize=False, *args, **kwargs):
+        if visualize or self.visualize:
+            if self.in_position:
+                _balance = self.balance + (self.margin + (self.margin * self.pnl))
+            else:
+                _balance = self.balance
+            if indicator_or_reward is None:
+                indicator_or_reward = self.df[self.current_step, -1]
+            render_row = [self.dates_df[self.current_step],
+                          *self.df[self.current_step, 0:4],
+                          indicator_or_reward,
+                          _balance]
+            trade_info = [self.last_order_type, round(self.absolute_profit, 2)]
+            #   print(f'trade_info {trade_info}')
+            self.visualization.append(render_row, trade_info)
+            self.visualization.render()

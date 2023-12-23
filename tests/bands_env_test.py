@@ -8,7 +8,7 @@ from utils.utility import get_slippage_stats
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
-    action = [0.03568069167245792, 0.003006891123941202, 0.5101507449452755, 8, 723, 903, 11.126713604052402]
+    action = [0.023998771101126748, 0.27111365210175387, 0.5984170065118863, 8, 741, 945, 8.30966963107716]
 
     dates_df, df = by_BinanceVision(ticker=ticker,
                                     interval=interval,
@@ -19,7 +19,7 @@ if __name__ == "__main__":
                                     delay=129_600)
     signals = get_MA_band_signal(df.to_numpy(), action[3], action[4], action[5], action[6])
     print(f'signal {signals}')
-    plt.plot(signals[-1_000:])
+    plt.plot(signals[-10_000:])
     plt.axhline(y=action[1], color='green', linestyle='--')
     plt.axhline(y=-action[2], color='red', linestyle='--')
     plt.show()

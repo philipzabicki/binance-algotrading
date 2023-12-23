@@ -60,8 +60,10 @@ def read_partial_df(_path):
 def collect_to_date(url, output_folder, start_date=date(year=2017, month=1, day=1), delta_itv='months'):
     if delta_itv == 'months':
         delta = relativedelta(months=1)
+        print(f'Collecting monthly from {start_date} to date...')
     elif delta_itv == 'days':
         delta = relativedelta(days=1)
+        print(f'Collecting daily from {start_date} to date...')
     end_date = date.today() - delta
     data_frames = []
     while start_date <= end_date:
@@ -89,7 +91,7 @@ def collect_to_date(url, output_folder, start_date=date(year=2017, month=1, day=
 
 def by_BinanceVision(ticker='BTCBUSD', interval='1m', market_type='um', data_type='klines', start_date='', split=False,
                      delay=LAST_DATA_POINT_DELAY):
-    print("saved_args is", locals())
+    # print("saved_args is", locals())
     ### example url #1 https://data.binance.vision/data/spot/daily/klines/BTCTUSD/1m/BTCTUSD-1m-2023-08-09.zip
     ### example url #2 https://data.binance.vision/data/futures/um/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2023-08-09.zip
     ### https://data.binance.vision/data/futures/um/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2023-07.zip

@@ -3,7 +3,7 @@ from numpy import array, float64, inf
 from talib import RSI
 
 from utils.ta_tools import custom_MACD, MACD_cross_signal, RSI_like_signal
-from .base import SignalExecuteSpotEnv
+from .signal_env import SignalExecuteSpotEnv
 
 
 class MACDRSIExecuteSpotEnv(SignalExecuteSpotEnv):

@@ -158,11 +158,17 @@ class TradingGraph:
                 self.ax1.scatter(x_position, high_low, c='green', label='green', s=120, edgecolors='none',
                                  marker="^")
                 self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.9999), c='black')
-            else:
+            elif self.trades_arr[i, 0] == 'open_short' or self.trades_arr[i, 0] == 'close_long':
                 high_low = self.render_arr[i, 2] + RANGE * 0.02
                 ycoords = self.render_arr[i, 2] + RANGE * 0.06
                 self.ax1.scatter(x_position, high_low, c='red', label='red', s=120, edgecolors='none',
                                  marker="v")
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.0001), c='black')
+            elif self.trades_arr[i, 0] == 'stop_loss':
+                high_low = self.render_arr[i, 2] + RANGE * 0.02
+                ycoords = self.render_arr[i, 2] + RANGE * 0.06
+                self.ax1.scatter(x_position, high_low, c='red', label='yellow', s=120, edgecolors='none',
+                                 marker="s")
                 self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.0001), c='black')
             '''try:
                 self.ax1.annotate('{0:.2f}'.format(self.render_arr[i, 5]), (self.render_arr[i, 0] - 0.02, high_low),
