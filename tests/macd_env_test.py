@@ -20,8 +20,8 @@ def sig_map(value):
 
 
 if __name__ == "__main__":
-    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '1m', 'um', 'klines', '2023-09-11'
-    action = [0.012592682275862523, 0.74876268670739, 0.25241850337542526, 220, 650, 373, 29, 8, 12]
+    ticker, interval, market_type, data_type, start_date = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
+    action = [0.013184332141448296,0.5151211725660106,0.013831228965725608,760,677,7,36,11,4]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,
@@ -84,5 +84,5 @@ if __name__ == "__main__":
                            coin_step=0.00001,
                            slipp_std=0,
                            slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                           verbose=True, visualize=False, write_to_file=True)
+                           verbose=True, visualize=True, write_to_file=True)
     env.step(action)

@@ -83,8 +83,8 @@ class SpotRL(SpotBacktest):
         super().render(indicator_or_reward=self.reward, visualize=visualize)
 
 
-class FuturesRL(SpotRL):
-    raise NotImplementedError
+# class FuturesRL(SpotRL):
+    # raise NotImplementedError
     # def step(self, action):
     #     close = self.df[self.current_step, 3]
     #     current_close = random.uniform(round(close * (1 + self.price_slippage), 2),
