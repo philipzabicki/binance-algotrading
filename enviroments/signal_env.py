@@ -1,4 +1,5 @@
 from numpy import empty
+
 from .base import SpotBacktest, FuturesBacktest
 
 
@@ -70,7 +71,9 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
     def _finish_episode(self):
         super()._finish_episode()
         if self.verbose:
-            print(f' position_ratio={self.position_ratio:.2f}, leverage={self.leverage}, stop_loss={self.stop_loss * 100:.3f}%,', end='')
+            print(
+                f' position_ratio={self.position_ratio:.2f}, leverage={self.leverage}, stop_loss={self.stop_loss * 100:.3f}%,',
+                end='')
             print(f' enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}')
 
     def __call__(self, *args, **kwargs):

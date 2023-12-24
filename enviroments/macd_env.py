@@ -112,7 +112,7 @@ class MACDStratFuturesEnv(Env):
 
     def step(self, action):
         self.reset(position_ratio=action[0], leverage=int(action[1]), stop_loss=action[2],
-                            enter_at=action[3], close_at=action[4],
-                            fast_period=int(action[5]), slow_period=int(action[6]), signal_period=int(action[7]),
-                            fast_ma_type=int(action[8]), slow_ma_type=int(action[9]), signal_ma_type=int(action[10]))
+                   enter_at=action[3], close_at=action[4],
+                   fast_period=int(action[5]), slow_period=int(action[6]), signal_period=int(action[7]),
+                   fast_ma_type=int(action[8]), slow_ma_type=int(action[9]), signal_ma_type=int(action[10]))
         return self.exec_env()

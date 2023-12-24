@@ -1,16 +1,16 @@
 # from random import normalvariate
+from csv import writer
+from datetime import datetime as dt
 from math import copysign, floor
 from random import randint
 from time import time
-from csv import writer
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
 from numpy import array, inf, mean, std
-from datetime import datetime as dt
 
-from utils.visualize import TradingGraph
 from definitions import REPORT_DIR
+from utils.visualize import TradingGraph
 
 
 class SpotBacktest(Env):
@@ -22,7 +22,9 @@ class SpotBacktest(Env):
         self.df = df.to_numpy()
         if len(self.df) < max_steps:
             raise ValueError("max_steps larger than rows in dataframe")
-        print(f'Environment({self.__class__.__name__}) created. Fee: {fee} Coin step: {coin_step}')
+        print(f'Environment({self.__class__.__name__}) created.')
+        print(f' fee:{fee}, coin_step:{coin_step}, max_steps:{max_steps}, no_action_finish:{no_action_finish}')
+        print(f' init_balance:{init_balance}, position_ratio:{position_ratio}')
         print(f' df_size: {len(self.df)} obs_sample(last row): {self.df[-1, exclude_cols_left:]}')
         print(f' slippage statistics (avg, stddev): {slippage}')
         if visualize and (dates_df is not None):

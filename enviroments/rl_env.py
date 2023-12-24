@@ -1,15 +1,11 @@
-from collections import deque
 # from random import normalvariate
 from math import floor
-from random import randint
-from time import time
 
 import numpy as np
 # from gym import spaces, Env
-from gymnasium import Env, spaces
-from numpy import array, inf, mean, std, random
+from gymnasium import spaces
+from numpy import array, inf, random
 
-from utils.visualize import TradingGraph
 from .base import SpotBacktest
 
 
@@ -85,7 +81,7 @@ class SpotRL(SpotBacktest):
         return obs, self._calculate_reward(), self.done, False, self.info
 
     def render(self, visualize=False, *args, **kwargs):
-        super().render(indicator_or_reward=self.reward,  visualize=visualize)
+        super().render(indicator_or_reward=self.reward, visualize=visualize)
 
 
 class FuturesRL(SpotRL):
