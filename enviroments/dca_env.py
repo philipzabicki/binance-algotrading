@@ -31,7 +31,7 @@ class DCAEnv(SpotBacktest):
             return self._next_observation(), None, self.done, {'asset_balance': self.asset_balance,
                                                                'purchase_count': self.purchase_count}
         else:
-            None
+            pass
 
     def step(self, action):
         super().step(action)

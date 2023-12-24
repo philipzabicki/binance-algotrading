@@ -18,7 +18,7 @@ if __name__ == "__main__":
             strat_env = DCAEnv(df=df, excluded_left=0, init_balance=29, fee=0.0, slippage=0.0001,
                                position_ratio=0.00001, leverage=1, lookback_window_size=1, Render_range=50,
                                visualize=False)
-            obs, _, done, info = strat_env.reset()
+            obs, _, done, _, info = strat_env.reset()
             # print(obs)
             _counter = 0
             while not strat_env.done:

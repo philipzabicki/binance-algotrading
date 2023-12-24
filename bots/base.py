@@ -14,8 +14,10 @@ from definitions import SLIPPAGE_DIR
 
 
 class SpotTakerBot:
-    def __init__(self, base='BTC', quote='USDT', market='spot', itv='1m', settings={}, API_KEY='', SECRET_KEY='',
+    def __init__(self, base='BTC', quote='USDT', market='spot', itv='1m', settings=None, API_KEY='', SECRET_KEY='',
                  prev_size=100, multi=25):
+        if settings is None:
+            raise ValueError("Settings must be dict type.")
         self.base, self.quote = base, quote
         self.symbol = base + quote
         if ('enter_at' not in settings.keys()) or ('close_at' not in settings.keys()) or (

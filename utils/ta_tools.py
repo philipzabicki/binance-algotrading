@@ -555,8 +555,8 @@ def hourly_seasonality_by_ticker(ticker: str,
 
   """
 
-    def get_hour_changes(ticker='BTCUSDT', type='um', data='klines'):
-        df = get_data.by_BinanceVision(ticker, '1h', type=type, data=data)
+    def get_hour_changes(ticker='BTCUSDT', market_type='um', data_type='klines'):
+        df = get_data.by_BinanceVision(ticker, '1h', market_type=type, data_type=data)
         hours = df[f'Opened'].dt.hour.to_numpy()
         co_change = ((df['Close'].to_numpy() / df['Open'].to_numpy()) - 1) * 100
         return {i: np.mean([chng for chng, h in zip(co_change, hours) if h == i]) for i in range(0, 24)}
@@ -618,8 +618,8 @@ def daily_seasonality_by_ticker(ticker: str,
   - The function internally uses the `get_data.by_BinanceVision` function to retrieve data for the ticker.
   """
 
-    def get_weekday_changes(ticker='BTCUSDT', type='um', data='klines'):
-        df = get_data.by_BinanceVision(ticker, '1d', type=type, data=data)
+    def get_weekday_changes(ticker='BTCUSDT', market_type='um', data_type='klines'):
+        df = get_data.by_BinanceVision(ticker, '1d', market_type=type, data_type=data)
         weekdays = df['Opened'].dt.dayofweek.to_numpy()
         co_change = ((df['Close'].to_numpy() / df['Open'].to_numpy()) - 1) * 100
         return {i: np.mean([chng for chng, day in zip(co_change, weekdays) if day == i]) for i in range(0, 7)}
@@ -652,7 +652,7 @@ def HullMA(close: list | np.ndarray, timeperiod: int) -> pd.Series:
 
 # @feature_timeit
 @jit(nopython=True, nogil=True, cache=True)
-def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
+def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray:
     """
         Calculate the Relative Moving Average (RMA) of a given array of closing prices.
 
@@ -681,7 +681,7 @@ def RMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
 
 
 @jit(nopython=True, nogil=True, cache=True)
-def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
+def LSMA(close: np.ndarray, timeperiod: int) -> np.ndarray:
     """
         Calculate the Least Squares Moving Average (LSMA) of a time series.
 
@@ -784,7 +784,7 @@ def VWMA(close: np.ndarray, volume: np.ndarray, timeperiod: int):
 
 # @feature_timeit
 # @jit(nopython=True, nogil=True, cache=True)
-def HammingMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
+def HammingMA(close: np.ndarray, timeperiod: int) -> np.ndarray:
     """
         Calculate the Hamming Moving Average (HMA) of a given numpy array of closing prices.
 
@@ -867,7 +867,7 @@ def HammingMA(close: np.ndarray, timeperiod: int) -> np.ndarray[np.float64]:
 #     return np.concatenate((np.zeros(timeperiod-1), nwma))
 
 @jit(nopython=True, nogil=True, cache=True)
-def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.ndarray[np.float64]:
+def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.ndarray:
     close = np.ascontiguousarray(close)
     # nwma = np.empty_like(close)
     if timeperiod % 2 == 1:
@@ -902,7 +902,7 @@ def NadarayWatsonMA(close: np.ndarray, timeperiod: int, kernel: int = 0) -> np.n
 
 
 @jit(nopython=True, nogil=True, cache=True)
-def LWMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+def LWMA(close: np.ndarray, period: int) -> np.ndarray:
     close = np.ascontiguousarray(close)
     weights = np.ascontiguousarray(np.arange(1, period + 1, dtype=close.dtype))
     weights_sum = weights.sum()
@@ -913,7 +913,7 @@ def LWMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
 
 # @feature_timeit
 @jit(nopython=True, nogil=True, cache=True)
-def MGD(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+def MGD(close: np.ndarray, period: int) -> np.ndarray:
     md = np.empty_like(close)
     md[0] = close[0]
     for i in range(1, len(close)):
@@ -928,7 +928,7 @@ def MGD(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
 ### It behaves differently depending on close len
 # @feature_timeit
 @jit(nopython=True, nogil=True, cache=True)
-def VIDYA(close: np.ndarray, k: np.ndarray, period: int) -> np.ndarray[np.float64]:
+def VIDYA(close: np.ndarray, k: np.ndarray, period: int) -> np.ndarray:
     alpha = 2 / (period + 1)
     # k = talib.CMO(close, period)
     k = np.abs(k) / 100
@@ -1359,11 +1359,12 @@ TA_FEATURES_TEMPLATE = {'None': blank_features,
                         'signals': signal_features}
 
 
-def get_combined_intervals_df(ticker, interval_list, type='um', data='klines', template='None'):
-    df = get_data.by_BinanceVision(ticker=ticker, interval=interval_list[0], type=type, data=data)
+def get_combined_intervals_df(ticker, interval_list, market_type='um', data_type='klines', template='None'):
+    df = get_data.by_BinanceVision(ticker=ticker, interval=interval_list[0], market_type=market_type,
+                                   data_type=data_type)
     df = TA_FEATURES_TEMPLATE[template](df, ticker)
     for itv in interval_list[1:]:
-        _df = get_data.by_BinanceVision(ticker=ticker, interval=itv, type=type, data=data)
+        _df = get_data.by_BinanceVision(ticker=ticker, interval=itv, market_type=market_type, data_type=data_type)
         _df['Opened'] = _df['Opened'] + (_df.iloc[-1]['Opened'] - _df.iloc[-2]['Opened'])
         _df = TA_FEATURES_TEMPLATE[template](_df, ticker, suffix='_' + itv)
         df = pd.merge_asof(df, _df, on='Opened', direction='backward', suffixes=('', '_' + itv))

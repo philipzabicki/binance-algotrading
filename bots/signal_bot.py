@@ -11,6 +11,8 @@ from utils.ta_tools import custom_MACD, MACD_cross_signal, get_MA_band_signal
 class MACDSpotTakerBot(SpotTakerBot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if kwargs['settings'] is None:
+            raise ValueError("No settings dict provided.")
         for key, value in kwargs['settings'].items():
             setattr(self, key, value)
         previous_size = max(self.slow_period, self.fast_period, self.signal_period) * kwargs['multi']

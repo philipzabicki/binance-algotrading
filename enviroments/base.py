@@ -493,6 +493,8 @@ class FuturesBacktest(SpotBacktest):
             elif self.qty < 0:
                 adj_price = price * self.buy_factor
                 self.last_order_type = 'close_short'
+            else:
+                raise RuntimeError("Bad call to _close_position, qty is 0")
         # print(f'CLOSING position at price {price} liquidated:{liquidated} SL:{SL} SL_price:{self.stop_loss_price}')
         _position_value = abs(self.qty) * adj_price
         _fee = (_position_value * self.fee)
