@@ -11,7 +11,7 @@ from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
 
 from genetic_search.base import SingleObjNonzeroMinAvgMaxCallback, save_results, get_callback_plot, get_variables_plot
-from genetic_search.macd_parametrizer import MACDMixedVariableProblem
+from genetic_search.macd_parametrizer import MACDMixedVariableProblem, MACDFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
@@ -22,35 +22,51 @@ N_GEN = 10
 
 
 def main():
-    _, df = by_BinanceVision(ticker='BTCFDUSD',
+    # _, df = by_BinanceVision(ticker='BTCFDUSD',
+    #                          interval='1m',
+    #                          market_type='spot',
+    #                          data_type='klines',
+    #                          start_date='2023-09-11',
+    #                          split=True,
+    #                          delay=0)
+    # print(f'df used: {df}')
+    _, df = by_BinanceVision(ticker='BTCUSDT',
                              interval='1m',
-                             market_type='spot',
+                             market_type='um',
                              data_type='klines',
-                             start_date='2023-09-11',
+                             start_date='2021-01-01',
                              split=True,
-                             delay=0)
+                             delay=259_200)
     print(f'df used: {df}')
-    # _, df_mark = by_BinanceVision(ticker='BTCUSDT',
-    #                               interval='1m',
-    #                               market_type='um',
-    #                               data_type='markPriceKlines',
-    #                               start_date='2021-01-01',
-    #                               split=True,
-    #                               delay=259_200)
-    # print(f'df_mark used: {df_mark}')
+    _, df_mark = by_BinanceVision(ticker='BTCUSDT',
+                                  interval='1m',
+                                  market_type='um',
+                                  data_type='markPriceKlines',
+                                  start_date='2021-01-01',
+                                  split=True,
+                                  delay=259_200)
+    print(f'df_mark used: {df_mark}')
 
     pool = Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)
     # MACDStratSpotEnv init arguments:
-    env_kwargs = {'init_balance': 350,
+    # env_kwargs = {'init_balance': 350,
+    #               'no_action_finish': inf,
+    #               'fee': 0.0,
+    #               'coin_step': 0.00001,
+    #               'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+    #               'verbose': False}
+    env_kwargs = {'max_steps': 259_200,
+                  'init_balance': 50,
                   'no_action_finish': inf,
-                  'fee': 0.0,
-                  'coin_step': 0.00001,
+                  'fee': 0.0005,
+                  'coin_step': 0.001,
                   'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                  'verbose': False}
-    problem = MACDMixedVariableProblem(df,
-                                       env_kwargs=env_kwargs,
-                                       elementwise_runner=runner)
+                  'verbose': True}
+    problem = MACDFuturesMixedVariableProblem(df,
+                                              df_mark,
+                                              env_kwargs=env_kwargs,
+                                              elementwise_runner=runner)
 
     # algorithm = NSGA2(pop_size=100)
     # algorithm = DNSGA2(pop_size=64)

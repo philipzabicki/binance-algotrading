@@ -1,4 +1,6 @@
-**/data
+data/binance_data_futures
+data/binance_data_spot
+data/binance_vision
 **/tensorboard
 .other
 credentials.py
