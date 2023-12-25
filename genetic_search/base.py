@@ -1,5 +1,5 @@
 from csv import writer
-
+import os
 from matplotlib import pyplot as plt
 from numpy import array, min, mean, max
 from pymoo.core.callback import Callback
@@ -9,7 +9,9 @@ from definitions import REPORT_DIR
 
 
 def save_results(filename, result):
-    with open(REPORT_DIR + filename + '.csv', 'w', newline='') as file:
+    filename = REPORT_DIR + filename + '.csv'
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w', newline='') as file:
         for f, x in zip(result.pop.get("F"), result.pop.get("X")):
             _row = [-1 * f[0], *x.values()]
             writer(file).writerow(_row)
