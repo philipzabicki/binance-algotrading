@@ -62,7 +62,8 @@ class MACDStratSpotEnv(Env):
 ########################################################################################################################
 # FUTURES
 class MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
-    def reset(self, *args, position_ratio=1.0, leverage=5, stop_loss=None, enter_at=1.0, close_at=1.0,
+    def reset(self, *args, position_ratio=1.0, stop_loss=None,
+              enter_at=1.0, close_at=1.0, leverage=5,
               fast_period=12, slow_period=26, signal_period=9,
               fast_ma_type=0, slow_ma_type=0, signal_ma_type=0, **kwargs):
         _ret = super().reset(*args, position_ratio=position_ratio, leverage=leverage, stop_loss=stop_loss,
@@ -97,22 +98,22 @@ class MACDStratFuturesEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.01, 1, 0.0001, 0.001, 0.001, 2, 2, 2, 0, 0, 0]
-        action_upper = [1.0, 125, 0.0500, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26]
+        action_lower = [0.01, 0.0001, 0.001, 0.001, 1, 2, 2, 2, 0, 0, 0]
+        action_upper = [1.0, 0.0500, 1.000, 1.000, 125, 10_000, 10_000, 10_000, 37, 37, 26]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
     def reset(self, position_ratio=1.0, leverage=5, stop_loss=None, enter_at=1.0, close_at=1.0,
               fast_period=12, slow_period=26, signal_period=9,
               fast_ma_type=1, slow_ma_type=1, signal_ma_type=1):
-        return self.exec_env.reset(position_ratio=position_ratio, leverage=leverage, stop_loss=stop_loss,
-                                   enter_at=enter_at, close_at=close_at,
+        return self.exec_env.reset(position_ratio=position_ratio, stop_loss=stop_loss,
+                                   enter_at=enter_at, close_at=close_at, leverage=leverage,
                                    fast_period=fast_period, slow_period=slow_period, signal_period=signal_period,
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type, signal_ma_type=signal_ma_type)
 
     def step(self, action):
-        self.reset(position_ratio=action[0], leverage=int(action[1]), stop_loss=action[2],
-                   enter_at=action[3], close_at=action[4],
+        self.reset(position_ratio=action[0], stop_loss=action[1],
+                   enter_at=action[2], close_at=action[3], leverage=int(action[4]),
                    fast_period=int(action[5]), slow_period=int(action[6]), signal_period=int(action[7]),
                    fast_ma_type=int(action[8]), slow_ma_type=int(action[9]), signal_ma_type=int(action[10]))
         return self.exec_env()

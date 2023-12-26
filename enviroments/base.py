@@ -251,7 +251,10 @@ class SpotBacktest(Env):
         gain = self.balance - self.init_balance
         total_return = (self.balance / self.init_balance) - 1
         risk_free_return = (self.df[self.end_step, 3] / self.df[self.start_step, 3]) - 1
-        above_free = (total_return - risk_free_return) * 100
+        if risk_free_return > 0:
+            above_free = (total_return - risk_free_return) * 100
+        else:
+            above_free = total_return * 100
         hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 1 and self.profit_hold_counter > 1 else 1.0
         if len(self.PNL_arrays) > 1:
             mean_pnl, stddev_pnl = mean(self.PNL_arrays[:, 0]), std(self.PNL_arrays[:, 0])
@@ -283,6 +286,8 @@ class SpotBacktest(Env):
         # self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.total_steps
         # self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
         exec_time = time() - self.creation_t
+        if self.balance >= 100_000:
+            self.verbose = True
         if self.verbose:
             print(
                 f'Episode finished: gain:${gain:.2f}({total_return * 100:.2f}%), gain/step:${gain / (self.end_step - self.start_step):.5f}, ',
@@ -364,6 +369,7 @@ class FuturesBacktest(SpotBacktest):
         self.tier = 0
         # self.stop_loss /= self.leverage
         self.liquidations = 0
+        self.liquidation_losses = 0
         return super().reset()
 
     def _check_tier(self):
@@ -388,6 +394,10 @@ class FuturesBacktest(SpotBacktest):
             self.tier = 9
         elif 300_000_000 < self.position_size < 500_000_000:
             self.tier = 10
+        if self.leverage > self.POSITION_TIER[self.tier][0]:
+            #print(f' Leverage exceeds tier {self.tier} max', end=' ')
+            #print(f'changing from {self.leverage} to {self.POSITION_TIER[self.tier][0]} (Balance:${self.balance}:.2f)')
+            self.leverage = self.POSITION_TIER[self.tier][0]
 
     # def _check_margin(self):
     #   #print('_check_margin')
@@ -410,18 +420,13 @@ class FuturesBacktest(SpotBacktest):
     #     return False
 
     def _check_margin(self):
-        # print('_check_margin')
-        self.liquidation_price = (self.margin - self.qty * self.enter_price) / (
-                abs(self.qty) * self.POSITION_TIER[self.tier][1] - self.qty)
-        # print(f'liquidation_price:{self.liquidation_price} (margin:{self.margin} qty:{self.qty} enter_price:{self.enter_price})')
-        if self.qty > 0:
-            min_price = self.df_mark[self.current_step, 2]
-            if self.liquidation_price >= min_price: return True
-        elif self.qty < 0:
-            max_price = self.df_mark[self.current_step, 1]
-            if self.liquidation_price <= max_price: return True
-        else:
-            return False
+        # If in long position and mark Low below liquidation price
+        if (self.qty > 0) and (self.liquidation_price >= self.df_mark[self.current_step, 2]):
+            return True
+        # If in short position and mark High above liquidation price
+        elif (self.qty < 0) and (self.liquidation_price <= self.df_mark[self.current_step, 1]):
+            return True
+        return False
 
     def _get_pnl(self, price, update=False):
         _pnl = (((price / self.enter_price) - 1) * self.leverage) * copysign(1, self.qty)
@@ -446,41 +451,31 @@ class FuturesBacktest(SpotBacktest):
             self.last_order_type = 'open_short'
         else:
             raise RuntimeError('side should be "long" or "short"')
-        # print(f'OPENING x{self.leverage} {side} at price {price} ')
         self._check_tier()
-        if self.leverage > self.POSITION_TIER[self.tier][0]:
-            print(
-                f' Leverage exceeds tier {self.tier} max, changing from {self.leverage} to {self.POSITION_TIER[self.tier][0]} (Balance: ${self.balance})')
-            # print(f'Balance: {self.balance}')
-            self.leverage = self.POSITION_TIER[self.tier][0]
         adj_qty = floor(self.position_size * self.leverage / (adj_price * self.coin_step))
         if adj_qty == 0:
             adj_qty = 1
             # print('Forcing adj_qty to 1. Calculated quantity possible to buy with given postion_size and coin_step equals 0')
         self.margin = (adj_qty * self.coin_step * adj_price) / self.leverage
-        # print(f'  (position size {self.position_size} qty {adj_qty})')
         if self.margin > self.balance:
             self._finish_episode()
             return
-        self.in_position = 1
-        self.episode_orders += 1
-        self.enter_price = price
         self.prev_bal = self.balance
         self.balance -= self.margin
         fee = (self.margin * self.fee * self.leverage)
-        # print(f'  (fee {fee:.8f})')
         self.margin -= fee
-        # print(f'OPENING POSITION fee:{fee:.2f} Margin:{self.margin:.2f} Balance:{self.balance+self.margin:.2f}')
-        self.cumulative_fees += fee
-        # print(f' balance(minus position size and fee) {self.balance}')
+        self.cumulative_fees -= fee
+        self.in_position = 1
+        self.episode_orders += 1
+        self.enter_price = price
         if side == 'long':
             self.qty = adj_qty * self.coin_step
         elif side == 'short':
             self.qty = -1 * adj_qty * self.coin_step
+        self.liquidation_price = (self.margin - self.qty * self.enter_price) / (
+                abs(self.qty) * self.POSITION_TIER[self.tier][1] - self.qty)
         if self.write_to_file:
             self._write_to_file()
-        # print(f'OPENING x{self.leverage} {side} at price:{price:.2f}({adj_price:.2f}) qty:{self.qty:.8f} fee:{fee:.2f}')
-        # sleep(2)
 
     def _close_position(self, price, liquidated=False, SL=False):
         if SL:
@@ -495,36 +490,32 @@ class FuturesBacktest(SpotBacktest):
                 self.last_order_type = 'close_short'
             else:
                 raise RuntimeError("Bad call to _close_position, qty is 0")
-        # print(f'CLOSING position at price {price} liquidated:{liquidated} SL:{SL} SL_price:{self.stop_loss_price}')
         _position_value = abs(self.qty) * adj_price
         _fee = (_position_value * self.fee)
         if liquidated:
             margin_balance = 0
+            self.liquidation_losses -= self.margin
         else:
             unrealized_PNL = (abs(self.qty) * self.enter_price / self.leverage) * self._get_pnl(adj_price)
             margin_balance = self.margin + unrealized_PNL - _fee
-        # print(f'CLOSING POSITION fee:{_fee:.2f} UPNL:{unrealized_PNL:.2f} MarginBalance:{margin_balance:.2f} Balance:{self.balance:.2f}')
-        self.cumulative_fees += _fee
+        self.cumulative_fees -= _fee
         self.balance += margin_balance
         self.margin = 0
         percentage_profit = (self.balance / self.prev_bal) - 1
         self.absolute_profit = self.balance - self.prev_bal
         ### PROFIT
         if percentage_profit > 0:
+            self.good_trades_count += 1
             if self.balance >= self.max_balance:
                 self.max_balance = self.balance
-                if self.balance > 1_000_000:
-                    print(f'$$ {self.balance:_.2f} $$')
-                elif self.balance > 100_000:
-                    print(f'$$$$$$$$ {self.balance:_.2f} $$$$$$$$')
-            self.good_trades_count += 1
-            if self.max_profit == 0 or percentage_profit > self.max_profit:
+            if (self.max_profit == 0) or (percentage_profit > self.max_profit):
                 self.max_profit = percentage_profit
         ### LOSS
         elif percentage_profit < 0:
-            if self.balance <= self.min_balance: self.min_balance = self.balance
             self.bad_trades_count += 1
-            if self.max_drawdown == 0 or percentage_profit < self.max_drawdown:
+            if self.balance <= self.min_balance:
+                self.min_balance = self.balance
+            if (self.max_drawdown == 0) or (percentage_profit < self.max_drawdown):
                 self.max_drawdown = percentage_profit
             if SL:
                 self.SL_losses += (self.balance - self.prev_bal)
@@ -537,8 +528,6 @@ class FuturesBacktest(SpotBacktest):
         self.pnl = 0
         if self.write_to_file:
             self._write_to_file()
-        # print(f'CLOSING x{self.leverage} at price:{price:.2f}({adj_price:.2f}) qty:{self.qty:.8f} fee:{_fee:.2f} profit:{self.absolute_profit}')
-        # sleep(2)
 
     # Execute one time step within the environment
     def step(self, action):
@@ -548,6 +537,7 @@ class FuturesBacktest(SpotBacktest):
             high, low, close = self.df[self.current_step, 1:4]
             mark_close = self.df_mark[self.current_step, 3]
             self.in_position_counter += 1
+            # change value for once in 8h, for 1m TF 8h=480
             if self.in_position_counter % 480 == 0:
                 self.margin -= (abs(self.qty) * close * self.funding_rate)
             self._get_pnl(mark_close, update=True)
@@ -576,7 +566,7 @@ class FuturesBacktest(SpotBacktest):
             self._close_position(self.enter_price)
         super()._finish_episode()
         if self.verbose:
-            print(f'Liquidations: {self.liquidations}')
+            print(f' liquidations: {self.liquidations} liq_losses: ${self.liquidation_losses:.2f}')
 
     def render(self, indicator_or_reward=None, visualize=False, *args, **kwargs):
         if visualize or self.visualize:
