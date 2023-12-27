@@ -57,7 +57,7 @@ def main():
     #               'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
     #               'verbose': False}
     env_kwargs = {'max_steps': 259_200,
-                  'init_balance': 50,
+                  'init_balance': 400,
                   'no_action_finish': inf,
                   'fee': 0.0005,
                   'coin_step': 0.001,
@@ -81,8 +81,8 @@ def main():
                    algorithm,
                    save_history=False,
                    callback=SingleObjNonzeroMinAvgMaxCallback(problem),
-                   termination=('n_gen', N_GEN),
-                   # termination=("time", "00:05:00"),
+                   # termination=('n_gen', N_GEN),
+                   termination=("time", "03:00:00"),
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')
