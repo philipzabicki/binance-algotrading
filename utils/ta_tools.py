@@ -404,6 +404,15 @@ def MACD_zerocross_signal(macd_col: list | np.ndarray, signal_col: list | np.nda
                     zip(macd_col[1:], signal_col[1:], macd_col[:-1], signal_col[:-1])]
 
 
+#@feature_timeit
+def ChaikinOscillator_signal(chaikin_oscillator: list | np.ndarray) -> list[float | int]:
+    return [0.0] + [1 if cur_chosc > 0 > prev_chosc else
+                    -1 if cur_chosc < 0 < prev_chosc else
+                    0
+                    for cur_chosc, prev_chosc in
+                    zip(chaikin_oscillator[1:], chaikin_oscillator[:-1])]
+
+
 @feature_timeit
 def BB_signal(close: list | np.ndarray,
               upper_band: list | np.ndarray,
@@ -1082,6 +1091,8 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
     return ma_types[ma_type](close.astype(np.float64), ma_period)
 
+def custom_ChaikinOscillator(adl, fast_period, slow_period, fast_ma_type, slow_ma_type):
+    return get_1D_MA(adl, fast_ma_type, fast_period) - get_1D_MA(adl, slow_ma_type, slow_period)
 
 def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
                 fast_ma_type, slow_ma_type, signal_ma_type):

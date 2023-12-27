@@ -12,6 +12,8 @@ def save_results(filename, result):
     filename = REPORT_DIR + filename + '.csv'
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, 'w', newline='') as file:
+        _header = ['reward'] + [*result.pop.get("X")[0].keys()]
+        writer(file).writerow(_header)
         for f, x in zip(result.pop.get("F"), result.pop.get("X")):
             _row = [-1 * f[0], *x.values()]
             writer(file).writerow(_row)

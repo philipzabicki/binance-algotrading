@@ -15,7 +15,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
         self.signals = empty(self.total_steps)
 
     def reset(self, *args, **kwargs):
-        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.00
+        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
         self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
         self.close_threshold = kwargs['close_at'] if 'close_at' in kwargs else 1.0
@@ -24,7 +24,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
     def _finish_episode(self):
         super()._finish_episode()
         if self.verbose:
-            print(f' position_ratio={self.position_ratio:.2f}, stop_loss={self.stop_loss * 100:.3f}%,', end='')
+            print(f' position_ratio={self.position_ratio:.2f}, stop_loss={self.stop_loss},', end='')
             print(f' enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}')
 
     def __call__(self, *args, **kwargs):
