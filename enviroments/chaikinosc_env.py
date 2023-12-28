@@ -11,9 +11,10 @@ class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
         super().__init__(*args, **kwargs)
         self.adl = AD(self.df[:, 1], self.df[:, 2], self.df[:, 3], self.df[:, 4])
 
-    def reset(self, *args, fast_period=3, slow_period=10,
+    def reset(self, *args, stop_loss=None,
+              fast_period=3, slow_period=10,
               fast_ma_type=0, slow_ma_type=0, **kwargs):
-        _ret = super().reset(*args, **kwargs)
+        _ret = super().reset(*args, stop_loss=stop_loss, **kwargs)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.fast_ma_type = fast_ma_type
@@ -39,19 +40,20 @@ class ChaikinOscillatorStratSpotEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0, 0, 2, 2]
-        action_upper = [26, 26, 10_000, 10_000]
+        action_lower = [0.0001, 0, 0, 2, 2]
+        action_upper = [0.0500, 26, 26, 10_000, 10_000]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, fast_period=12, slow_period=26,
+    def reset(self, stop_loss=None, fast_period=12, slow_period=26,
               fast_ma_type=1, slow_ma_type=1):
-        return self.exec_env.reset(fast_period=fast_period, slow_period=slow_period,
+        return self.exec_env.reset(stop_loss=stop_loss, fast_period=fast_period, slow_period=slow_period,
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
 
     def step(self, action):
-        _reset = self.reset(fast_period=int(action[0]), slow_period=int(action[1]),
-                            fast_ma_type=int(action[2]), slow_ma_type=int(action[3]))
+        _reset = self.reset(stop_loss=action[0],
+                            fast_period=int(action[1]), slow_period=int(action[2]),
+                            fast_ma_type=int(action[3]), slow_ma_type=int(action[4]))
         return self.exec_env(_reset)
 
 

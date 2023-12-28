@@ -18,8 +18,13 @@ from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 8192
+POP_SIZE = 2048
 N_GEN = 100
+TICKER = 'LOTOS'
+ITV = '1d'
+MARKET_TYPE = 'spot'
+DATA_TYPE = 'klines'
+START_DATE = '2023-09-11'
 
 
 def main():
@@ -47,7 +52,7 @@ def main():
     env_kwargs = {'init_balance': 1_000,
                   'no_action_finish': inf,
                   'fee': 0.0,
-                  'coin_step': 0.01,
+                  'coin_step': 1.0,
                   'verbose': False}
     problem = ChaikinOscillatorMixedVariableProblem(df,
                                                     env_kwargs=env_kwargs,
@@ -71,7 +76,8 @@ def main():
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')
-    filename = f'Pop-{POP_SIZE}_ngen-{res.algorithm.n_iter - 1}_{str(dt.today()).replace(":", "-")[:-7]}'
+    _date = str(dt.today()).replace(":", "-")[:-7]
+    filename = f'{TICKER}{ITV}_{MARKET_TYPE}_Pop{POP_SIZE}_ngen{res.algorithm.n_iter - 1}_{problem.env.__class__.__name__}_{_date}'
     save_results(filename, res)
 
     if len(res.F) == 1:

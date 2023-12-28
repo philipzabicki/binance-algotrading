@@ -21,7 +21,7 @@ def sig_map(value):
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '1m', 'um', 'klines', '2021-01-01'
-    action = [0.5288197315655362,0.013468264923114039,0.47597277547099476,0.9930838698824984,19,127,835,913,13,1,17]
+    action = [0.6738342509334962, 0.014422781355894457, 0.27221247997964254, 0.8100101139394998, 21, 837, 842, 842, 34, 7, 18]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     axs[2].legend(loc='upper left')
 
     plt.tight_layout()
-    plt.show()
+    #plt.show()
 
     # plt.subplot(2, 1, 1)
     # plt.plot(macd[-1_000:], label='MACD')
@@ -77,8 +77,8 @@ if __name__ == "__main__":
     env = MACDStratFuturesEnv(df=df.iloc[:, 1:6],
                               df_mark=df_mark,
                               dates_df=df['Opened'],
-                              max_steps=259_200,
-                              init_balance=50,
+                              max_steps=129_600,
+                              init_balance=400,
                               no_action_finish=inf,
                               fee=0.0005,
                               coin_step=0.001,
