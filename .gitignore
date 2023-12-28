@@ -1,6 +1,8 @@
 data/binance_data_futures
 data/binance_data_spot
 data/binance_vision
+reports/*
+!reports/.gitkeep
 **/tensorboard
 .other
 credentials.py

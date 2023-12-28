@@ -20,14 +20,14 @@ from utils.utility import get_slippage_stats
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
 POP_SIZE = 512
-N_GEN = 50
+N_GEN = 100
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
 PROBLEM = ChaikinOscillatorFuturesMixedVariableProblem
-ALGORITHM = MixedVariableGA
+ALGORITHM = DNSGA2
 
 
 def main():
@@ -65,8 +65,8 @@ def main():
     #               'coin_step': 0.00001,
     #               'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
     #               'verbose': False}
-    env_kwargs = {#'max_steps': 17_280,
-                  'init_balance': 400,
+    env_kwargs = {'max_steps': 8_640,
+                  'init_balance': 50,
                   'no_action_finish': inf,
                   'fee': 0.0005,
                   'coin_step': 0.001,

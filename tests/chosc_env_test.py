@@ -10,6 +10,7 @@ from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_ChaikinOscillator, get_1D_MA, ChaikinOscillator_signal
 from utils.utility import get_slippage_stats
 
+N_TEST = 100
 
 def sig_map(value):
     """Maps signals into values actually used by macd strategy env"""
@@ -23,7 +24,7 @@ def sig_map(value):
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-    action = [0.8590044580214056, 0.010165570342581401, 28, 57, 680, 4, 25]
+    action = [0.7583083580027301, 0.0054319598767312545, 53, 579, 88, 5, 9]
 
     # df = pd.read_csv("C:/github/binance-algotrading/.other/lotos.csv")
     dates_df, df = by_BinanceVision(ticker=ticker,
@@ -82,12 +83,18 @@ if __name__ == "__main__":
     env = ChaikinOscillatorStratFuturesEnv(df=df,
                                            df_mark=df_mark,
                                            dates_df=dates_df,
-                                           # max_steps=17_280,
-                                           init_balance=400,
+                                           max_steps=8_640,
+                                           init_balance=50,
                                            no_action_finish=inf,
                                            fee=0.0005,
                                            coin_step=0.001,
                                            # slipp_std=0,
                                            slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
                                            verbose=True, visualize=False, write_to_file=True)
-    env.step(action)
+    results = []
+    for _ in range(N_TEST):
+        _, reward, _, _, _ = env.step(action)
+        results.append(reward)
+    profitable = sum(i > 0 for i in results)
+    print(f'From {N_TEST} tests. Profitable: {profitable} ({profitable/len(results)*100}%)')
+

@@ -20,8 +20,8 @@ def sig_map(value):
 
 
 if __name__ == "__main__":
-    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '1m', 'um', 'klines', '2021-01-01'
-    action = [0.6738342509334962, 0.014422781355894457, 0.27221247997964254, 0.8100101139394998, 21, 837, 842, 842, 34, 7, 18]
+    ticker, interval, market_type, data_type, start_date = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
+    action = [0.012406220889525164, 0.20757856752824583, 0.8042156329491291, 885, 839, 987, 29, 25, 23]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,
@@ -30,13 +30,13 @@ if __name__ == "__main__":
                           start_date=start_date,
                           split=False,
                           delay=259_200)
-    _, df_mark = by_BinanceVision(ticker='BTCUSDT',
-                                  interval='1m',
-                                  market_type='um',
-                                  data_type='markPriceKlines',
-                                  start_date='2021-01-01',
-                                  split=True,
-                                  delay=259_200)
+    # _, df_mark = by_BinanceVision(ticker='BTCUSDT',
+    #                               interval='1m',
+    #                               market_type='um',
+    #                               data_type='markPriceKlines',
+    #                               start_date='2021-01-01',
+    #                               split=True,
+    #                               delay=259_200)
     macd, signal = custom_MACD(df.iloc[:, 1:6].to_numpy(), action[-6], action[-5], action[-4], action[-3], action[-2],
                                action[-1])
     signals = MACD_cross_signal(macd, signal)
@@ -74,14 +74,14 @@ if __name__ == "__main__":
     #
     # plt.show()
 
-    env = MACDStratFuturesEnv(df=df.iloc[:, 1:6],
-                              df_mark=df_mark,
+    env = MACDStratSpotEnv(df=df.iloc[:, 1:6],
+                              #df_mark=df_mark,
                               dates_df=df['Opened'],
-                              max_steps=129_600,
+                              #max_steps=129_600,
                               init_balance=400,
                               no_action_finish=inf,
-                              fee=0.0005,
-                              coin_step=0.001,
+                              fee=0.0,
+                              coin_step=0.00001,
                               slipp_std=0,
                               slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
                               verbose=True, visualize=False, write_to_file=True)
