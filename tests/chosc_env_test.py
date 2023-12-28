@@ -24,7 +24,7 @@ def sig_map(value):
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-    action = [0.7583083580027301, 0.0054319598767312545, 53, 579, 88, 5, 9]
+    action = [0.5130294249730448,0.007580729757771941,70,250,696,5,11]
 
     # df = pd.read_csv("C:/github/binance-algotrading/.other/lotos.csv")
     dates_df, df = by_BinanceVision(ticker=ticker,
