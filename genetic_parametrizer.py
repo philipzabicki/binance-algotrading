@@ -18,7 +18,7 @@ from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 128
+POP_SIZE = 2048
 N_GEN = 25
 TICKER = 'BTCFDUSD'
 ITV = '1m'
