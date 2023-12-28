@@ -154,7 +154,7 @@ class SpotBacktest(Env):
         fee = (self.position_size * self.fee)
         self.position_size -= fee
         self.cumulative_fees += fee
-        self.absolute_profit = fee
+        self.absolute_profit = -fee
         if self.write_to_file:
             self._write_to_file()
         # print(f'BOUGHT {self.qty} at {price}({adj_price})')
@@ -165,7 +165,7 @@ class SpotBacktest(Env):
             # while price>self.enter_price:
             #     price = self._random_factor(price, 'SL')
             adj_price = price * self.stop_loss_factor
-            self.last_order_type = 'stop_loss'
+            self.last_order_type = 'stop_loss_long'
         else:
             # price = self._random_factor(price, 'market_sell')
             adj_price = price * self.sell_factor
@@ -287,7 +287,7 @@ class SpotBacktest(Env):
         # self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.total_steps
         # self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
         exec_time = time() - self.creation_t
-        if self.balance >= 100_000:
+        if self.balance >= 1_000_000:
             self.verbose = True
         if self.verbose:
             print(
@@ -466,6 +466,7 @@ class FuturesBacktest(SpotBacktest):
         fee = (self.margin * self.fee * self.leverage)
         self.margin -= fee
         self.cumulative_fees -= fee
+        self.absolute_profit = -fee
         self.in_position = 1
         self.episode_orders += 1
         self.enter_price = price
@@ -481,7 +482,10 @@ class FuturesBacktest(SpotBacktest):
     def _close_position(self, price, liquidated=False, SL=False):
         if SL:
             adj_price = price * self.stop_loss_factor
-            self.last_order_type = 'stop_loss'
+            if self.qty > 0:
+                self.last_order_type = 'stop_loss_long'
+            elif self.qty < 0:
+                self.last_order_type = 'stop_loss_short'
         else:
             if self.qty > 0:
                 adj_price = price * self.sell_factor
@@ -494,6 +498,10 @@ class FuturesBacktest(SpotBacktest):
         _position_value = abs(self.qty) * adj_price
         _fee = (_position_value * self.fee)
         if liquidated:
+            if self.qty > 0:
+                self.last_order_type = 'liquidate_long'
+            elif self.qty < 0:
+                self.last_order_type = 'liquidate_short'
             margin_balance = 0
             self.liquidation_losses -= self.margin
         else:

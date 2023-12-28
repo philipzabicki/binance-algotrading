@@ -9,22 +9,25 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
     MixedVariableDuplicateElimination
 from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
-
+from pymoo.core.mixed import MixedVariableGA
 from genetic_search.base import SingleObjNonzeroMinAvgMaxCallback, save_results, get_callback_plot, get_variables_plot
 # from genetic_search.macd_parametrizer import MACDMixedVariableProblem, MACDFuturesMixedVariableProblem
-from genetic_search.chosc_parametrizer import ChaikinOscillatorMixedVariableProblem
+from genetic_search.chosc_parametrizer import ChaikinOscillatorMixedVariableProblem, \
+    ChaikinOscillatorFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 2048
-N_GEN = 25
-TICKER = 'BTCFDUSD'
-ITV = '1m'
-MARKET_TYPE = 'spot'
+POP_SIZE = 512
+N_GEN = 50
+TICKER = 'BTCUSDT'
+ITV = '15m'
+MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-START_DATE = '2023-09-11'
+START_DATE = '2020-01-01'
+PROBLEM = ChaikinOscillatorFuturesMixedVariableProblem
+ALGORITHM = MixedVariableGA
 
 
 def main():
@@ -44,14 +47,14 @@ def main():
                              split=True,
                              delay=259_200)
     print(f'df used: {df}')
-    # _, df_mark = by_BinanceVision(ticker=TICKER,
-    #                               interval=ITV,
-    #                               market_type=MARKET_TYPE,
-    #                               data_type='markPriceKlines',
-    #                               start_date=START_DATE,
-    #                               split=True,
-    #                               delay=259_200)
-    # print(f'df_mark used: {df_mark}')
+    _, df_mark = by_BinanceVision(ticker=TICKER,
+                                  interval=ITV,
+                                  market_type=MARKET_TYPE,
+                                  data_type='markPriceKlines',
+                                  start_date=START_DATE,
+                                  split=True,
+                                  delay=259_200)
+    print(f'df_mark used: {df_mark}')
 
     pool = Pool(CPU_CORES_COUNT)
     runner = StarmapParallelization(pool.starmap)
@@ -62,26 +65,22 @@ def main():
     #               'coin_step': 0.00001,
     #               'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
     #               'verbose': False}
-    env_kwargs = {#'max_steps': 129_600,
-                  'init_balance': 350,
+    env_kwargs = {#'max_steps': 17_280,
+                  'init_balance': 400,
                   'no_action_finish': inf,
-                  'fee': 0.0,
-                  'coin_step': 0.00001,
+                  'fee': 0.0005,
+                  'coin_step': 0.001,
                   'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
                   'verbose': False}
-    problem = ChaikinOscillatorMixedVariableProblem(df,
-                                              #df_mark,
-                                              env_kwargs=env_kwargs,
-                                              elementwise_runner=runner)
+    problem = PROBLEM(df,
+                      df_mark,
+                      env_kwargs=env_kwargs,
+                      elementwise_runner=runner)
 
-    # algorithm = NSGA2(pop_size=100)
-    # algorithm = DNSGA2(pop_size=64)
-    # algorithm = MixedVariableGA(pop=10)
-    # algorithm = Optuna()
-    algorithm = DNSGA2(pop_size=POP_SIZE,
-                   sampling=MixedVariableSampling(),
-                   mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
-                   eliminate_duplicates=MixedVariableDuplicateElimination())
+    algorithm = ALGORITHM(pop_size=POP_SIZE,
+                          sampling=MixedVariableSampling(),
+                          mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
+                          eliminate_duplicates=MixedVariableDuplicateElimination())
 
     res = minimize(problem,
                    algorithm,
@@ -108,18 +107,13 @@ def main():
 
     plt1 = get_callback_plot(res.algorithm.callback, filename)
     plt2 = get_variables_plot(res.pop.get("X"), problem, filename)
-    # plt.subplot(plt1)
-    # plt1.show()
+    # Shows both:
     plt1.show()
-    # plt1.clf()
-    # plt2.show()
-    # time(1)
-    # plt2.show()
 
 
 if __name__ == '__main__':
     # profiler = cProfile.Profile()
     # profiler.enable()
     main()
-    # profiler.disable()  # Zakończ profilowanie
+    # profiler.disable()
     # profiler.print_stats(sort='tottime')

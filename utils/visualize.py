@@ -18,7 +18,7 @@ class TradingGraph:
         self.render_range = render_range
         self.time_step = float(time_step) * .8
         # print(f'self.time_step {self.time_step}')
-        self.date_format = mpl_dates.DateFormatter('%Y-%m-%d %H:%M:%S')
+        self.date_format = mpl_dates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
 
         self.Show_reward = Show_reward
         self.Show_indicators = Show_indicators
@@ -28,7 +28,7 @@ class TradingGraph:
         # close all plots if there are open
         plt.close('all')
         # figsize attribute allows us to specify the width and height of a figure in unit inches
-        self.fig = plt.figure(figsize=(21, 9))
+        self.fig = plt.figure(figsize=(21, 9), dpi=65)
 
         # Create top subplot for price axis
         self.ax1 = plt.subplot2grid((6, 1), (0, 0), rowspan=5, colspan=1)
@@ -153,23 +153,41 @@ class TradingGraph:
             annotate_text = '$' + self.trades_arr[i, 1] if self.trades_arr[i, 1] != '0.0' else ''
             x_position = self.render_arr[i, 0]
             if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i, 0] == 'close_short':
-                high_low = self.render_arr[i, 3] - RANGE * 0.02
-                ycoords = self.render_arr[i, 3] - RANGE * 0.08
-                self.ax1.scatter(x_position, high_low, c='green', label='green', s=120, edgecolors='none',
+                high_low = self.render_arr[i, 3] - RANGE * 0.03
+                ycoords = self.render_arr[i, 3] - RANGE * 1.10
+                self.ax1.scatter(x_position, high_low, c='green', label='green', s=180, edgecolors='black',
                                  marker="^")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.9999), c='black')
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.994), c='black')
             elif self.trades_arr[i, 0] == 'open_short' or self.trades_arr[i, 0] == 'close_long':
-                high_low = self.render_arr[i, 2] + RANGE * 0.02
-                ycoords = self.render_arr[i, 2] + RANGE * 0.06
-                self.ax1.scatter(x_position, high_low, c='red', label='red', s=120, edgecolors='none',
+                high_low = self.render_arr[i, 2] + RANGE * 0.03
+                ycoords = self.render_arr[i, 2] + RANGE * 1.10
+                self.ax1.scatter(x_position, high_low, c='red', label='red', s=180, edgecolors='black',
                                  marker="v")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.0001), c='black')
-            elif self.trades_arr[i, 0] == 'stop_loss':
-                high_low = self.render_arr[i, 2] + RANGE * 0.02
-                ycoords = self.render_arr[i, 2] + RANGE * 0.06
-                self.ax1.scatter(x_position, high_low, c='red', label='yellow', s=120, edgecolors='none',
-                                 marker="s")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.0001), c='black')
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.005), c='black')
+            elif self.trades_arr[i, 0] == 'stop_loss_long':
+                high_low = self.render_arr[i, 3] - RANGE * 0.03
+                ycoords = self.render_arr[i, 3] - RANGE * 1.10
+                self.ax1.scatter(x_position, high_low, c='yellow', label='yellow', s=180, edgecolors='black',
+                                 marker="d")
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.994), c='black')
+            elif self.trades_arr[i, 0] == 'stop_loss_short':
+                high_low = self.render_arr[i, 2] + RANGE * 0.03
+                ycoords = self.render_arr[i, 2] + RANGE * 1.10
+                self.ax1.scatter(x_position, high_low, c='yellow', label='yellow', s=180, edgecolors='black',
+                                 marker="d")
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.005), c='black')
+            elif self.trades_arr[i, 0] == 'liquidate_long':
+                high_low = self.render_arr[i, 3] - RANGE * 0.03
+                ycoords = self.render_arr[i, 3] - RANGE * 1.10
+                self.ax1.scatter(x_position, high_low, c='black', label='black', s=180, edgecolors='black',
+                                 marker="X")
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.994), c='black')
+            elif self.trades_arr[i, 0] == 'liquidate_short':
+                high_low = self.render_arr[i, 2] + RANGE * 0.03
+                ycoords = self.render_arr[i, 2] + RANGE * 1.10
+                self.ax1.scatter(x_position, high_low, c='black', label='black', s=180, edgecolors='black',
+                                 marker="X")
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.005), c='black')
             '''try:
                 self.ax1.annotate('{0:.2f}'.format(self.render_arr[i, 5]), (self.render_arr[i, 0] - 0.02, high_low),
                                   xytext=(self.render_arr[i, 0] - 0.02, ycoords),
@@ -178,9 +196,15 @@ class TradingGraph:
                 print(f'Exception: {e}')'''
 
         # we need to set layers every step, because we are clearing subplots every step
+        # box1 = dict(facecolor="blue", pad=2, alpha=0.4)
+        # box2 = dict(facecolor="red", pad=2, alpha=0.4)
         self.ax2.set_xlabel('Date')
-        self.ax1.set_ylabel('Price')
-        self.ax3.set_ylabel('Balance')
+        self.ax2.set_ylabel('Indicator/Reward', fontsize=16)
+        self.ax2.yaxis.label.set_color('red')
+        self.ax1.set_ylabel('Price', fontsize=16)
+        self.ax3.yaxis.set_label_position("right")
+        self.ax3.set_ylabel('Balance', fontsize=16)
+        self.ax3.yaxis.label.set_color('blue')
 
         # I use tight_layout to replace plt.subplots_adjustx
         self.fig.tight_layout()

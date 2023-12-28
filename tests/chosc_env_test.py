@@ -5,7 +5,7 @@ from numpy import inf
 from talib import AD
 
 from enviroments import MACDStratSpotEnv, MACDStratFuturesEnv
-from enviroments.chaikinosc_env import ChaikinOscillatorStratSpotEnv
+from enviroments.chaikinosc_env import ChaikinOscillatorStratSpotEnv, ChaikinOscillatorStratFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_ChaikinOscillator, get_1D_MA, ChaikinOscillator_signal
 from utils.utility import get_slippage_stats
@@ -22,26 +22,26 @@ def sig_map(value):
 
 
 if __name__ == "__main__":
-    ticker, interval, market_type, data_type, start_date = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
-    action = [0.014984120484895906, 627, 152, 9, 25]
+    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
+    action = [0.8590044580214056, 0.010165570342581401, 28, 57, 680, 4, 25]
 
     # df = pd.read_csv("C:/github/binance-algotrading/.other/lotos.csv")
-    df = by_BinanceVision(ticker=ticker,
-                          interval=interval,
-                          market_type=market_type,
-                          data_type=data_type,
-                          start_date=start_date,
-                          split=False,
-                          delay=259_200)
-    # _, df_mark = by_BinanceVision(ticker='BTCUSDT',
-    #                               interval='1m',
-    #                               market_type='um',
-    #                               data_type='markPriceKlines',
-    #                               start_date='2021-01-01',
-    #                               split=True,
-    #                               delay=259_200)
+    dates_df, df = by_BinanceVision(ticker=ticker,
+                                    interval=interval,
+                                    market_type=market_type,
+                                    data_type=data_type,
+                                    start_date=start_date,
+                                    split=True,
+                                    delay=259_200)
+    _, df_mark = by_BinanceVision(ticker=ticker,
+                                  interval=interval,
+                                  market_type=market_type,
+                                  data_type='markPriceKlines',
+                                  start_date=start_date,
+                                  split=True,
+                                  delay=259_200)
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()
-    fast_adl, slow_adl = get_1D_MA(adl, action[3], action[1]), get_1D_MA(adl, action[4], action[2])
+    fast_adl, slow_adl = get_1D_MA(adl, action[-2], action[-4]), get_1D_MA(adl, action[-1], action[-3])
     chosc = fast_adl - slow_adl
     signals = ChaikinOscillator_signal(chosc)
     df['fast_ADL'] = fast_adl
@@ -79,14 +79,15 @@ if __name__ == "__main__":
     #
     # plt.show()
 
-    env = ChaikinOscillatorStratSpotEnv(df=df.iloc[:, 1:6],
-                                        dates_df=df['Opened'],
-                                        # max_steps=259_200,
-                                        init_balance=350,
-                                        no_action_finish=inf,
-                                        fee=0.0,
-                                        coin_step=0.00001,
-                                        # slipp_std=0,
-                                        # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                                        verbose=True, visualize=False, write_to_file=True)
+    env = ChaikinOscillatorStratFuturesEnv(df=df,
+                                           df_mark=df_mark,
+                                           dates_df=dates_df,
+                                           # max_steps=17_280,
+                                           init_balance=400,
+                                           no_action_finish=inf,
+                                           fee=0.0005,
+                                           coin_step=0.001,
+                                           # slipp_std=0,
+                                           slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+                                           verbose=True, visualize=False, write_to_file=True)
     env.step(action)
