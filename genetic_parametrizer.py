@@ -11,7 +11,7 @@ from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
 from pymoo.core.mixed import MixedVariableGA
 from genetic_search.base import SingleObjNonzeroMinAvgMaxCallback, save_results, get_callback_plot, get_variables_plot
-# from genetic_search.macd_parametrizer import MACDMixedVariableProblem, MACDFuturesMixedVariableProblem
+from genetic_search.macd_parametrizer import MACDMixedVariableProblem, MACDFuturesMixedVariableProblem
 from genetic_search.chosc_parametrizer import ChaikinOscillatorMixedVariableProblem, \
     ChaikinOscillatorFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
@@ -19,14 +19,14 @@ from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 512
-N_GEN = 100
+POP_SIZE = 4096
+N_GEN = 1000
 TICKER = 'BTCUSDT'
-ITV = '15m'
+ITV = '1h'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = ChaikinOscillatorFuturesMixedVariableProblem
+PROBLEM = MACDFuturesMixedVariableProblem
 ALGORITHM = DNSGA2
 
 
@@ -65,8 +65,8 @@ def main():
     #               'coin_step': 0.00001,
     #               'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
     #               'verbose': False}
-    env_kwargs = {'max_steps': 8_640,
-                  'init_balance': 50,
+    env_kwargs = {'max_steps': 2_160,
+                  'init_balance': 350,
                   'no_action_finish': inf,
                   'fee': 0.0005,
                   'coin_step': 0.001,
@@ -86,8 +86,8 @@ def main():
                    algorithm,
                    save_history=False,
                    callback=SingleObjNonzeroMinAvgMaxCallback(problem),
-                   termination=('n_gen', N_GEN),
-                   # termination=("time", "09:00:00"),
+                   #termination=('n_gen', N_GEN),
+                   termination=("time", "09:00:00"),
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')

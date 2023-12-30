@@ -16,12 +16,17 @@ class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
         self.signal_ma_type = signal_ma_type
+        _max_period = max(self.fast_period, self.slow_period) + self.signal_period
+        if _max_period > self.total_steps:
+            raise ValueError('One of indicator periods is greater than df size.')
+        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
-        macd, macd_signal = custom_MACD(self.df[self.start_step:self.end_step, :5],
+        macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
                                         slow_ma_type=slow_ma_type, slow_period=slow_period,
                                         signal_ma_type=signal_ma_type, signal_period=signal_period)
-        self.signals = MACD_cross_signal(macd, macd_signal)
+        self.signals = MACD_cross_signal(macd[self.start_step - prev_values:],
+                                         macd_signal[self.start_step - prev_values:])
         return _ret
 
     def _finish_episode(self):
@@ -53,10 +58,10 @@ class MACDStratSpotEnv(Env):
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type, signal_ma_type=signal_ma_type)
 
     def step(self, action):
-        _reset = self.reset(stop_loss=action[0], enter_at=action[1], close_at=action[2],
-                            fast_period=int(action[3]), slow_period=int(action[4]), signal_period=int(action[5]),
-                            fast_ma_type=int(action[6]), slow_ma_type=int(action[7]), signal_ma_type=int(action[8]))
-        return self.exec_env(_reset)
+        self.reset(stop_loss=action[0], enter_at=action[1], close_at=action[2],
+                   fast_period=int(action[3]), slow_period=int(action[4]), signal_period=int(action[5]),
+                   fast_ma_type=int(action[6]), slow_ma_type=int(action[7]), signal_ma_type=int(action[8]))
+        return self.exec_env()
 
 
 ########################################################################################################################
@@ -74,12 +79,17 @@ class MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
         self.signal_ma_type = signal_ma_type
+        _max_period = max(self.fast_period, self.slow_period) + self.signal_period
+        if _max_period > self.total_steps:
+            raise ValueError('One of indicator periods is greater than df size.')
+        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
-        macd, macd_signal = custom_MACD(self.df[self.start_step:self.end_step, :5],
+        macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
                                         slow_ma_type=slow_ma_type, slow_period=slow_period,
                                         signal_ma_type=signal_ma_type, signal_period=signal_period)
-        self.signals = MACD_cross_signal(macd, macd_signal)
+        self.signals = MACD_cross_signal(macd[self.start_step - prev_values:],
+                                         macd_signal[self.start_step - prev_values:])
         return _ret
 
     def _finish_episode(self):

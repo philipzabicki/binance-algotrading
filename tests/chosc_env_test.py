@@ -3,6 +3,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 from talib import AD
+from statistics import mean
 
 from enviroments import MACDStratSpotEnv, MACDStratFuturesEnv
 from enviroments.chaikinosc_env import ChaikinOscillatorStratSpotEnv, ChaikinOscillatorStratFuturesEnv
@@ -10,7 +11,8 @@ from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_ChaikinOscillator, get_1D_MA, ChaikinOscillator_signal
 from utils.utility import get_slippage_stats
 
-N_TEST = 100
+N_TEST = 1000
+
 
 def sig_map(value):
     """Maps signals into values actually used by macd strategy env"""
@@ -23,8 +25,8 @@ def sig_map(value):
 
 
 if __name__ == "__main__":
-    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-    action = [0.5130294249730448,0.007580729757771941,70,250,696,5,11]
+    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '30m', 'um', 'klines', '2020-01-01'
+    action = [0.6520180455353644, 0.0023261265329450245, 93, 123, 193, 0, 24]
 
     # df = pd.read_csv("C:/github/binance-algotrading/.other/lotos.csv")
     dates_df, df = by_BinanceVision(ticker=ticker,
@@ -83,8 +85,8 @@ if __name__ == "__main__":
     env = ChaikinOscillatorStratFuturesEnv(df=df,
                                            df_mark=df_mark,
                                            dates_df=dates_df,
-                                           max_steps=8_640,
-                                           init_balance=50,
+                                           max_steps=4_320,
+                                           init_balance=350,
                                            no_action_finish=inf,
                                            fee=0.0005,
                                            coin_step=0.001,
@@ -92,9 +94,12 @@ if __name__ == "__main__":
                                            slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
                                            verbose=True, visualize=False, write_to_file=True)
     results = []
+    gains = []
     for _ in range(N_TEST):
         _, reward, _, _, _ = env.step(action)
         results.append(reward)
+        if reward > 0:
+            gains.append(env.exec_env.balance - env.exec_env.init_balance)
     profitable = sum(i > 0 for i in results)
-    print(f'From {N_TEST} tests. Profitable: {profitable} ({profitable/len(results)*100}%)')
-
+    print(
+        f'From {N_TEST} tests, profitable: {profitable} ({profitable / len(results) * 100}%) gain(avg/min/max): ${mean(gains):_.2f}/${min(gains):_.2f}/${max(gains):_.2f}')

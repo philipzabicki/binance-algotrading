@@ -19,13 +19,17 @@ class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
         self.slow_period = slow_period
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
-        if max(self.fast_period, self.slow_period) > self.total_steps:
+        _max_period = max(self.fast_period, self.slow_period)
+        if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
+        # Calculate only the data length necessary, with additional length caused by indicator periods
+        prev_values = self.start_step-_max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
-        chaikin_oscillator = custom_ChaikinOscillator(self.adl[self.start_step:self.end_step, ],
+        chaikin_oscillator = custom_ChaikinOscillator(self.adl[prev_values:self.end_step, ],
                                                       fast_ma_type=fast_ma_type, fast_period=fast_period,
                                                       slow_ma_type=slow_ma_type, slow_period=slow_period)
-        self.signals = ChaikinOscillator_signal(chaikin_oscillator)
+        self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step - prev_values:])
+        print(f'len sig {len(self.signals)}')
         return _ret
 
     def _finish_episode(self):
@@ -81,15 +85,17 @@ class ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.slow_period = slow_period
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
-        if max(self.fast_period, self.slow_period) > self.total_steps:
+        _max_period = max(self.fast_period, self.slow_period)
+        if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
-        # print(f'self.adl[self.start_step:self.end_step,] {self.adl[self.start_step:self.end_step,]}')
-        # print(f'self.start_step {self.start_step}')
-        # print(f'self.end_step {self.end_step}')
-        chaikin_oscillator = custom_ChaikinOscillator(self.adl[self.start_step:self.end_step,],
+        # Calculate only the data length necessary, with additional length caused by indicator periods
+        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
+        # print(self.df[self.start_step:self.end_step, :5])
+        chaikin_oscillator = custom_ChaikinOscillator(self.adl[prev_values:self.end_step, ],
                                                       fast_ma_type=fast_ma_type, fast_period=fast_period,
                                                       slow_ma_type=slow_ma_type, slow_period=slow_period)
-        self.signals = ChaikinOscillator_signal(chaikin_oscillator)
+        self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step-prev_values:])
+        print(f'start_step {self.start_step} end_step {self.end_step} _max_period {_max_period} prev_values {prev_values}')
         return _ret
 
     def _finish_episode(self):
