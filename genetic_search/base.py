@@ -1,5 +1,6 @@
-from csv import writer
 import os
+from csv import writer
+
 from matplotlib import pyplot as plt
 from numpy import array, min, mean, max
 from pymoo.core.callback import Callback
@@ -57,23 +58,31 @@ def get_variables_plot(x_variables, problem, fname, save=True):
     return plot
 
 
-class SingleObjNonzeroMinAvgMaxCallback(Callback):
+class MinAvgMaxNonzeroSingleObjCallback(Callback):
     def __init__(self, problem) -> None:
         super().__init__()
         self.opt = []
         self.problem = problem
 
     def notify(self, algorithm):
-        # print(f'algorithm.pop.get("F") {algorithm.pop.get("F")}')
         avg_rew = mean(algorithm.pop.get("F"))
         if avg_rew < 0:
             min_rew = min(algorithm.pop.get("F"))
             max_rew = max(algorithm.pop.get("F"))
             self.opt.append([min_rew, avg_rew, max_rew])
-            # self.opt.append([avg_rew])
         else:
             self.opt.append([0.0, 0.0, 0.0])
-        # _plot = display_result(algorithm.pop.get("X"), self.problem, f"/to_gif/{len(self.opt)}cus.png")
-        # _plot.show()
-        # _plot.close()
-        # print(self.opt)
+
+
+class AverageNonzeroSingleObjCallback(Callback):
+    def __init__(self, problem) -> None:
+        super().__init__()
+        self.opt = []
+        self.problem = problem
+
+    def notify(self, algorithm):
+        avg_rew = mean(algorithm.pop.get("F"))
+        if avg_rew < 0:
+            self.opt.append(avg_rew)
+        else:
+            self.opt.append(0.0)

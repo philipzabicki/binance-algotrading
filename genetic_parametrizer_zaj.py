@@ -1,7 +1,7 @@
 from datetime import datetime as dt
 from multiprocessing import Pool, cpu_count
-import pandas as pd
 
+import pandas as pd
 from numpy import inf
 # from pymoo.algorithms.moo.dnsga2 import DNSGA2
 # from pymoo.algorithms.moo.nsga2 import NSGA2
@@ -13,8 +13,6 @@ from pymoo.optimize import minimize
 
 from genetic_search.base import SingleObjNonzeroMinAvgMaxCallback, save_results, get_callback_plot, get_variables_plot
 from genetic_search.chosc_parametrizer import ChaikinOscillatorMixedVariableProblem
-from utils.get_data import by_BinanceVision
-from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1

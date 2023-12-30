@@ -1,14 +1,12 @@
-import mplfinance as mpf
-import pandas as pd
+from statistics import mean
+
 from matplotlib import pyplot as plt
 from numpy import inf
 from talib import AD
-from statistics import mean
 
-from enviroments import MACDStratSpotEnv, MACDStratFuturesEnv
-from enviroments.chaikinosc_env import ChaikinOscillatorStratSpotEnv, ChaikinOscillatorStratFuturesEnv
+from enviroments.chaikinosc_env import ChaikinOscillatorStratFuturesEnv
 from utils.get_data import by_BinanceVision
-from utils.ta_tools import custom_ChaikinOscillator, get_1D_MA, ChaikinOscillator_signal
+from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
 from utils.utility import get_slippage_stats
 
 N_TEST = 1000
@@ -25,8 +23,8 @@ def sig_map(value):
 
 
 if __name__ == "__main__":
-    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '30m', 'um', 'klines', '2020-01-01'
-    action = [0.6520180455353644, 0.0023261265329450245, 93, 123, 193, 0, 24]
+    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '1h', 'um', 'klines', '2020-01-01'
+    action = [0.13588268987752294, 0.011900277715630523, 61, 498, 371, 22, 4]
 
     # df = pd.read_csv("C:/github/binance-algotrading/.other/lotos.csv")
     dates_df, df = by_BinanceVision(ticker=ticker,
@@ -85,7 +83,7 @@ if __name__ == "__main__":
     env = ChaikinOscillatorStratFuturesEnv(df=df,
                                            df_mark=df_mark,
                                            dates_df=dates_df,
-                                           max_steps=4_320,
+                                           max_steps=2_160,
                                            init_balance=350,
                                            no_action_finish=inf,
                                            fee=0.0005,

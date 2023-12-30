@@ -2,32 +2,29 @@ from datetime import datetime as dt
 from multiprocessing import Pool, cpu_count
 
 from numpy import inf
-from pymoo.algorithms.moo.dnsga2 import DNSGA2
-# from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.algorithms.soo.nonconvex.ga import GA
+from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
     MixedVariableDuplicateElimination
 from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
-from pymoo.core.mixed import MixedVariableGA
-from genetic_search.base import SingleObjNonzeroMinAvgMaxCallback, save_results, get_callback_plot, get_variables_plot
-from genetic_search.macd_parametrizer import MACDMixedVariableProblem, MACDFuturesMixedVariableProblem
-from genetic_search.chosc_parametrizer import ChaikinOscillatorMixedVariableProblem, \
-    ChaikinOscillatorFuturesMixedVariableProblem
+
+from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
+    AverageNonzeroSingleObjCallback
+from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 4096
-N_GEN = 1000
+POP_SIZE = 1024
+N_GEN = 50
 TICKER = 'BTCUSDT'
-ITV = '1h'
+ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
 PROBLEM = MACDFuturesMixedVariableProblem
-ALGORITHM = DNSGA2
+ALGORITHM = NSGA2
 
 
 def main():
@@ -65,7 +62,7 @@ def main():
     #               'coin_step': 0.00001,
     #               'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
     #               'verbose': False}
-    env_kwargs = {'max_steps': 2_160,
+    env_kwargs = {'max_steps': 17_280,
                   'init_balance': 350,
                   'no_action_finish': inf,
                   'fee': 0.0005,
@@ -85,9 +82,9 @@ def main():
     res = minimize(problem,
                    algorithm,
                    save_history=False,
-                   callback=SingleObjNonzeroMinAvgMaxCallback(problem),
-                   #termination=('n_gen', N_GEN),
-                   termination=("time", "09:00:00"),
+                   callback=AverageNonzeroSingleObjCallback(problem),
+                   termination=('n_gen', N_GEN),
+                   # termination=("time", "09:00:00"),
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')

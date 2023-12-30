@@ -255,6 +255,8 @@ class SpotBacktest(Env):
             above_free = (total_return - risk_free_return) * 100
         else:
             above_free = total_return * 100
+        if hasattr(self, 'leverage'):
+            above_free /= self.leverage
         hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 1 and self.profit_hold_counter > 1 else 1.0
         if len(self.PNL_arrays) > 1:
             mean_pnl, stddev_pnl = mean(self.PNL_arrays[:, 0]), std(self.PNL_arrays[:, 0])
@@ -396,8 +398,8 @@ class FuturesBacktest(SpotBacktest):
         elif 300_000_000 < self.position_size < 500_000_000:
             self.tier = 10
         if self.leverage > self.POSITION_TIER[self.tier][0]:
-            #print(f' Leverage exceeds tier {self.tier} max', end=' ')
-            #print(f'changing from {self.leverage} to {self.POSITION_TIER[self.tier][0]} (Balance:${self.balance}:.2f)')
+            # print(f' Leverage exceeds tier {self.tier} max', end=' ')
+            # print(f'changing from {self.leverage} to {self.POSITION_TIER[self.tier][0]} (Balance:${self.balance}:.2f)')
             self.leverage = self.POSITION_TIER[self.tier][0]
 
     # def _check_margin(self):

@@ -66,7 +66,7 @@ def collect_to_date(url, output_folder, start_date=date(year=2017, month=1, day=
         print(f'Collecting daily from {start_date} to date...')
     else:
         raise ValueError("arg delta_itv should be one of 'months' or 'days'")
-    end_date = date.today() - 2*delta
+    end_date = date.today() - 2 * delta
     data_frames = []
     while start_date <= end_date:
         if delta_itv == 'months':

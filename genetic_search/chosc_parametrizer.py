@@ -39,7 +39,7 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['position_ratio'], X['stop_loss'],  X['leverage'],
+        action = [X['position_ratio'], X['stop_loss'], X['leverage'],
                   X['fast_period'], X['slow_period'],
                   X['fast_ma_type'], X['slow_ma_type']]
         _, reward, _, _, _ = self.env.step(action)

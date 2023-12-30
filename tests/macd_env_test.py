@@ -1,10 +1,11 @@
+from statistics import mean
+
 import mplfinance as mpf
 import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
-from statistics import mean
 
-from enviroments import MACDStratSpotEnv, MACDStratFuturesEnv
+from enviroments import MACDStratFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
 from utils.utility import get_slippage_stats
@@ -23,8 +24,8 @@ def sig_map(value):
 
 
 if __name__ == "__main__":
-    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '1h', 'um', 'klines', '2020-01-01'
-    action = [0.9592626121638462, 0.001861227626335021, 0.218663895653567, 0.265466684691816, 25, 280, 707, 163, 25, 29, 6]
+    ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
+    action = [0.9598733086016673, 0.012355534017885849, 0.8440143414882533, 0.9716292121840854, 15, 102, 684, 530, 28, 29, 1]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     axs[2].legend(loc='upper left')
 
     plt.tight_layout()
-    #plt.show()
+    # plt.show()
 
     # plt.subplot(2, 1, 1)
     # plt.plot(macd[-1_000:], label='MACD')
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     env = MACDStratFuturesEnv(df=df.iloc[:, 1:6],
                               df_mark=df_mark,
                               dates_df=df['Opened'],
-                              max_steps=2_160,
+                              max_steps=17_280,
                               init_balance=350,
                               no_action_finish=inf,
                               fee=0.0005,
