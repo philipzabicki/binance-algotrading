@@ -11,6 +11,7 @@ from pymoo.optimize import minimize
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     AverageNonzeroSingleObjCallback
 from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem
+from genetic_search.chosc_parametrizer import ChaikinOscillatorFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
@@ -23,7 +24,7 @@ ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = MACDFuturesMixedVariableProblem
+PROBLEM = ChaikinOscillatorFuturesMixedVariableProblem
 ALGORITHM = NSGA2
 
 

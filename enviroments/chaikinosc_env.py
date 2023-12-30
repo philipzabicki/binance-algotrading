@@ -29,7 +29,7 @@ class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
                                                       fast_ma_type=fast_ma_type, fast_period=fast_period,
                                                       slow_ma_type=slow_ma_type, slow_period=slow_period)
         self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step - prev_values:])
-        print(f'len sig {len(self.signals)}')
+        # print(f'len sig {len(self.signals)}')
         return _ret
 
     def _finish_episode(self):
@@ -72,8 +72,8 @@ class ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.adl = AD(self.df[:, 1], self.df[:, 2], self.df[:, 3], self.df[:, 4])
-        print(f'futures self.adl {self.adl}')
-        print(f'len(self.adl) {len(self.adl)}')
+        # print(f'futures self.adl {self.adl}')
+        # print(f'len(self.adl) {len(self.adl)}')
 
     def reset(self, *args, position_ratio=1.0,
               stop_loss=None, leverage=5,
@@ -95,8 +95,7 @@ class ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
                                                       fast_ma_type=fast_ma_type, fast_period=fast_period,
                                                       slow_ma_type=slow_ma_type, slow_period=slow_period)
         self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step - prev_values:])
-        print(
-            f'start_step {self.start_step} end_step {self.end_step} _max_period {_max_period} prev_values {prev_values}')
+        # print(f'start_step {self.start_step} end_step {self.end_step} _max_period {_max_period} prev_values {prev_values}')
         return _ret
 
     def _finish_episode(self):
@@ -104,6 +103,8 @@ class ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
         if self.verbose:
             print(f' fast_period={self.fast_period}, slow_period={self.slow_period}')
             print(f' fast_MA_type={self.fast_ma_type}, slow_MA_type={self.slow_ma_type}')
+        if self.balance >= 1_000_000:
+            self.verbose = False
 
 
 class ChaikinOscillatorStratFuturesEnv(Env):

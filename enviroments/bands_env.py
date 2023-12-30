@@ -28,6 +28,8 @@ class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
         if self.verbose:
             print(f' ma_type={self.ma_type}, ma_period={self.ma_period}')
             print(f' atr_period={self.atr_period}, atr_multi={self.atr_multi}')
+        if self.balance >= 1_000_000:
+            self.verbose = False
 
 
 class BandsStratSpotEnv(Env):
@@ -82,6 +84,8 @@ class BandsExecuteFuturesEnv(SignalExecuteFuturesEnv):
         if self.verbose:
             print(f' ma_type={self.ma_type}, ma_period={self.ma_period}')
             print(f' atr_period={self.atr_period}, atr_multi={self.atr_multi}')
+        if self.balance >= 1_000_000:
+            self.verbose = False
 
 
 class BandsStratFuturesEnv(Env):

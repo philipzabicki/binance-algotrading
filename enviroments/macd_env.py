@@ -36,6 +36,8 @@ class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
                 f' fast_period={self.fast_period}, slow_period={self.slow_period}, signal_period={self.signal_period}')
             print(
                 f' fast_MA_type={self.fast_ma_type}, slow_MA_type={self.slow_ma_type}, signal_MA_type={self.signal_ma_type}')
+        if self.balance >= 1_000_000:
+            self.verbose = False
 
 
 class MACDStratSpotEnv(Env):
@@ -99,6 +101,8 @@ class MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
                 f' fast_period={self.fast_period}, slow_period={self.slow_period}, signal_period={self.signal_period}')
             print(
                 f' fast_MA_type={self.fast_ma_type}, slow_MA_type={self.slow_ma_type}, signal_MA_type={self.signal_ma_type}')
+        if self.balance >= 1_000_000:
+            self.verbose = False
 
 
 class MACDStratFuturesEnv(Env):

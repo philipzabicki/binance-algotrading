@@ -1089,7 +1089,7 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 26: lambda c, p: NadarayWatsonMA(c, p, kernel=5)}
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
-    return ma_types[ma_type](close.astype(np.float64), ma_period)
+    return np.nan_to_num(ma_types[ma_type](close.astype(np.float64), ma_period))
 
 
 def custom_ChaikinOscillator(adl, fast_period, slow_period, fast_ma_type, slow_ma_type):
