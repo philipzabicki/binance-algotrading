@@ -4,6 +4,7 @@ from multiprocessing import Pool, cpu_count
 from matplotlib import pyplot as plt
 from numpy import inf
 from talib import AD
+from time import sleep
 
 from enviroments.chaikinosc_env import ChaikinOscillatorStratFuturesEnv
 from utils.get_data import by_BinanceVision
@@ -15,7 +16,7 @@ N_TEST = 10_000
 N_STEPS = 25_920
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = ChaikinOscillatorStratFuturesEnv
-ACTION = [0.6951826753360898, 0.003631629294158902, 93, 194, 559, 14, 21]
+ACTION = [0.9572525991722116, 0.003780177222604649, 90, 209, 593, 21, 18]
 
 
 def sig_map(value):
@@ -69,9 +70,12 @@ if __name__ == "__main__":
                                   split=True,
                                   delay=259_200)
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()
+    #print(adl[:10])
+    #sleep(100)
     fast_adl, slow_adl = get_1D_MA(adl, ACTION[-2], ACTION[-4]), get_1D_MA(adl, ACTION[-1], ACTION[-3])
     chosc = fast_adl - slow_adl
     signals = ChaikinOscillator_signal(chosc)
+    df['ADL'] = adl
     df['fast_ADL'] = fast_adl
     df['slow_ADL'] = slow_adl
     df['ChaikinOscillator'] = chosc
@@ -83,6 +87,7 @@ if __name__ == "__main__":
     axs = gs.subplots(sharex=False)
     axs[0].plot(df['fast_ADL'], label='fast_ADL')
     axs[0].plot(df['slow_ADL'], label='slow_ADL')
+    axs[0].plot(df['ADL'], label='ADL')
     axs[0].legend(loc='upper left')
     axs[1].plot(df['ChaikinOscillator'], label='ChaikinOscillator')
     axs[1].legend(loc='upper left')
@@ -92,7 +97,7 @@ if __name__ == "__main__":
     axs[2].legend(loc='upper left')
 
     plt.tight_layout()
-    #plt.show()
+    plt.show()
 
     # plt.subplot(2, 1, 1)
     # plt.plot(macd[-1_000:], label='MACD')

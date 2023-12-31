@@ -1,4 +1,4 @@
-from statistics import mean
+from statistics import mean, stdev
 
 import mplfinance as mpf
 import pandas as pd
@@ -25,7 +25,7 @@ def sig_map(value):
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-    action = [0.9891439285753105, 0.011084900496150438, 0.6818328651590088, 0.9355985095148547, 43, 93, 812, 737, 1, 30, 21]
+    action = [0.9990928588561859, 0.010375407587923694, 0.19764900366990446, 0.916657252209374, 34, 92, 742, 688, 12, 4, 13]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     env = MACDStratFuturesEnv(df=df.iloc[:, 1:6],
                               df_mark=df_mark,
                               dates_df=df['Opened'],
-                              max_steps=17_280,
+                              max_steps=25_920,
                               init_balance=350,
                               no_action_finish=inf,
                               fee=0.0005,
@@ -97,5 +97,6 @@ if __name__ == "__main__":
         if reward > 0:
             gains.append(env.exec_env.balance - env.exec_env.init_balance)
     profitable = sum(i > 0 for i in results)
-    print(
-        f'From {N_TEST} tests, profitable: {profitable} ({profitable / len(results) * 100}%) gain(avg/min/max): ${mean(gains):_.2f}/${min(gains):_.2f}/${max(gains):_.2f}')
+    print(f'From {N_TEST} tests, profitable: {profitable} ({profitable / len(results) * 100}%)')
+    print(f'gain(avg/stdev): ${mean(gains):_.2f}/${stdev(gains):_.2f}')
+    print(f'gain(min/max): ${min(gains):_.2f}/${max(gains):_.2f}')

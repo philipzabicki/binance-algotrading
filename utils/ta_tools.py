@@ -753,17 +753,26 @@ def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 
     return np.concatenate((np.zeros(timeperiod - 1), alma))
 
 
+from time import sleep
+
+
 @jit(nopython=True, nogil=True, cache=True)
 def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
+    close = np.absolute(close)
     gma = np.empty_like(close)
     log_close = np.log(close)
     exponent = 1 / period
     window_sum = np.sum(log_close[:period])
+    # print(f'log_close {log_close}')
+    # print(f'window_sum {window_sum}')
     gma[period - 1] = window_sum * exponent
     for i in range(period, len(close)):
         window_sum -= log_close[i - period]
         window_sum += log_close[i]
         gma[i] = window_sum * exponent
+        # print(f'window_sum {window_sum}')
+        # print(f'gma[i] {gma[i]}')
+        # sleep(5)
     return np.exp(gma)
 
 
