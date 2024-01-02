@@ -13,10 +13,10 @@ from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000
-N_STEPS = 25_920
+N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = ChaikinOscillatorStratFuturesEnv
-ACTION = [0.9572525991722116, 0.003780177222604649, 90, 209, 593, 21, 18]
+ACTION = [0.995802476834269, 0.012965799862694773, 50, 344, 18, 11, 2]
 
 
 def sig_map(value):
@@ -69,6 +69,8 @@ if __name__ == "__main__":
                                   start_date=START_DATE,
                                   split=True,
                                   delay=259_200)
+    print(df)
+
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()
     #print(adl[:10])
     #sleep(100)
@@ -115,7 +117,7 @@ if __name__ == "__main__":
     with Pool(processes=CPU_CORES) as pool:
         # Each process will call 'run_indefinitely_process'
         # The list(range(num_processes)) is just to provide a different argument to each process (even though it's not used in the function)
-        results = pool.starmap(parallel_test, [(i, df, df_mark, dates_df) for i in range(CPU_CORES)])
+        results = pool.starmap(parallel_test, [(i, df.iloc[:, 0:5], df_mark, dates_df) for i in range(CPU_CORES)])
     joined_res = []
     joined_gains = []
     for el in results:

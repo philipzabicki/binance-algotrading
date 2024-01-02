@@ -1,4 +1,4 @@
-from numpy import array
+from numpy import array, median
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
@@ -6,8 +6,9 @@ from enviroments.chaikinosc_env import ChaikinOscillatorStratSpotEnv, ChaikinOsc
 
 
 class ChaikinOscillatorMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, **kwargs):
         self.env = ChaikinOscillatorStratSpotEnv(df=df, **env_kwargs)
+        self.n_evals = n_evals
         macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
                           "fast_period": Integer(bounds=(2, 1_000)),
                           "slow_period": Integer(bounds=(2, 1_000)),
@@ -20,14 +21,18 @@ class ChaikinOscillatorMixedVariableProblem(ElementwiseProblem):
         action = [X['stop_loss'],
                   X['fast_period'], X['slow_period'],
                   X['fast_ma_type'], X['slow_ma_type']]
-        _, reward, _, _, _ = self.env.step(action)
-        # print(f'_evaluate() reward:{reward}')
-        out["F"] = array([-reward])
+        if self.n_evals > 1:
+            rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
+            # print(f'median_of{self.n_evals}_reward: {median(rews)}')
+            out["F"] = array([median(rews)])
+        else:
+            out["F"] = array([-self.env.step(action)[1]])
 
 
 class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, **kwargs):
         self.env = ChaikinOscillatorStratFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
+        self.n_evals = n_evals
         macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
                           "leverage": Integer(bounds=(1, 125)),
@@ -42,6 +47,9 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
         action = [X['position_ratio'], X['stop_loss'], X['leverage'],
                   X['fast_period'], X['slow_period'],
                   X['fast_ma_type'], X['slow_ma_type']]
-        _, reward, _, _, _ = self.env.step(action)
-        # print(f'_evaluate() reward:{reward}')
-        out["F"] = array([-reward])
+        if self.n_evals > 1:
+            rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
+            # print(f'median_of{self.n_evals}_reward: {median(rews)}')
+            out["F"] = array([median(rews)])
+        else:
+            out["F"] = array([-self.env.step(action)[1]])

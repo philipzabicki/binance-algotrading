@@ -25,7 +25,7 @@ def sig_map(value):
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-    action = [0.9990928588561859, 0.010375407587923694, 0.19764900366990446, 0.916657252209374, 34, 92, 742, 688, 12, 4, 13]
+    action = [0.9804969597725088, 0.00973130981551137, 0.11554753353989672, 0.08301467079546807, 26, 42, 455, 232, 26, 2, 11]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,
@@ -58,8 +58,8 @@ if __name__ == "__main__":
     axs[1].plot(df_plot.index, df_plot['signal'], label='Signal')
     axs[1].legend(loc='upper left')
     axs[2].plot(df_plot.index, df_plot['signals'], label='Trade signals')
-    axs[2].axhline(y=sig_map(action[1]), label='Buy threshold', color='green', linestyle='--')
-    axs[2].axhline(y=-sig_map(action[2]), label='Sell threshold', color='red', linestyle='--')
+    axs[2].axhline(y=sig_map(action[2]), label='Buy threshold', color='green', linestyle='--')
+    axs[2].axhline(y=-sig_map(action[3]), label='Sell threshold', color='red', linestyle='--')
     axs[2].legend(loc='upper left')
 
     plt.tight_layout()
@@ -81,14 +81,14 @@ if __name__ == "__main__":
     env = MACDStratFuturesEnv(df=df.iloc[:, 1:6],
                               df_mark=df_mark,
                               dates_df=df['Opened'],
-                              max_steps=25_920,
+                              max_steps=2_880,
                               init_balance=350,
                               no_action_finish=inf,
                               fee=0.0005,
                               coin_step=0.001,
                               slipp_std=0,
                               slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                              verbose=True, visualize=False, write_to_file=True)
+                              verbose=False, visualize=False, write_to_file=True)
     results = []
     gains = []
     for _ in range(N_TEST):

@@ -1,31 +1,71 @@
 from matplotlib import pyplot as plt
-from numpy import inf
+from multiprocessing import Pool, cpu_count
+from numpy import inf, mean, std
 
-from enviroments import BandsStratSpotEnv
+from enviroments.bands_env import BandsStratSpotEnv, BandsStratFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_MA_band_signal
 from utils.utility import get_slippage_stats
 
-if __name__ == "__main__":
-    ticker, interval, market_type, data_type, start_date = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
-    action = [0.023998771101126748, 0.27111365210175387, 0.5984170065118863, 8, 741, 945, 8.30966963107716]
+CPU_CORES = cpu_count()
+N_TEST = 10_000
+N_STEPS = 2_880
+TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
+ENV = BandsStratFuturesEnv
+ACTION = [0.1986358330957605, 0.01112644899366479, 0.9218573504661901, 0.5562397842066255, 4.67662879195464, 686, 7, 351, 45]
 
-    dates_df, df = by_BinanceVision(ticker=ticker,
-                                    interval=interval,
-                                    market_type=market_type,
-                                    data_type=data_type,
-                                    start_date=start_date,
+
+def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
+    env = ENV(df=df,
+              df_mark=df_mark,
+              dates_df=dates_df,
+              max_steps=N_STEPS,
+              init_balance=350,
+              no_action_finish=inf,
+              fee=0.0005,
+              coin_step=0.001,
+              # slipp_std=0,
+              slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+              verbose=False, visualize=False, write_to_file=True)
+    results, gains = [], []
+    for _ in range(N_TEST // CPU_CORES):
+        _, reward, _, _, _ = env.step(ACTION)
+        results.append(reward)
+        if reward > 0:
+            gains.append(env.exec_env.balance - env.exec_env.init_balance)
+    return results, gains
+
+
+if __name__ == "__main__":
+    dates_df, df = by_BinanceVision(ticker=TICKER,
+                                    interval=ITV,
+                                    market_type=MARKET_TYPE,
+                                    data_type=DATA_TYPE,
+                                    start_date=START_DATE,
                                     split=True,
-                                    delay=129_600)
-    signals = get_MA_band_signal(df.to_numpy(), action[3], action[4], action[5], action[6])
+                                    delay=259_200)
+    _, df_mark = by_BinanceVision(ticker=TICKER,
+                                  interval=ITV,
+                                  market_type=MARKET_TYPE,
+                                  data_type='markPriceKlines',
+                                  start_date=START_DATE,
+                                  split=True,
+                                  delay=259_200)
+    signals = get_MA_band_signal(df.to_numpy(), ACTION[-3], ACTION[-2], ACTION[-4], ACTION[-5])
     print(f'signal {signals}')
-    plt.plot(signals[-10_000:])
-    plt.axhline(y=action[1], color='green', linestyle='--')
-    plt.axhline(y=-action[2], color='red', linestyle='--')
+    plt.plot(signals)
+    plt.axhline(y=ACTION[2], color='green', linestyle='--')
+    plt.axhline(y=-ACTION[3], color='red', linestyle='--')
     plt.show()
 
-    env = BandsStratSpotEnv(df=df, dates_df=dates_df, init_balance=300, no_action_finish=inf,
-                            fee=0.0, coin_step=0.00001,
-                            slippage=get_slippage_stats(market_type, ticker, interval, 'market'),
-                            verbose=True, visualize=False)
-    env.step(action)
+    with Pool(processes=CPU_CORES) as pool:
+        results = pool.starmap(parallel_test, [(i, df.iloc[:, 0:5], df_mark, dates_df) for i in range(CPU_CORES)])
+    joined_res = []
+    joined_gains = []
+    for el in results:
+        joined_res.extend(el[0])
+        joined_gains.extend(el[1])
+    profitable = sum(i > 0 for i in joined_res)
+    print(f'From {len(joined_res)} tests, profitable: {profitable} ({profitable / len(joined_res) * 100}%)')
+    print(f'gain(avg/stdev): ${mean(joined_gains):_.2f}/${std(joined_gains):_.2f}')
+    print(f'gain(min/max): ${min(joined_gains):_.2f}/${max(joined_gains):_.2f}')

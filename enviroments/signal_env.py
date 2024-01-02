@@ -24,7 +24,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
     def _finish_episode(self):
         super()._finish_episode()
         if self.verbose:
-            print(f' position_ratio={self.position_ratio:.2f}, stop_loss={self.stop_loss},', end='')
+            print(f' position_ratio={self.position_ratio:.2f}, stop_loss={self.stop_loss}')
             print(f' enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}')
 
     def __call__(self, *args, **kwargs):
@@ -72,8 +72,7 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         super()._finish_episode()
         if self.verbose:
             print(
-                f' position_ratio={self.position_ratio:.2f}, leverage={self.leverage}, stop_loss={self.stop_loss * 100:.3f}%,',
-                end='')
+                f' position_ratio={self.position_ratio:.2f}, leverage={self.leverage}, stop_loss={self.stop_loss * 100:.3f}%')
             print(f' enter_at={self.enter_threshold:.3f}, close_at={self.close_threshold:.3f}')
 
     def __call__(self, *args, **kwargs):

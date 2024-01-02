@@ -3,6 +3,7 @@ from multiprocessing import Pool, cpu_count
 
 from numpy import inf
 from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.algorithms.moo.dnsga2 import DNSGA2
 from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
     MixedVariableDuplicateElimination
 from pymoo.core.problem import StarmapParallelization
@@ -12,22 +13,24 @@ from genetic_search.base import save_results, get_callback_plot, get_variables_p
     AverageNonzeroSingleObjCallback
 from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem
 from genetic_search.chosc_parametrizer import ChaikinOscillatorFuturesMixedVariableProblem
+from genetic_search.bands_parametrizer import BandsFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 1024
-N_GEN = 500
+POP_SIZE = 32
+N_GEN = 5000
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = ChaikinOscillatorFuturesMixedVariableProblem
+PROBLEM = BandsFuturesMixedVariableProblem
 ALGORITHM = NSGA2
 # TERMINATION = ("time", "01:30:00")
 TERMINATION = ('n_gen', N_GEN)
+
 
 def main():
     # _, df = by_BinanceVision(ticker='BTCFDUSD',
@@ -64,7 +67,7 @@ def main():
     #               'coin_step': 0.00001,
     #               'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
     #               'verbose': False}
-    env_kwargs = {'max_steps': 25_920,
+    env_kwargs = {'max_steps': 2_880,
                   'init_balance': 350,
                   'no_action_finish': inf,
                   'fee': 0.0005,
@@ -74,6 +77,7 @@ def main():
     problem = PROBLEM(df,
                       df_mark,
                       env_kwargs=env_kwargs,
+                      n_evals=5,
                       elementwise_runner=runner)
 
     algorithm = ALGORITHM(pop_size=POP_SIZE,
