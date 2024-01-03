@@ -1,6 +1,7 @@
 from numpy import array, mean
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
+
 from enviroments.macdrsi_env import MACDRSIStratSpotEnv, MACDRSIStratFuturesEnv
 
 

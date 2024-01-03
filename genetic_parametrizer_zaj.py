@@ -11,7 +11,7 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
 from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
 
-from genetic_search.base import SingleObjNonzeroMinAvgMaxCallback, save_results, get_callback_plot, get_variables_plot
+from genetic_search.base import MinAvgMaxNonzeroSingleObjCallback, save_results, get_callback_plot, get_variables_plot
 from genetic_search.chosc_parametrizer import ChaikinOscillatorMixedVariableProblem
 
 CPU_CORES_COUNT = cpu_count()
@@ -68,7 +68,7 @@ def main():
     res = minimize(problem,
                    algorithm,
                    save_history=False,
-                   callback=SingleObjNonzeroMinAvgMaxCallback(problem),
+                   callback=MinAvgMaxNonzeroSingleObjCallback(problem),
                    termination=('n_gen', N_GEN),
                    # termination=("time", "00:05:00"),
                    verbose=True)

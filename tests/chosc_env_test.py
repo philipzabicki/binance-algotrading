@@ -1,10 +1,9 @@
-from statistics import mean, stdev
 from multiprocessing import Pool, cpu_count
+from statistics import mean, stdev
 
 from matplotlib import pyplot as plt
 from numpy import inf
 from talib import AD
-from time import sleep
 
 from enviroments.chaikinosc_env import ChaikinOscillatorStratFuturesEnv
 from utils.get_data import by_BinanceVision
@@ -16,7 +15,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = ChaikinOscillatorStratFuturesEnv
-ACTION = [0.9828319340319241,0.013824254316664305,5,51,372,13,3]
+ACTION = [0.9828319340319241, 0.013824254316664305, 5, 51, 372, 13, 3]
 
 
 def sig_map(value):
@@ -42,7 +41,7 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
               verbose=False, visualize=False, write_to_file=True)
     results, gains = [], []
-    for _ in range(N_TEST//CPU_CORES):
+    for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)
         results.append(reward)
         if reward > 0:
@@ -72,8 +71,8 @@ if __name__ == "__main__":
     print(df)
 
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()
-    #print(adl[:10])
-    #sleep(100)
+    # print(adl[:10])
+    # sleep(100)
     fast_adl, slow_adl = get_1D_MA(adl, ACTION[-2], ACTION[-4]), get_1D_MA(adl, ACTION[-1], ACTION[-3])
     chosc = fast_adl - slow_adl
     signals = ChaikinOscillator_signal(chosc)

@@ -1,8 +1,9 @@
-from matplotlib import pyplot as plt
 from multiprocessing import Pool, cpu_count
+
+from matplotlib import pyplot as plt
 from numpy import inf, mean, std
 
-from enviroments.bands_env import BandsStratSpotEnv, BandsStratFuturesEnv
+from enviroments.bands_env import BandsStratFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_MA_band_signal
 from utils.utility import get_slippage_stats
@@ -12,7 +13,8 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = BandsStratFuturesEnv
-ACTION = [0.019529637708766846, 0.00739563229644748, 0.0699572173220474, 0.528148259620255, 3.6084815304323206, 745, 14, 667, 55]
+ACTION = [0.019529637708766846, 0.00739563229644748, 0.0699572173220474, 0.528148259620255, 3.6084815304323206, 745, 14,
+          667, 55]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):

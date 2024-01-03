@@ -25,7 +25,8 @@ def sig_map(value):
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-    action = [0.11792233684596416, 0.0038911088869666875, 0.23594317918225022, 0.30748453990570873, 6, 689, 318, 789, 5, 13, 0]
+    action = [0.11792233684596416, 0.0038911088869666875, 0.23594317918225022, 0.30748453990570873, 6, 689, 318, 789, 5,
+              13, 0]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,

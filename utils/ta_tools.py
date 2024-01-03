@@ -753,9 +753,6 @@ def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 
     return np.concatenate((np.zeros(timeperiod - 1), alma))
 
 
-from time import sleep
-
-
 @jit(nopython=True, nogil=True, cache=True)
 def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     close = np.absolute(close)

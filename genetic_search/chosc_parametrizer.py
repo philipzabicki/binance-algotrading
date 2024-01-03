@@ -1,4 +1,4 @@
-from numpy import array, median, mean
+from numpy import array, mean
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 

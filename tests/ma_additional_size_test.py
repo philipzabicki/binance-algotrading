@@ -21,7 +21,7 @@ if __name__ == "__main__":
     profiler = cProfile.Profile()
     profiler.enable()
 
-    for t in range(35):
+    for t in range(37):
         print(f'MAtype: {t}')
         additional_prev_data = 0
         # print(result_full[-check_size:])

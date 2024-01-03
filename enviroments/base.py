@@ -266,14 +266,14 @@ class SpotBacktest(Env):
             losses_mean = mean(losses) if len(losses) > 1 else 0.0
             losses_stddev = std(losses) if len(losses) > 1 else 0.0
             PnL_trades_ratio = mean(self.PNL_arrays[:, 1])
-            PnL_means_ratio = abs(profits_mean / losses_mean) if profits_mean*losses_mean != 0 else 1.0
+            PnL_means_ratio = abs(profits_mean / losses_mean) if profits_mean * losses_mean != 0 else 1.0
             # slope_indicator = linear_slope_indicator(PnL_trades_ratio)
             slope_indicator = 1.000
             in_gain_indicator = self.with_gain_c / (
                     self.total_steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
             above_free_pow2 = copysign(abs(above_free) ** 2, above_free)
             self.reward = (above_free_pow2 * self.episode_orders * PnL_trades_ratio * (
-                        hold_ratio ** (1 / 3)) * (PnL_means_ratio ** (1 / 3)) * in_gain_indicator) / self.total_steps
+                    hold_ratio ** (1 / 3)) * (PnL_means_ratio ** (1 / 3)) * in_gain_indicator) / self.total_steps
             # self.reward = total_return
         else:
             mean_pnl, stddev_pnl = 0.0, 0.0

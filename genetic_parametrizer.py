@@ -3,7 +3,6 @@ from multiprocessing import Pool, cpu_count
 
 from numpy import inf
 from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.algorithms.moo.dnsga2 import DNSGA2
 from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
     MixedVariableDuplicateElimination
 from pymoo.core.problem import StarmapParallelization
@@ -12,8 +11,6 @@ from pymoo.optimize import minimize
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     AverageNonzeroSingleObjCallback
 from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem
-from genetic_search.chosc_parametrizer import ChaikinOscillatorFuturesMixedVariableProblem
-from genetic_search.bands_parametrizer import BandsFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
