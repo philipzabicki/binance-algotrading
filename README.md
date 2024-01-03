@@ -54,8 +54,8 @@ interval | STR | YES | Any trading interval existing on Binance Vision ex. '30m'
 market_type | STR | YES | Options: 'um' - USDT-M Futures 'cm' - COIN-M Futures, 'spot' - Spot market
 data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', 'liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'. Spot options: 'aggTrades', 'klines', 'trades'. Better explained with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
 start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just 'YYYY-MM-DD'.
-split | BOOL | NO | _
-delay | INT | NO | _
+split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (Opened_col, OHLCV_cols). Otherwise returns single df.
+delay | INT | NO | Let's one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by default.
 
 ### by_DataClient()
 ```python
@@ -66,6 +66,8 @@ def by_DataClient(ticker='BTCUSDT',
                   split=False,
                   delay=LAST_DATA_POINT_DELAY): ...
 ```
+**Parameters:**
+Same as above and ones from [binance_data](https://github.com/uneasyguy/binance_data#kline_data). Instead of 'pair_list' it uses only single ticker.
 
 ## Backtesting enviroments
 
