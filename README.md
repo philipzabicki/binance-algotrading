@@ -36,13 +36,13 @@ All data used in this project is either downloaded via [binance_data](https://gi
 Script used for handling data downloads is [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
 
 Main functions in this file are:
-```
+```python
 def by_BinanceVision(ticker='BTCBUSD', interval='1m', market_type='um', data_type='klines', start_date='', split=False,
                      delay=LAST_DATA_POINT_DELAY):
   ...
 ```
 and
-```
+```python
 def by_DataClient(ticker='BTCUSDT', interval='1m', futures=True, statements=True, split=False,
                   delay=LAST_DATA_POINT_DELAY):
   ...
