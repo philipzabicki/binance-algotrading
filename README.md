@@ -50,8 +50,11 @@ def by_BinanceVision(ticker='BTCBUSD',
 Name | Type | Mandatory | Description
 ------------ | ------------ | ------------ | ------------
 ticker | STR | YES | Any cryptocurrency pair traded on Binance ex. 'ETHUSDT'
-interval | STR | YES | Any interval existing on Binance Vision ex. '30m'
-market_type | STR | YES | Options 'um' - USDT-M Futures, 'cm' - COIN-M Futures, 'spot' - Spot market
+interval | STR | YES | Any trading interval existing on Binance Vision ex. '30m'
+market_type | STR | YES | Options:
+                          'um' - USDT-M Futures
+                          'cm' - COIN-M Futures
+                          'spot' - Spot market
 data_type | STR | YES | _
 start_date | STR | NO | _
 split | BOOL | NO | _
