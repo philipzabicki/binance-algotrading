@@ -93,7 +93,10 @@ It imitates Binance Exchnage Futures market. Inherits from SpotBacktest. Require
 Adds new methods to allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485) etc.
 #### SignalExecuteSpotEnv and SignalExecuteFuturesEnv
 Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at once on whole episode (whole df or randomly picked max_steps size from whole dataframe).
+
 Allows for asymmetrical enter postion(enter_threshold) and close postion(close_threshold) signals.
+
+In generic base class implementation signals are empty numpy array. Other inheriting environments extend this.
 
 ```python
     def __init__(self, *args, **kwargs):
