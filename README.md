@@ -88,7 +88,7 @@ Always trades with current candle close price, allows to provide price slippage 
 
 Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, episode ends or balance is so low it does not allow for any market action for given coin.
 #### FuturesBacktest
-It imitates Binance Exchnage Futures market. Inherits from SpotBacktest.
+It imitates Binance Exchnage Futures market. Inherits from SpotBacktest. Requires additional dataframe with mark price ohlc values as binance uses mark prices for unrealized pnl calculation and liquidation price, see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087)
 
 Adds new methods to allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485) etc.
 #### SignalExecuteSpotEnv/SignalExecuteFuturesEnv
