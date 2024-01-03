@@ -89,7 +89,7 @@ Backtesting works by calling 'step()' method with 'action' argument until max_st
 ### FuturesBacktest
 It imitates Binance Exchnage Futures market. Inherits from SpotBacktest.
 
-Adds new methods to allow short selling, margin checking, [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin). Can liquidate postions etc.
+Adds new methods to allow [short selling]([https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447)), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), position liquidations etc.
 
 ## Trading strategies
 
