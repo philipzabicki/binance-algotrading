@@ -91,8 +91,9 @@ Backtesting works by calling 'step()' method with 'action' argument until max_st
 It imitates Binance Exchnage Futures market. Inherits from SpotBacktest. Requires additional dataframe with mark price ohlc values as binance uses mark prices for unrealized pnl calculation and liquidation price, see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087)
 
 Adds new methods to allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485) etc.
-#### SignalExecuteSpotEnv/SignalExecuteFuturesEnv
+#### SignalExecuteSpotEnv and SignalExecuteFuturesEnv
 Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at once on whole episode (whole df or randomly picked max_steps size from whole dataframe).
+Allows for asymmetrical enter postion(enter_threshold) and close postion(close_threshold) signals.
 
 ```python
     def __init__(self, *args, **kwargs):
@@ -111,7 +112,7 @@ Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of
         while not self.done:
             # step must be start_step adjusted cause one can start and end backtest at any point in df
             _step = self.current_step - self.start_step
-            if self.signals[_step] >= self.close_threshold:
+            if self.signals[_step] >= self.enter_threshold:
                 action = 1
             elif self.signals[_step] <= -self.close_threshold:
                 action = 2
