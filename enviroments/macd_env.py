@@ -112,8 +112,8 @@ class MACDStratFuturesEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.01, 0.0001, 0.001, 0.001, 1, 2, 2, 2, 0, 0, 0]
-        action_upper = [1.0, 0.0500, 1.000, 1.000, 125, 10_000, 10_000, 10_000, 37, 37, 26]
+        action_lower = [0.01, 0.0001, 0.001, 0.001, 2, 2, 2, 0, 0, 0, 1]
+        action_upper = [1.0, 0.0500, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -127,7 +127,8 @@ class MACDStratFuturesEnv(Env):
 
     def step(self, action):
         self.reset(position_ratio=action[0], stop_loss=action[1],
-                   enter_at=action[2], close_at=action[3], leverage=int(action[4]),
-                   fast_period=int(action[5]), slow_period=int(action[6]), signal_period=int(action[7]),
-                   fast_ma_type=int(action[8]), slow_ma_type=int(action[9]), signal_ma_type=int(action[10]))
+                   enter_at=action[2], close_at=action[3],
+                   fast_period=int(action[4]), slow_period=int(action[5]), signal_period=int(action[6]),
+                   fast_ma_type=int(action[7]), slow_ma_type=int(action[8]), signal_ma_type=int(action[9]),
+                   leverage=int(action[10]))
         return self.exec_env()

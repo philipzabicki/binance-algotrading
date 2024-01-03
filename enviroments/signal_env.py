@@ -37,7 +37,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
                 action = 2
             else:
                 action = 0
-            _, _, _, _, _ = self.step(action)
+            self.step(action)
             if self.visualize:
                 # current_step manipulation just to synchronize plot rendering
                 # could be fixed by calling .render() inside .step() just before return statement
@@ -85,7 +85,7 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
                 action = 2
             else:
                 action = 0
-            _, _, _, _, _ = self.step(action)
+            self.step(action)
             if self.visualize:
                 # current_step manipulation just to synchronize plot rendering
                 # could be fixed by calling .render() inside .step() just before return statement

@@ -114,8 +114,8 @@ class ChaikinOscillatorStratFuturesEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.01, 0.0001, 1, 2, 2, 0, 0]
-        action_upper = [1.0, 0.0500, 125, 10_000, 10_000, 26, 26]
+        action_lower = [0.01, 0.0001, 2, 2, 0, 0, 1]
+        action_upper = [1.0, 0.0500, 10_000, 10_000, 26, 26, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -127,7 +127,7 @@ class ChaikinOscillatorStratFuturesEnv(Env):
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
 
     def step(self, action):
-        self.reset(position_ratio=action[0], stop_loss=action[1], leverage=int(action[2]),
-                   fast_period=int(action[3]), slow_period=int(action[4]),
-                   fast_ma_type=int(action[5]), slow_ma_type=int(action[6]))
+        self.reset(position_ratio=action[0], stop_loss=action[1],
+                   fast_period=int(action[2]), slow_period=int(action[3]),
+                   fast_ma_type=int(action[4]), slow_ma_type=int(action[5]), leverage=int(action[6]))
         return self.exec_env()

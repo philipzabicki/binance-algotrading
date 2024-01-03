@@ -1,4 +1,4 @@
-from numpy import array, median
+from numpy import array, median, mean
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
@@ -27,7 +27,7 @@ class MACDMixedVariableProblem(ElementwiseProblem):
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            out["F"] = array([median(rews)])
+            out["F"] = array([mean(rews)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
 
@@ -40,24 +40,25 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
-                          "leverage": Integer(bounds=(1, 125)),
                           "fast_period": Integer(bounds=(2, 1_000)),
                           "slow_period": Integer(bounds=(2, 1_000)),
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 26))}
+                          "signal_ma_type": Integer(bounds=(0, 26)),
+                          "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
         action = [X['position_ratio'], X['stop_loss'],
-                  X['enter_at'], X['close_at'], X['leverage'],
+                  X['enter_at'], X['close_at'],
                   X['fast_period'], X['slow_period'], X['signal_period'],
-                  X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
+                  X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type'],
+                  X['leverage']]
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            out["F"] = array([median(rews)])
+            out["F"] = array([mean(rews)])
         else:
             out["F"] = array([-self.env.step(action)[1]])

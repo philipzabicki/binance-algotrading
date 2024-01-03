@@ -55,6 +55,6 @@ class BandsFuturesMixedVariableProblem(ElementwiseProblem):
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             #print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            out["F"] = array([median(rews)])
+            out["F"] = array([mean(rews)])
         else:
             out["F"] = array([-self.env.step(action)[1]])

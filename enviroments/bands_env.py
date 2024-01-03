@@ -114,5 +114,5 @@ class BandsStratFuturesEnv(Env):
         self.reset(position_ratio=action[0], stop_loss=action[1],
                    enter_at=action[2], close_at=action[3],
                    atr_multi=action[4], atr_period=int(action[5]),
-                   ma_type=int(action[6]), ma_period=int(action[7]), leverage=action[8])
+                   ma_type=int(action[6]), ma_period=int(action[7]), leverage=int(action[8]))
         return self.exec_env()
