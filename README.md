@@ -36,16 +36,35 @@ All data used in this project is either downloaded via [binance_data](https://gi
 Script used for handling data downloads is [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
 
 Main functions in this file are:
+### by_BinanceVision()
 ```python
-def by_BinanceVision(ticker='BTCBUSD', interval='1m', market_type='um', data_type='klines', start_date='', split=False,
-                     delay=LAST_DATA_POINT_DELAY):
-  ...
+def by_BinanceVision(ticker='BTCBUSD',
+                     interval='1m',
+                     market_type='um',
+                     data_type='klines',
+                     start_date='',
+                     split=False,
+                     delay=LAST_DATA_POINT_DELAY): ...
 ```
-and
+**Parameters:**
+Name | Type | Mandatory | Description
+------------ | ------------ | ------------ | ------------
+ticker | STR | YES | Any cryptocurrency pair traded on Binance ex. 'ETHUSDT'
+interval | STR | YES | Any interval existing on Binance Vision ex. '30m'
+market_type | STR | YES | Options 'um' - USDT-M Futures, 'cm' - COIN-M Futures, 'spot' - Spot market
+data_type | STR | YES | _
+start_date | STR | NO | _
+split | BOOL | NO | _
+delay | INT | NO | _
+
+### by_DataClient()
 ```python
-def by_DataClient(ticker='BTCUSDT', interval='1m', futures=True, statements=True, split=False,
-                  delay=LAST_DATA_POINT_DELAY):
-  ...
+def by_DataClient(ticker='BTCUSDT',
+                  interval='1m',
+                  futures=True,
+                  statements=True,
+                  split=False,
+                  delay=LAST_DATA_POINT_DELAY): ...
 ```
 
 ## Backtesting enviroments
