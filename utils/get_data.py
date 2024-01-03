@@ -12,7 +12,7 @@ from dateutil.relativedelta import relativedelta
 from definitions import DATA_DIR
 
 
-LAST_DATA_POINT_DELAY = 86_400  # in seconds
+LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
 ITV_ALIASES = {'1m': '1T', '3m': '3T', '5m': '5T', '15m': '15T', '30m': '30T'}
 
 

@@ -59,12 +59,16 @@ delay | INT | NO | Let's one decide data delay (in seconds) from most up-to-date
 
 ### by_DataClient()
 ```python
+(...)
+LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
+(...)
+
 def by_DataClient(ticker='BTCUSDT',
                   interval='1m',
                   futures=True,
                   statements=True,
                   split=False,
-                  delay=LAST_DATA_POINT_DELAY): ...
+                  delay=LAST_DATA_POINT_DELAY): (...)
 ```
 **Parameters:**
 
@@ -88,7 +92,7 @@ Always trades with current candle close price, allows to provide price slippage 
 
 Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, episode ends or balance is so low it does not allow for any market action for given coin.
 #### FuturesBacktest
-It imitates Binance Exchnage Futures market. Inherits from SpotBacktest. Requires additional dataframe with mark price ohlc values as binance uses mark prices for unrealized pnl calculation and liquidation price, see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087)
+It imitates Binance Exchange Futures market. Inherits from SpotBacktest. Requires additional dataframe with mark price ohlc values as binance uses mark prices for unrealized pnl calculation and liquidation price, see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087)
 
 Adds new methods to allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485) etc.
 #### SignalExecuteSpotEnv and SignalExecuteFuturesEnv
@@ -99,6 +103,8 @@ Allows for asymmetrical enter postion(enter_threshold) and close postion(close_t
 In generic base class implementation signals are empty numpy array. Other inheriting environments extend this.
 
 ```python
+(...)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'close_at' in kwargs and 'enter_at' in kwargs:
@@ -109,7 +115,7 @@ In generic base class implementation signals are empty numpy array. Other inheri
             self.close_threshold = 1.0
         self.signals = empty(self.total_steps)
 
-    ...
+(...)
 
     def __call__(self, *args, **kwargs):
         while not self.done:
