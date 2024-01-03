@@ -75,13 +75,21 @@ def by_DataClient(ticker='BTCUSDT',
 'futures' if false, downloads spot data.
 
 ## Backtesting enviroments
-Project has 2 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible enviroments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16) and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352).
+Project has 2 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible enviroments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16) and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (inheriting from SpotBacktest).
 
 All other environments inherit from them.
 ### SpotBacktest
-...
+It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with OHLCV values.
+
+Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss for whole backtest period.
+
+Always trades with current candle close price, allows to provide price slippage data for better imitation of real world scenario.
+
+Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, dataframe ends or balance is so low it does not allow for any market action for given coin.
 ### FuturesBacktest
-...
+It imitates Binance Exchnage Futures market. Inherits from SpotBacktest.
+
+Adds new methods to allow short selling, margin checking, [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin). Can liquidate postions etc.
 
 ## Trading strategies
 
