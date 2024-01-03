@@ -6,8 +6,9 @@ Main purpose of this repo is downloading historical data from exchanges, using t
 strategies and finally deplot it on server for live automatic trading on Binance exchange.
 
 ## Requirements
-
-...
+### Prerequirements
+Before installing TA-lib via pip one needs to satisfy dependencies.
+Just follow this [TA-Lib]([http://ta-lib.org/hdr_dw.html](https://github.com/TA-Lib/ta-lib-python?tab=readme-ov-file#dependencies))
 
 ## Download data
 
