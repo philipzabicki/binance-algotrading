@@ -51,11 +51,8 @@ Name | Type | Mandatory | Description
 ------------ | ------------ | ------------ | ------------
 ticker | STR | YES | Any cryptocurrency pair traded on Binance ex. 'ETHUSDT'
 interval | STR | YES | Any trading interval existing on Binance Vision ex. '30m'
-market_type | STR | YES | Options:
-                          'um' - USDT-M Futures
-                          'cm' - COIN-M Futures
-                          'spot' - Spot market
-data_type | STR | YES | _
+market_type | STR | YES | Options: 'um' - USDT-M Futures 'cm' - COIN-M Futures, 'spot' - Spot market
+data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', 'liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'
 start_date | STR | NO | _
 split | BOOL | NO | _
 delay | INT | NO | _
