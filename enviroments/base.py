@@ -272,12 +272,8 @@ class SpotBacktest(Env):
             in_gain_indicator = self.with_gain_c / (
                     self.total_steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
             above_free_pow2 = copysign(abs(above_free) ** 2, above_free)
-            if above_free > 0:
-                self.reward = (above_free_pow2 * self.episode_orders * PnL_trades_ratio * (
+            self.reward = (above_free_pow2 * self.episode_orders * PnL_trades_ratio * (
                         hold_ratio ** (1 / 3)) * (PnL_means_ratio ** (1 / 3)) * in_gain_indicator) / self.total_steps
-            elif above_free < 0:
-                self.reward = (above_free_pow2 * 1/self.episode_orders * 1/PnL_trades_ratio * 1/(
-                        hold_ratio ** (1 / 3)) * 1/(PnL_means_ratio ** (1 / 3)) * 1/in_gain_indicator) / self.total_steps
             # self.reward = total_return
         else:
             mean_pnl, stddev_pnl = 0.0, 0.0

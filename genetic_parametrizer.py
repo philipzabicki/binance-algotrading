@@ -19,14 +19,14 @@ from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 32
-N_GEN = 5000
+POP_SIZE = 1024
+N_GEN = 1000
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = BandsFuturesMixedVariableProblem
+PROBLEM = MACDFuturesMixedVariableProblem
 ALGORITHM = NSGA2
 # TERMINATION = ("time", "01:30:00")
 TERMINATION = ('n_gen', N_GEN)
