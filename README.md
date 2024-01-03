@@ -74,11 +74,12 @@ def by_DataClient(ticker='BTCUSDT',
 
 'futures' if false, downloads spot data.
 
-## Backtesting enviroments
-Project has 2 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible enviroments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16) and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (inheriting from SpotBacktest).
+## Backtesting environments
+Project has 2 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible environments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16) and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (inheriting from SpotBacktest).
 
 All other environments inherit from them.
-### SpotBacktest
+### Base environments
+#### SpotBacktest
 It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with OHLCV values.
 
 Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss for whole backtest period.
@@ -86,10 +87,47 @@ Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - bu
 Always trades with current candle close price, allows to provide price slippage data for better imitation of real world scenario.
 
 Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, dataframe ends or balance is so low it does not allow for any market action for given coin.
-### FuturesBacktest
+#### FuturesBacktest
 It imitates Binance Exchnage Futures market. Inherits from SpotBacktest.
 
-Adds new methods to allow [short selling]([https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447)), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), position liquidations etc.
+Adds new methods to allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485) etc.
+#### SignalExecuteSpotEnv/SignalExecuteFuturesEnv
+Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at once on whole dataframe.
+
+```python
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'close_at' in kwargs and 'enter_at' in kwargs:
+            self.enter_threshold = kwargs['enter_at']
+            self.close_threshold = kwargs['close_at']
+        else:
+            self.enter_threshold = 1.0
+            self.close_threshold = 1.0
+        self.signals = empty(self.total_steps)
+
+    ...
+
+    def __call__(self, *args, **kwargs):
+        while not self.done:
+            # step must be start_step adjusted cause one can start and end backtest at any point in df
+            _step = self.current_step - self.start_step
+            if self.signals[_step] >= self.close_threshold:
+                action = 1
+            elif self.signals[_step] <= -self.close_threshold:
+                action = 2
+            else:
+                action = 0
+            self.step(action)
+            if self.visualize:
+                # current_step manipulation just to synchronize plot rendering
+                # could be fixed by calling .render() inside .step() just before return statement
+                self.current_step -= 1
+                self.render(indicator_or_reward=self.signals[_step])
+                self.current_step += 1
+        return None, self.reward, self.done, False, self.info
+```
+
+
 
 ## Trading strategies
 
