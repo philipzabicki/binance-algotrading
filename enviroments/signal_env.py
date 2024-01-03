@@ -31,7 +31,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
         while not self.done:
             # step must be start_step adjusted cause one can start and end backtest at any point in df
             _step = self.current_step - self.start_step
-            if self.signals[_step] >= self.close_threshold:
+            if self.signals[_step] >= self.enter_threshold:
                 action = 1
             elif self.signals[_step] <= -self.close_threshold:
                 action = 2
@@ -79,7 +79,7 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         while not self.done:
             # step must be start_step adjusted cause one can start and end backtest at any point in df
             _step = self.current_step - self.start_step
-            if self.signals[_step] >= self.close_threshold:
+            if self.signals[_step] >= self.enter_threshold:
                 action = 1
             elif self.signals[_step] <= -self.close_threshold:
                 action = 2
