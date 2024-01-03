@@ -7,6 +7,8 @@ strategies and finally deplot it on server for live automatic trading on Binance
 
 ## Requirements
 ### Pre-requirements
+Whole project runs with python 3.11.4 but it should work fine with any 3.11.x
+
 Before installing TA-lib via pip one needs to satisfy dependencies.
 Just follow this [TA-Lib](https://github.com/TA-Lib/ta-lib-python?tab=readme-ov-file#dependencies).
 
@@ -15,6 +17,16 @@ Then inside directory where you downloaded run
 ```
 pip install ta_lib-0.4.25-cp311-cp311-win_amd64.whl
 ```
+### Install via pip
+After satisfying TA-lib dependencies from above, you can download this repo as zip or by git CLI:
+```
+git clone https://github.com/philipzabicki/binance-algotrading.git
+```
+Then inside binance-algotrading directory run:
+```
+pip install -r requirements.txt
+```
+It will take some time...
 
 ## Download data
 
