@@ -75,7 +75,12 @@ def by_DataClient(ticker='BTCUSDT',
 'futures' if false, downloads spot data.
 
 ## Backtesting enviroments
+Project has 2 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible enviroments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16) and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352).
 
+All other environments inherit from them.
+### SpotBacktest
+...
+### FuturesBacktest
 ...
 
 ## Trading strategies
