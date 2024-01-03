@@ -68,8 +68,10 @@ def by_DataClient(ticker='BTCUSDT',
 ```
 **Parameters:**
 
-'split' and 'delay' are same as above. 
-'interval' and 'statements' are ones from [binance_data](https://github.com/uneasyguy/binance_data#kline_data). Instead of 'pair_list' it uses only single ticker.
+'split' and 'delay' are same as for by_BinanceVision().
+
+'interval' and 'statements' are ones from [binance_data](https://github.com/uneasyguy/binance_data#kline_data). Instead of 'pair_list' it handles only single ticker.
+
 'futures' if false, downloads spot data.
 
 ## Backtesting enviroments
