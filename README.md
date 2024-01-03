@@ -80,19 +80,19 @@ Project has 2 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.gi
 All other environments inherit from them.
 ### Base environments
 #### SpotBacktest
-It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with OHLCV values.
+It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with OHLCV values. One trading session is called episode and can use whole dataframe or randomly picked max_steps size data from df.
 
 Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss for whole backtest period.
 
 Always trades with current candle close price, allows to provide price slippage data for better imitation of real world scenario.
 
-Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, dataframe ends or balance is so low it does not allow for any market action for given coin.
+Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, episode ends or balance is so low it does not allow for any market action for given coin.
 #### FuturesBacktest
 It imitates Binance Exchnage Futures market. Inherits from SpotBacktest.
 
 Adds new methods to allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485) etc.
 #### SignalExecuteSpotEnv/SignalExecuteFuturesEnv
-Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at once on whole dataframe.
+Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at once on whole episode (whole df or randomly picked max_steps size from whole dataframe).
 
 ```python
     def __init__(self, *args, **kwargs):
