@@ -25,8 +25,7 @@ def sig_map(value):
 
 if __name__ == "__main__":
     ticker, interval, market_type, data_type, start_date = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-    action = [0.11792233684596416, 0.0038911088869666875, 0.23594317918225022, 0.30748453990570873, 6, 689, 318, 789, 5,
-              13, 0]
+    action = [0.9839826807196196, 0.01026489549333572, 0.02022990188305404, 0.5164379927641636, 531, 644, 240, 10, 31, 21, 65]
 
     df = by_BinanceVision(ticker=ticker,
                           interval=interval,
@@ -42,8 +41,8 @@ if __name__ == "__main__":
                                   start_date=start_date,
                                   split=True,
                                   delay=259_200)
-    macd, signal = custom_MACD(df.iloc[:, 1:6].to_numpy(), action[-6], action[-5], action[-4], action[-3], action[-2],
-                               action[-1])
+    macd, signal = custom_MACD(df.iloc[:, 1:6].to_numpy(), action[-7], action[-6], action[-5], action[-4], action[-3],
+                               action[-2])
     signals = MACD_cross_signal(macd, signal)
     df['MACD'] = macd
     df['signal'] = signal
@@ -64,7 +63,7 @@ if __name__ == "__main__":
     axs[2].legend(loc='upper left')
 
     plt.tight_layout()
-    # plt.show()
+    plt.show()
 
     # plt.subplot(2, 1, 1)
     # plt.plot(macd[-1_000:], label='MACD')

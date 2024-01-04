@@ -7,7 +7,7 @@ strategies and finally deplot it on server for live automatic trading on Binance
 
 ## Requirements
 ### Pre-requirements
-Whole project runs with python 3.11.4 but it should work fine with any 3.11.x
+Whole project runs with python 3.11.4 but it should work fine with any 3.11.x version.
 
 Before installing TA-lib via pip one needs to satisfy dependencies.
 Just follow this [TA-Lib](https://github.com/TA-Lib/ta-lib-python?tab=readme-ov-file#dependencies).
@@ -31,9 +31,9 @@ pip install -r requirements.txt
 It will take some time...
 
 ## Download data
-All data used in this project is either downloaded via [binance_data](https://github.com/uneasyguy/binance_data.git) packege or [Binance Vision url](https://data.binance.vision/)
+All data used in this project is either downloaded via [binance_data](https://github.com/uneasyguy/binance_data.git) package or [Binance Vision](https://data.binance.vision/) website.
 
-Script used for handling data downloads is [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
+Code used for handling data downloads is [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
 
 Main functions in this file are:
 ### by_BinanceVision()
@@ -98,7 +98,7 @@ Adds new methods to allow [short selling](https://github.com/philipzabicki/binan
 #### SignalExecuteSpotEnv and SignalExecuteFuturesEnv
 Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at once on whole episode (whole df or randomly picked max_steps size from whole dataframe).
 
-Allows for asymmetrical enter postion(enter_threshold) and close postion(close_threshold) signals.
+Allows for asymmetrical enter position(enter_threshold) and close position(close_threshold) signals.
 
 In generic base class implementation signals are empty numpy array. Other inheriting environments extend this.
 
@@ -136,8 +136,40 @@ In generic base class implementation signals are empty numpy array. Other inheri
                 self.current_step += 1
         return None, self.reward, self.done, False, self.info
 ```
+### Technical analysis single signal trading environments
+Inherited from SignalExecuteSpotEnv or SignalExecuteFuturesEnv.
+Currently only MACD, MACD+RSI, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
 
+All of them can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages instead of just EMAs and any valid periods.
+Ex. MACD using TEMA for slow ma, HullMA for fast ma and HammingMA for signal line.
+#### MACD strategy environment
+```python
+(...)
+class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
+    def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,
+              fast_period=12, slow_period=26, signal_period=9,
+              fast_ma_type=0, slow_ma_type=0, signal_ma_type=0, **kwargs):
+        _ret = super().reset(*args, stop_loss=stop_loss, enter_at=enter_at, close_at=close_at, **kwargs)
+        self.fast_period = fast_period
+        self.slow_period = slow_period
+        self.signal_period = signal_period
+        self.fast_ma_type = fast_ma_type
+        self.slow_ma_type = slow_ma_type
+        self.signal_ma_type = signal_ma_type
+        _max_period = max(self.fast_period, self.slow_period) + self.signal_period
+        if _max_period > self.total_steps:
+            raise ValueError('One of indicator periods is greater than df size.')
+        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
+        # print(self.df[self.start_step:self.end_step, :5])
+        macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
+                                        fast_ma_type=fast_ma_type, fast_period=fast_period,
+                                        slow_ma_type=slow_ma_type, slow_period=slow_period,
+                                        signal_ma_type=signal_ma_type, signal_period=signal_period)
+        self.signals = MACD_cross_signal(macd[self.start_step - prev_values:],
+                                         macd_signal[self.start_step - prev_values:])
+        return _ret
 
+```
 
 ## Trading strategies
 
