@@ -1,5 +1,4 @@
 from numpy import array, mean, median
-from scipy.stats import hmean
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
@@ -27,7 +26,7 @@ class BandsMixedVariableProblem(ElementwiseProblem):
         if self.n_evals > 1:
             rews = [-self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'rews mean {mean(rews)}')
-            out["F"] = array([mean(rews)])
+            out["F"] = array([median(rews)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
 

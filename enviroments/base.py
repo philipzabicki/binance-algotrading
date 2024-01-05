@@ -22,10 +22,10 @@ class SpotBacktest(Env):
         self.df = df.to_numpy()
         if len(self.df) < max_steps:
             raise ValueError("max_steps larger than rows in dataframe")
-        print(f'Environment({self.__class__.__name__}) created.')
-        print(f' fee:{fee}, coin_step:{coin_step}, max_steps:{max_steps}, no_action_finish:{no_action_finish}')
-        print(f' init_balance:{init_balance}, position_ratio:{position_ratio}')
-        print(f' df_size: {len(self.df)} obs_sample(last row): {self.df[-1, exclude_cols_left:]}')
+        print(f'Environment ({self.__class__.__name__}) created.')
+        print(f' fee:{fee}, coin_step:{coin_step}, init_balance:{init_balance}, position_ratio:{position_ratio}')
+        print(f' df_size: {len(self.df)}, max_steps: {max_steps}({max_steps/len(self.df)*100:.2f}%), no_action_finish:{no_action_finish}')
+        print(f' obs_sample(last row): {self.df[-1, exclude_cols_left:]}')
         print(f' slippage statistics (avg, stddev): {slippage}')
         if visualize and (dates_df is not None):
             self.dates_df = date2num(dates_df.to_numpy())
@@ -273,10 +273,10 @@ class SpotBacktest(Env):
             in_gain_indicator = self.with_gain_c / (
                     steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
             if above_free > 0:
-                self.reward = ((above_free**3)/100 * self.episode_orders * PnL_trades_ratio * (
+                self.reward = ((above_free**3)/(10**6) * self.episode_orders * PnL_trades_ratio * (
                         hold_ratio ** (1 / 3)) * (PnL_means_ratio ** (1 / 3)) * in_gain_indicator) / steps
             else:
-                self.reward = ((above_free**3)/100 * self.episode_orders * 1/PnL_trades_ratio * 1/(
+                self.reward = ((above_free**3)/(10**6) * self.episode_orders * 1/PnL_trades_ratio * 1/(
                         hold_ratio ** (1 / 3)) * 1/(PnL_means_ratio ** (1 / 3)) * 1/in_gain_indicator) / steps
             # self.reward = total_return
         else:
@@ -370,6 +370,7 @@ class FuturesBacktest(SpotBacktest):
         # BTCUSDTperp last 1Y mean=6.09e-05 stdev=6.52e-05, mean+2*stedv covers ~95,4% of variance
         # self.funding_rate = 0.01912 * (1/100)
         self.funding_rate = 0.01 * (1 / 100)
+        print(f' df_mark_size: {len(self.df_mark)}, max_steps: {self.max_steps}({self.max_steps / len(self.df)*100:.2f}%)')
 
     def reset(self, **kwargs):
         self.margin = 0

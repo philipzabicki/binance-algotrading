@@ -7,12 +7,12 @@ strategies and finally deplot it on server for live automatic trading on Binance
 
 ## Requirements
 ### Pre-requirements
-Whole project runs with python 3.11.4 but it should work fine with any 3.11.x version.
+Whole project runs with python 3.11.4, but it should work fine with any 3.11.x version.
 
-Before installing TA-lib via pip one needs to satisfy dependencies.
+Before installing TA-lib via pip you need to satisfy dependencies.
 Just follow this [TA-Lib](https://github.com/TA-Lib/ta-lib-python?tab=readme-ov-file#dependencies).
 
-Otherwise you can download this file [ta_lib-0.4.25-cp311-cp311-win_amd64.whl](https://drive.google.com/file/d/117WDdPpTAJK_IX2yWpliBRy14m9uUWSD/view?usp=sharing).
+Otherwise, you can download this file [ta_lib-0.4.25-cp311-cp311-win_amd64.whl](https://drive.google.com/file/d/117WDdPpTAJK_IX2yWpliBRy14m9uUWSD/view?usp=sharing).
 Then inside directory where you downloaded run 
 ```
 pip install ta_lib-0.4.25-cp311-cp311-win_amd64.whl
@@ -28,12 +28,14 @@ Then inside binance-algotrading directory run:
 ```
 pip install -r requirements.txt
 ```
-It will take some time...
+It may take some time...
 
 ## Download data
 All data used in this project is either downloaded via [binance_data](https://github.com/uneasyguy/binance_data.git) package or [Binance Vision](https://data.binance.vision/) website.
+Website approach uses most efficient way to get data as it starts downloading from current date and goes back in time as long as there is data on website.
+It also downloads data in monthly batches if available, if not daily are used.
 
-Code used for handling data downloads is [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
+Code used for handling data downloads can be found there: [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
 
 Main functions in this file are:
 ### by_BinanceVision()
@@ -54,8 +56,8 @@ interval | STR | YES | Any trading interval existing on Binance Vision ex. '30m'
 market_type | STR | YES | Options: 'um' - USDT-M Futures 'cm' - COIN-M Futures, 'spot' - Spot market
 data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', 'liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'. Spot options: 'aggTrades', 'klines', 'trades'. Better explained with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
 start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just 'YYYY-MM-DD'.
-split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (Opened_col, OHLCV_cols). Otherwise returns single df.
-delay | INT | NO | Let's one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by default.
+split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (Opened_col, OHLCV_cols). Otherwise, returns single df.
+delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by default.
 
 ### by_DataClient()
 ```python
@@ -140,7 +142,7 @@ In generic base class implementation signals are empty numpy array. Other inheri
 Inherited from SignalExecuteSpotEnv or SignalExecuteFuturesEnv.
 Currently only MACD, MACD+RSI, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
 
-All of them can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages instead of just EMAs and any valid periods.
+All of them can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages and any valid periods instead of just 12/26 periods EMAs.
 Ex. MACD using TEMA for slow ma, HullMA for fast ma and HammingMA for signal line.
 #### MACD strategy environment
 ```python

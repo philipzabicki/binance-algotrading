@@ -12,22 +12,30 @@ from genetic_search.base import save_results, get_callback_plot, get_variables_p
     AverageNonzeroSingleObjCallback
 from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem
 from genetic_search.bands_parametrizer import BandsFuturesMixedVariableProblem
+from genetic_search.chosc_parametrizer import ChaikinOscillatorFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
 POP_SIZE = 32
-N_GEN = 5000
+N_GEN = 2_000
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = BandsFuturesMixedVariableProblem
+PROBLEM = ChaikinOscillatorFuturesMixedVariableProblem
 ALGORITHM = NSGA2
-# TERMINATION = ("time", "01:30:00")
+# TERMINATION = ("time", "08:30:00")
 TERMINATION = ('n_gen', N_GEN)
+ENV_KWARGS = {'max_steps': 2_880,
+              'init_balance': 50,
+              'no_action_finish': inf,
+              'fee': 0.0005,
+              'coin_step': 0.001,
+              'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+              'verbose': False}
 
 
 def main():
@@ -65,16 +73,9 @@ def main():
     #               'coin_step': 0.00001,
     #               'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
     #               'verbose': False}
-    env_kwargs = {'max_steps': 2_880,
-                  'init_balance': 350,
-                  'no_action_finish': inf,
-                  'fee': 0.0005,
-                  'coin_step': 0.001,
-                  'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                  'verbose': False}
     problem = PROBLEM(df,
                       df_mark,
-                      env_kwargs=env_kwargs,
+                      env_kwargs=ENV_KWARGS,
                       n_evals=5,
                       elementwise_runner=runner)
 

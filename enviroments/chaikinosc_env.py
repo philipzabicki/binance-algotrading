@@ -86,8 +86,8 @@ class ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
         _max_period = max(self.fast_period, self.slow_period)
-        if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
+        if (_max_period > self.total_steps) or (_max_period > self.max_steps):
+            raise ValueError('One of indicator periods is greater than df size or max_steps size (not enough previous values).')
         # Calculate only the data length necessary, with additional length caused by indicator periods
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
