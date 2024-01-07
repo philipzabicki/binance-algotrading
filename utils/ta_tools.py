@@ -988,12 +988,6 @@ def FWMA(close, period):
     return CWMA(close, fib_to(period + 1, normalization=True)[1:], period)
 
 
-# @feature_timeit
-def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_multi: float = 1.0) -> np.ndarray:
-    # print(np_ATR)
-    return ((np_xMA - np_close) / np_ATR) / atr_multi
-
-
 ######################################################################################
 ######################################################################################
 ######################################################################################
@@ -1114,6 +1108,12 @@ def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
     # plt.show()
     macd = np.nan_to_num(fast) - np.nan_to_num(slow)
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
+
+
+# @feature_timeit
+def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_multi: float = 1.0) -> np.ndarray:
+    # print(np_ATR)
+    return ((np_xMA - np_close) / np_ATR) / atr_multi
 
 
 def get_MA_band_signal(np_df: np.ndarray, ma_type: int, ma_period: int, atr_period: int, atr_multi: float):

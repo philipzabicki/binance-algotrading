@@ -1,2 +1,2 @@
-from .base import SpotTakerBot
-from .signal_bot import MACDSpotTakerBot, BandsSpotTakerBot
+from .base import SpotTaker, FuturesTaker
+from .signal_bot import MACDSignalsBot, BandsSignalsBot, ChaikinOscillatorSignalsBot, MACDRSISignalsBot

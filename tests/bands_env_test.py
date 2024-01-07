@@ -13,7 +13,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = BandsStratFuturesEnv
-ACTION = [0.21394791871177718, 0.014445097103633899, 0.633181727067384, 0.8522018166122647, 0.012417997222420811, 631, 14, 757, 44]
+ACTION = [0.24572335391002165, 0.014814306782004709, 0.1485808371530462, 0.6665835288560931, 6.304819202357273, 680, 14, 890, 53]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -21,12 +21,12 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               df_mark=df_mark,
               dates_df=dates_df,
               max_steps=N_STEPS,
-              init_balance=350,
+              init_balance=50,
               no_action_finish=inf,
               fee=0.0005,
               coin_step=0.001,
               # slipp_std=0,
-              slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+              #slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
               verbose=False, visualize=False, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):

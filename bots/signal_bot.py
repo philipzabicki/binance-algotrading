@@ -2,31 +2,20 @@ from collections import deque
 from time import time
 
 from numpy import array, where, asarray
-from talib import RSI
+from talib import RSI, ATR, AD
 
-from bots import SpotTakerBot
-from utils.ta_tools import custom_MACD, MACD_cross_signal, get_MA_band_signal
+from bots import SpotTaker, FuturesTaker
+from utils.ta_tools import custom_MACD, MACD_cross_signal, anyMA_sig, get_MA, RSI_like_signal, custom_ChaikinOscillator, \
+    ChaikinOscillator_signal
 
 
-class MACDSpotTakerBot(SpotTakerBot):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if kwargs['settings'] is None:
-            raise ValueError("No settings dict provided.")
-        for key, value in kwargs['settings'].items():
-            setattr(self, key, value)
-        previous_size = max(self.slow_period, self.fast_period, self.signal_period) * kwargs['multi']
-        prev_candles = self.client.get_historical_klines(self.symbol,
-                                                         kwargs['itv'],
-                                                         str(previous_size) + " minutes ago UTC")
-        prev_data = array([array(list(map(float, candle[1:6]))) for candle in prev_candles[:-1]])
-        prev_data[where(prev_data[:, -1] == 0.0), -1] = 0.00000001
-        self.OHLCV_data = deque(prev_data,
-                                maxlen=len(prev_candles[:-1]))
-        self.close = self.OHLCV_data[-1][3]
-        print(f'SETTINGS: {kwargs["settings"]}, prev_data_size:{len(self.OHLCV_data)}')
-        print(
-            f'Initial q:{self.q}, balance:{self.balance} last_{kwargs["itv"]}_close:{self.close} prev_data_size:{len(self.OHLCV_data)}')
+class MACDSignalsBot(object):
+    def __init__(self, *args, bot_type=SpotTaker, **kwargs):
+        self.__class__ = type(self.__class__.__name__,
+                              (bot_type, object),
+                              dict(self.__class__.__dict__))
+        previous_size = max(kwargs['settings']['slow_period'], kwargs['settings']['fast_period']) + kwargs['settings']['signal_period']
+        super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
 
     def _check_signal(self):
         self.macd, self.signal_line = custom_MACD(asarray(self.OHLCV_data),
@@ -40,60 +29,65 @@ class MACDSpotTakerBot(SpotTakerBot):
         print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} trade_signals:{self.signals}')
 
 
-class MACDRSISpotTakerBot(SpotTakerBot):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for key, value in kwargs['settings'].items():
-            setattr(self, key, value)
-        previous_size = max(self.slow_period, self.fast_period, self.signal_period) * kwargs['multi']
-        prev_candles = self.client.get_historical_klines(self.symbol,
-                                                         kwargs['itv'],
-                                                         str(previous_size) + " minutes ago UTC")
-        prev_data = array([array(list(map(float, candle[1:6]))) for candle in prev_candles[:-1]])
-        prev_data[where(prev_data[:, -1] == 0.0), -1] = 0.00000001
-        self.OHLCV_data = deque(prev_data,
-                                maxlen=len(prev_candles[:-1]))
-        self.close = self.OHLCV_data[-1][3]
-        print(f'SETTINGS: {kwargs["settings"]}, prev_data_size:{len(self.OHLCV_data)}')
-        print(
-            f'Initial q:{self.q}, balance:{self.balance} last_{kwargs["itv"]}_close:{self.close} prev_data_size:{len(self.OHLCV_data)}')
+class BandsSignalsBot(object):
+    def __init__(self, *args, bot_type=SpotTaker, **kwargs):
+        self.__class__ = type(self.__class__.__name__,
+                              (bot_type, object),
+                              dict(self.__class__.__dict__))
+        previous_size = max(kwargs['settings']['ma_period'], kwargs['settings']['atr_period'])
+        super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
+
+    def _check_signal(self):
+        self.ma = get_MA(asarray(self.OHLCV_data),
+                         self.ma_type, self.ma_period)
+        # *asarray(self.OHLCV_data)[:, 1:4].T translates as:
+        #  self.OHLCV_data)[:, 1], self.OHLCV_data)[:, 2], self.OHLCV_data)[:, 3]
+        self.atr = ATR(*asarray(self.OHLCV_data)[:, 1:4].T, self.atr_period)
+        self.signals = anyMA_sig(asarray(self.OHLCV_data)[-3:, 3], self.ma[-3:], self.atr[-3:], self.atr_multi)
+        self.signal = self.signals[-1]
+        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        print(f'    MA:{self.ma[-3:]} ATR:{self.atr[-3:]} trade_signals:{self.signals}')
+
+
+class ChaikinOscillatorSignalsBot(object):
+    def __init__(self, *args, bot_type=SpotTaker, **kwargs):
+        self.__class__ = type(self.__class__.__name__,
+                              (bot_type, object),
+                              dict(self.__class__.__dict__))
+        previous_size = max(kwargs['settings']['slow_period'], kwargs['settings']['fast_period'])
+        super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
+
+    def _check_signal(self):
+        # Can be done faster as adl does not require as much lookback data
+        self.adl = AD(*asarray(self.OHLCV_data)[:, 1:5].T)
+        self.chaikin_oscillator = custom_ChaikinOscillator(self.adl, fast_ma_type=self.fast_ma_type, fast_period=self.fast_period,
+                                                           slow_ma_type=self.slow_ma_type, slow_period=self.slow_period)
+        self.signals = ChaikinOscillator_signal(self.chaikin_oscillator[-3:])
+        self.signal = self.signals[-1]
+        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        print(f'    ChaikinOscillator:{self.chaikin_oscillator[-3:]} trade_signals:{self.signals}')
+
+
+class MACDRSISignalsBot(object):
+    def __init__(self, *args, bot_type=SpotTaker, **kwargs):
+        self.__class__ = type(self.__class__.__name__,
+                              (bot_type, object),
+                              dict(self.__class__.__dict__))
+        previous_size = max((max(kwargs['settings']['slow_period'], kwargs['settings']['fast_period']) + kwargs['settings']['signal_period']),
+                            kwargs['settings']['rsi_period'])
+        super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
 
     def _check_signal(self):
         self.macd, self.signal_line = custom_MACD(asarray(self.OHLCV_data),
                                                   fast_ma_type=self.fast_ma_type, fast_period=self.fast_period,
                                                   slow_ma_type=self.slow_ma_type, slow_period=self.slow_period,
                                                   signal_ma_type=self.signal_ma_type, signal_period=self.signal_period)
-        self.RSI = RSI()
+        self.rsi = RSI(asarray(self.OHLCV_data)[:, 3], self.rsi_period)
         # We only need last 2 values of macd and signal line to get trade signals
-        self.signals = MACD_cross_signal(self.macd[-3:], self.signal_line[-3:])
-        self.signal = self.signals[-1]
+        self.signals1 = MACD_cross_signal(self.macd[-3:], self.signal_line[-3:])
+        self.signals2 = RSI_like_signal(self.rsi[-3:], self.rsi_period)
+        self.signal = (self.signals1[-1], self.signals2[-1])
         print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} trade_signals:{self.signals}')
-
-
-class BandsSpotTakerBot(SpotTakerBot):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for key, value in kwargs['settings'].items():
-            setattr(self, key, value)
-        previous_size = max(self.ma_period, self.atr_period) * kwargs['multi']
-        prev_candles = self.client.get_historical_klines(self.symbol,
-                                                         kwargs['itv'],
-                                                         str(previous_size) + " minutes ago UTC")
-        prev_data = array([array(list(map(float, candle[1:6]))) for candle in prev_candles[:-1]])
-        prev_data[where(prev_data[:, -1] == 0.0), -1] = 0.00000001
-        self.OHLCV_data = deque(prev_data,
-                                maxlen=len(prev_candles[:-1]))
-        self.close = self.OHLCV_data[-1][3]
-        print(f'SETTINGS: {kwargs["settings"]}, prev_data_size:{len(self.OHLCV_data)}')
-        print(
-            f'Initial q:{self.q}, balance:{self.balance} last_{kwargs["itv"]}_close:{self.close} prev_data_size:{len(self.OHLCV_data)}')
-
-    def _check_signal(self):
-        self.OHLCV0_np = array(self.OHLCV_data)
-        self.signals = get_MA_band_signal(asarray(self.OHLCV_data),
-                                          self.ma_type, self.ma_period,
-                                          self.atr_period, self.atr_multi)
-        self.signal = self.signals[-1]
-        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    signals:{self.signals[-3:]}')
+        print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]}')
+        print(f'    signals1:{self.signals1} signals1:{self.signals1} signal:{self.signal}')
+        raise NotImplementedError("More than single signal trading not implemented yet.")

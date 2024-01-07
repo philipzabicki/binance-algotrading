@@ -12,10 +12,10 @@ from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000
-N_STEPS = 2_880
+N_STEPS = 8_640
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = ChaikinOscillatorStratFuturesEnv
-ACTION = [0.6620428385739913,0.009283902821234319,219,443,12,3,47]
+ACTION = [0.5176180660228993, 0.009081368528904019, 74, 439, 17, 3, 44]
 
 
 def sig_map(value):
@@ -33,7 +33,7 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               df_mark=df_mark,
               dates_df=dates_df,
               max_steps=N_STEPS,
-              init_balance=350,
+              init_balance=50,
               no_action_finish=inf,
               fee=0.0005,
               coin_step=0.001,
