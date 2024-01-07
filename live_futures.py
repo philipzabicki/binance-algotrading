@@ -30,4 +30,5 @@ if __name__ == "__main__":
                                         API_KEY=binance_API_KEY,
                                         SECRET_KEY=binance_SECRET_KEY,
                                         multi=PREV_DATA_MULTIPLAYER)
-    bocik.run()
+    while True:
+        bocik.run()

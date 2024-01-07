@@ -1,4 +1,4 @@
-from bots import MACDSpotTakerBot
+from bots import SpotTaker, MACDSignalsBot
 from credentials import binance_API_KEY, binance_SECRET_KEY
 
 BASE_TICKER = 'BTC'
@@ -20,13 +20,14 @@ SETTINGS = {'stop_loss': stop_loss,
             'signal_ma_type': signal_ma_type}
 
 if __name__ == '__main__':
-    bot = MACDSpotTakerBot(base=BASE_TICKER,
-                           quote=QUOTE_TICKER,
-                           market=MARKET,
-                           itv=INTERVAL,
-                           settings=SETTINGS,
-                           API_KEY=binance_API_KEY,
-                           SECRET_KEY=binance_SECRET_KEY,
-                           multi=PREV_DATA_MULTIPLAYER)
+    bot = MACDSignalsBot(bot_type=SpotTaker,
+                         base=BASE_TICKER,
+                         quote=QUOTE_TICKER,
+                         market=MARKET,
+                         itv=INTERVAL,
+                         settings=SETTINGS,
+                         API_KEY=binance_API_KEY,
+                         SECRET_KEY=binance_SECRET_KEY,
+                         multi=PREV_DATA_MULTIPLAYER)
     while True:
         bot.run()
