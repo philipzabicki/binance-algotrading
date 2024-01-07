@@ -24,4 +24,5 @@ tensorflow~=2.14.0
 keras-rl
 binance_data
 python-binance
+binance-futures-connector
 #ccxt~=4.0.86

@@ -38,7 +38,7 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               fee=0.0005,
               coin_step=0.001,
               # slipp_std=0,
-              slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+              #slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
               verbose=False, visualize=False, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):

@@ -15,6 +15,29 @@ from websocket import WebSocketApp
 from definitions import SLIPPAGE_DIR
 
 
+ITV_AS_MS = {'1m': 60_000,
+             '3m': 180_000,
+             '5m': 300_000,
+             '15m': 900_000,
+             '30m': 1_800_000,
+             '1h': 3_600_000,
+             '2h': 7_200_000,
+             '4h': 14_400_000,
+             '6h': 21_600_000,
+             '8h': 28_800_000,
+             '12h': 43_200_000,
+             '1d': 86_400_000,
+             '3d': 259_200_000,
+             '1w': 604_800_000,
+             '1M': 2_419_200_000}
+
+POSITION_TIER = {1: (125, .0040, 0), 2: (100, .005, 50),
+                 3: (50, .01, 2_550), 4: (20, .025, 122_550),
+                 5: (10, .05, 1_372_550), 6: (5, .10, 5_372_550),
+                 7: (4, .125, 7_872_550), 8: (3, .15, 10_872_550),
+                 9: (2, .25, 30_872_550), 10: (1, .50, 105_872_550)}
+
+
 class SpotTaker:
     def __init__(self, base='BTC', quote='USDT', market='spot', itv='1m', settings=None, API_KEY='', SECRET_KEY='',
                  prev_size=100, multi=25):
@@ -229,30 +252,6 @@ class SpotMakerBot:
         raise NotImplementedError
 
 
-from matplotlib import pyplot as plt
-
-ITV_AS_MS = {'1m': 60_000,
-             '3m': 180_000,
-             '5m': 300_000,
-             '15m': 900_000,
-             '30m': 1_800_000,
-             '1h': 3_600_000,
-             '2h': 7_200_000,
-             '4h': 14_400_000,
-             '6h': 21_600_000,
-             '8h': 28_800_000,
-             '12h': 43_200_000,
-             '1d': 86_400_000,
-             '3d': 259_200_000,
-             '1w': 604_800_000,
-             '1M': 2_419_200_000}
-POSITION_TIER = {1: (125, .0040, 0), 2: (100, .005, 50),
-                 3: (50, .01, 2_550), 4: (20, .025, 122_550),
-                 5: (10, .05, 1_372_550), 6: (5, .10, 5_372_550),
-                 7: (4, .125, 7_872_550), 8: (3, .15, 10_872_550),
-                 9: (2, .25, 30_872_550), 10: (1, .50, 105_872_550)}
-
-
 class FuturesTaker:
     def __init__(self, base='BTC', quote='USDT', market='um', itv='1m', settings=None, API_KEY='', SECRET_KEY='',
                  prev_size=100, multi=25):
@@ -317,7 +316,7 @@ class FuturesTaker:
         self.in_position = False
         self.stoploss_price = 0.0
         self.buy_order, self.sell_order, self.SL_order = None, None, None
-        print(f'prev_data: {self.OHLCV_data}, len: {len(self.OHLCV_data)}')
+        print(f'prev_data[-5:]: {asarray(self.OHLCV_data)[-5:, :]}, len: {len(self.OHLCV_data)}')
         print(f'last close: {self.close}')
         print(
             f'usdt_balance: {self.available_balance}, trade_balance: {self.trade_balance}, leverage_balance: {self.trade_balance * self.leverage}')

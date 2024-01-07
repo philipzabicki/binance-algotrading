@@ -16,7 +16,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = MACDStratFuturesEnv
-ACTION = [0.21394791871177718, 0.014445097103633899, 0.633181727067384, 0.8522018166122647, 0.012417997222420811, 631, 14, 757, 44]
+ACTION = [0.5027873928638713, 0.011830748094424587, 0.08935921017781712, 0.7720605257945228, 77, 259, 74, 36, 33, 9, 54]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -24,12 +24,12 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               df_mark=df_mark,
               dates_df=dates_df,
               max_steps=N_STEPS,
-              init_balance=350,
+              init_balance=50,
               no_action_finish=inf,
               fee=0.0005,
               coin_step=0.001,
               # slipp_std=0,
-              slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+              # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
               verbose=False, visualize=False, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     plt.show()
 
     with Pool(processes=CPU_CORES) as pool:
-        results = pool.starmap(parallel_test, [(i, df.iloc[:, 0:5], df_mark, dates_df) for i in range(CPU_CORES)])
+        results = pool.starmap(parallel_test, [(i, df.iloc[:, 1:6], df_mark, df['Opened']) for i in range(CPU_CORES)])
     joined_res = []
     joined_gains = []
     for el in results:
