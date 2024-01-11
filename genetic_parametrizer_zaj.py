@@ -11,13 +11,13 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
 from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
 
-from genetic_search.base import MinAvgMaxNonzeroSingleObjCallback, save_results, get_callback_plot, get_variables_plot
-from genetic_search.chosc_parametrizer import ChaikinOscillatorMixedVariableProblem
+from genetic_search.base import VariablesPlotCallback, save_results, get_callback_plot, get_variables_plot
+from genetic_search.zajeciowy_parametrizer import ChaikinOscillatorMixedVariableProblem
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 2048
-N_GEN = 100
+POP_SIZE = 128
+N_GEN = 200
 TICKER = 'LOTOS'
 ITV = '1d'
 MARKET_TYPE = 'spot'
@@ -50,8 +50,9 @@ def main():
     env_kwargs = {'init_balance': 1_000,
                   'no_action_finish': inf,
                   'fee': 0.0,
-                  'coin_step': 1.0,
-                  'verbose': False}
+                  'coin_step': 0.01,
+                  'verbose': False,
+                  'save_to_csv': False}
     problem = ChaikinOscillatorMixedVariableProblem(df,
                                                     env_kwargs=env_kwargs,
                                                     elementwise_runner=runner)
@@ -68,7 +69,7 @@ def main():
     res = minimize(problem,
                    algorithm,
                    save_history=False,
-                   callback=MinAvgMaxNonzeroSingleObjCallback(problem),
+                   callback=VariablesPlotCallback(problem),
                    termination=('n_gen', N_GEN),
                    # termination=("time", "00:05:00"),
                    verbose=True)

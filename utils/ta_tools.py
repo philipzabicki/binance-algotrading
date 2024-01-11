@@ -1058,7 +1058,39 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
 
 
 def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
-    # print(f'{np_df} {type} {MA_period}')
+    """
+        Calculate the Moving Average (MA) of a given type for a specified period.
+
+        Parameters:
+        - close (np.ndarray): Array of closing prices.
+        - ma_type (int): Type of Moving Average:
+            0: Simple Moving Average (SMA)
+            1: Exponential Moving Average (EMA)
+            2: Weighted Moving Average (WMA)
+            3: Kaufman's Adaptive Moving Average (KAMA)
+            4: Triangular Moving Average (TRIMA)
+            5: Double Exponential Moving Average (DEMA)
+            6: Triple Exponential Moving Average (TEMA)
+            7: Triple Exponential Moving Average (T3)
+            8: MESA Adaptive Moving Average (MAMA)
+            9: Linear Regression Moving Average (LINEARREG)
+            10: Exponential Hull Moving Average (EHMA)
+            11: Laguerre Moving Average (LMA)
+            12: Symmetric Hull Moving Average (SHMMA)
+            13: Asymmetric Hull Moving Average (AHMA)
+            14: Running Moving Average (RMA)
+            15: Hull Moving Average (HullMA)
+            16: Arnaud Legoux Moving Average (ALMA)
+            17: Hamming Moving Average (HammingMA)
+            18: Linear Weighted Moving Average (LWMA)
+            19: Geometric Moving Average (GMA)
+            20: Fractal Adaptive Moving Average (FBA)
+            21-26: Nadaray-Watson Moving Average with various kernels (0-5)
+        - ma_period (int): Number of periods to consider for the Moving Average.
+
+        Returns:
+        - np.ndarray: Calculated Moving Average values corresponding to the input parameters.
+    """
     ma_types = {0: lambda c, p: talib.SMA(c, timeperiod=p),
                 1: lambda c, p: talib.EMA(c, timeperiod=p),
                 2: lambda c, p: talib.WMA(c, timeperiod=p),

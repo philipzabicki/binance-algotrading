@@ -1,21 +1,23 @@
 from multiprocessing import Pool, cpu_count
 from statistics import mean, stdev
+import pandas as pd
 
 from matplotlib import pyplot as plt
 from numpy import inf
 from talib import AD
 
-from enviroments.chaikinosc_env import ChaikinOscillatorStratFuturesEnv
+from enviroments.zajeciowy_env import ChaikinOscillatorStratSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
 from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
-N_TEST = 10_000
-N_STEPS = 5_760
-TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-ENV = ChaikinOscillatorStratFuturesEnv
-ACTION = [0.5176180660228993,0.009081368528904019,74,439,17,3,44]
+CPU_CORES = 1
+N_TEST = 1
+#N_STEPS = 5_760
+#TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
+ENV = ChaikinOscillatorStratSpotEnv
+ACTION = [20, 5, 6, 5]
 
 
 def sig_map(value):
@@ -28,18 +30,19 @@ def sig_map(value):
         return 1.0
 
 
-def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
+def parallel_test(pool_nb, df, dates_df=None, df_mark=None):
     env = ENV(df=df,
-              df_mark=df_mark,
+              #df_mark=df_mark,
               dates_df=dates_df,
-              max_steps=N_STEPS,
-              init_balance=50,
+              #max_steps=N_STEPS,
+              init_balance=1_000,
               no_action_finish=inf,
-              fee=0.0005,
-              coin_step=0.001,
+              fee=0.0,
+              coin_step=0.01,
               # slipp_std=0,
               #slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              verbose=False, visualize=False, write_to_file=True)
+              render_range=180,
+              verbose=True, visualize=False, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)
@@ -53,27 +56,14 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
 
 
 if __name__ == "__main__":
-    # df = pd.read_csv("C:/github/binance-algotrading/.other/lotos.csv")
-    dates_df, df = by_BinanceVision(ticker=TICKER,
-                                    interval=ITV,
-                                    market_type=MARKET_TYPE,
-                                    data_type=DATA_TYPE,
-                                    start_date=START_DATE,
-                                    split=True,
-                                    delay=259_200)
-    _, df_mark = by_BinanceVision(ticker=TICKER,
-                                  interval=ITV,
-                                  market_type=MARKET_TYPE,
-                                  data_type='markPriceKlines',
-                                  start_date=START_DATE,
-                                  split=True,
-                                  delay=259_200)
+    df = pd.read_csv("C:/github/binance-algotrading/.other/lotos.csv")
+    df['Opened'] = pd.to_datetime(df['Opened'], format='%Y%m%d')
     print(df)
 
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()
     # print(adl[:10])
     # sleep(100)
-    fast_adl, slow_adl = get_1D_MA(adl, ACTION[-3], ACTION[-5]), get_1D_MA(adl, ACTION[-2], ACTION[-4])
+    fast_adl, slow_adl = get_1D_MA(adl, ACTION[2], ACTION[0]), get_1D_MA(adl, ACTION[3], ACTION[1])
     chosc = fast_adl - slow_adl
     signals = ChaikinOscillator_signal(chosc)
     df['ADL'] = adl
@@ -102,7 +92,7 @@ if __name__ == "__main__":
     plt.show()
 
     with Pool(processes=CPU_CORES) as pool:
-        results = pool.starmap(parallel_test, [(i, df.iloc[:, 0:5], df_mark, dates_df) for i in range(CPU_CORES)])
+        results = pool.starmap(parallel_test, [(i, df.iloc[:, 1:6], df['Opened']) for i in range(CPU_CORES)])
     joined_res = []
     joined_gains = []
     for el in results:

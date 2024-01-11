@@ -1,7 +1,11 @@
 import os
 from csv import writer
+from os import makedirs, path
 
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
+from datetime import datetime as dt
 from numpy import array, min, mean, max
 from pymoo.core.callback import Callback
 from pymoo.visualization.pcp import PCP
@@ -24,18 +28,19 @@ def save_results(filename, result):
 def get_callback_plot(callback, fname):
     plt.figure(figsize=(16, 9))
     plt.title("Convergence")
-    plt.ylabel('Reward (min/avg/max)')
-    plt.xlabel('Population')
+    #plt.ylabel('Reward (min/avg/max)')
+    plt.ylabel('% return (min/avg/max)')
+    plt.xlabel('Population No.')
     plt.plot(-1 * array(callback.opt), "--")
     plt.savefig(REPORT_DIR + 'Convergence_' + fname + ".png", dpi=300)
     return plt
 
 
-def get_variables_plot(x_variables, problem, fname, save=True):
+def get_variables_plot(x_variables, problem, fname, save=True, dpi=300):
     sample_gen = x_variables[0]
     if not isinstance(sample_gen, dict):
         raise NotImplementedError("Currently supports only list of dict type populations")
-    X_array = array([[*entry.values()] for entry in x_variables])
+    X_array = array([list(map(float, entry.values())) for entry in x_variables])
     pop_size = len(X_array)
     labels = [*sample_gen.keys()]
     bounds = array([problem.vars[name].bounds for name in labels]).T
@@ -54,8 +59,32 @@ def get_variables_plot(x_variables, problem, fname, save=True):
     plot.add(X_array[:int(pop_size * .1)], linewidth=1.0, color='#004a73')
     plot.add(X_array[0], linewidth=1.5, color='red')
     if save:
-        plot.save(REPORT_DIR + fname + ".png", dpi=300)
+        plot.save(REPORT_DIR + fname + ".png", dpi=dpi)
     return plot
+
+
+class VariablesPlotCallback(Callback):
+    def __init__(self, problem) -> None:
+        super().__init__()
+        self.problem = problem
+        self.opt = []
+        self.gen_n = 0
+        _date = str(dt.today()).replace(":", "-")[:-7]
+        self.file_location = f'frames/{self.problem.env.__class__.__name__}_{_date}/'
+        dir = REPORT_DIR+self.file_location
+        makedirs(path.dirname(dir), exist_ok=True)
+
+    def notify(self, algorithm):
+        filename = f'{self.file_location}/{self.gen_n}'
+        get_variables_plot(algorithm.pop.get("X"), self.problem, filename, save=True, dpi=50)
+        self.gen_n += 1
+        avg_rew = mean(algorithm.pop.get("F"))
+        if avg_rew < 0:
+            min_rew = min(algorithm.pop.get("F"))
+            max_rew = max(algorithm.pop.get("F"))
+            self.opt.append([min_rew, avg_rew, max_rew])
+        else:
+            self.opt.append([0.0, 0.0, 0.0])
 
 
 class MinAvgMaxNonzeroSingleObjCallback(Callback):

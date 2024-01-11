@@ -278,7 +278,7 @@ class SpotBacktest(Env):
             else:
                 self.reward = ((above_free**3)/(10**6) * self.episode_orders * 1/PnL_trades_ratio * 1/(
                         hold_ratio ** (1 / 3)) * 1/(PnL_means_ratio ** (1 / 3)) * 1/in_gain_indicator) / steps
-            # self.reward = total_return
+            # self.reward = total_return*100
         else:
             mean_pnl, stddev_pnl = 0.0, 0.0
             profits_mean, losses_mean, losses_stddev = 0.0, 0.0, 0.0
@@ -341,7 +341,7 @@ class SpotBacktest(Env):
                           *self.df[self.current_step, 0:4],
                           indicator_or_reward,
                           _balance]
-            trade_info = [self.last_order_type, round(self.absolute_profit, 2)]
+            trade_info = [self.last_order_type, str(round(self.absolute_profit, 2))]
             #   print(f'trade_info {trade_info}')
             self.visualization.append(render_row, trade_info)
             self.visualization.render()

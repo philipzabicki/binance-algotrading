@@ -12,8 +12,8 @@ from utils.ta_tools import custom_MACD, MACD_cross_signal
 from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
-N_TEST = 10_000
-N_STEPS = 2_880
+N_TEST = 16
+N_STEPS = 5_760
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = MACDStratFuturesEnv
 ACTION = [0.5027873928638713, 0.011830748094424587, 0.08935921017781712, 0.7720605257945228, 77, 259, 74, 36, 33, 9, 54]

@@ -28,7 +28,7 @@ class TradingGraph:
         # close all plots if there are open
         plt.close('all')
         # figsize attribute allows us to specify the width and height of a figure in unit inches
-        self.fig = plt.figure(figsize=(21, 9), dpi=65)
+        self.fig = plt.figure(figsize=(16, 9), dpi=150)
 
         # Create top subplot for price axis
         self.ax1 = plt.subplot2grid((6, 1), (0, 0), rowspan=5, colspan=1)
@@ -150,44 +150,44 @@ class TradingGraph:
         # print(f'idx {idx}')
         for i in idx:
             # print(f'i: {i} self.trades_arr[i]: {self.trades_arr[i]}')
-            annotate_text = '$' + self.trades_arr[i, 1] if self.trades_arr[i, 1] != '0.0' else ''
+            annotate_text = '$' + self.trades_arr[i, 1] if (self.trades_arr[i, 1] != '0.0') and (self.trades_arr[i, 1] != '-0.0') else ''
             x_position = self.render_arr[i, 0]
             if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i, 0] == 'close_short':
-                high_low = self.render_arr[i, 3] - RANGE * 0.03
+                high_low = self.render_arr[i, 3] - RANGE * 0.02
                 ycoords = self.render_arr[i, 3] - RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='green', label='green', s=180, edgecolors='black',
+                self.ax1.scatter(x_position, high_low, c='green', label='green', s=self.render_range*.55, edgecolors='black',
                                  marker="^")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.994), c='black')
+                self.ax1.annotate(annotate_text, (x_position, high_low * 0.993), c='black', ha='center', va='center', size=self.render_range*.04)
             elif self.trades_arr[i, 0] == 'open_short' or self.trades_arr[i, 0] == 'close_long':
-                high_low = self.render_arr[i, 2] + RANGE * 0.03
+                high_low = self.render_arr[i, 2] + RANGE * 0.02
                 ycoords = self.render_arr[i, 2] + RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='red', label='red', s=180, edgecolors='black',
+                self.ax1.scatter(x_position, high_low, c='red', label='red', s=self.render_range*.5, edgecolors='black',
                                  marker="v")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.005), c='black')
+                self.ax1.annotate(annotate_text, (x_position, high_low * 1.008), c='black', ha='center', va='center', size=self.render_range*.04)
             elif self.trades_arr[i, 0] == 'stop_loss_long':
-                high_low = self.render_arr[i, 3] - RANGE * 0.03
+                high_low = self.render_arr[i, 3] - RANGE * 0.02
                 ycoords = self.render_arr[i, 3] - RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='yellow', label='yellow', s=180, edgecolors='black',
+                self.ax1.scatter(x_position, high_low, c='yellow', label='yellow', s=self.render_range*.6, edgecolors='black',
                                  marker="d")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.994), c='black')
+                self.ax1.annotate(annotate_text, (x_position, high_low * 0.993), c='black', ha='center', va='center', size=self.render_range*.04)
             elif self.trades_arr[i, 0] == 'stop_loss_short':
-                high_low = self.render_arr[i, 2] + RANGE * 0.03
+                high_low = self.render_arr[i, 2] + RANGE * 0.02
                 ycoords = self.render_arr[i, 2] + RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='yellow', label='yellow', s=180, edgecolors='black',
+                self.ax1.scatter(x_position, high_low, c='yellow', label='yellow', s=self.render_range*.6, edgecolors='black',
                                  marker="d")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.005), c='black')
+                self.ax1.annotate(annotate_text, (x_position, high_low * 1.007), c='black', ha='center', va='center', size=self.render_range*.04)
             elif self.trades_arr[i, 0] == 'liquidate_long':
-                high_low = self.render_arr[i, 3] - RANGE * 0.03
+                high_low = self.render_arr[i, 3] - RANGE * 0.02
                 ycoords = self.render_arr[i, 3] - RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='black', label='black', s=180, edgecolors='black',
+                self.ax1.scatter(x_position, high_low, c='black', label='black', s=self.render_range*.6, edgecolors='black',
                                  marker="X")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 0.994), c='black')
+                self.ax1.annotate(annotate_text, (x_position, high_low * 0.993), c='black', ha='center', va='center', size=self.render_range*.04)
             elif self.trades_arr[i, 0] == 'liquidate_short':
-                high_low = self.render_arr[i, 2] + RANGE * 0.03
+                high_low = self.render_arr[i, 2] + RANGE * 0.02
                 ycoords = self.render_arr[i, 2] + RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='black', label='black', s=180, edgecolors='black',
+                self.ax1.scatter(x_position, high_low, c='black', label='black', s=self.render_range*.6, edgecolors='black',
                                  marker="X")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.005), c='black')
+                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.007), c='black', ha='center', va='center', size=self.render_range*.04)
             '''try:
                 self.ax1.annotate('{0:.2f}'.format(self.render_arr[i, 5]), (self.render_arr[i, 0] - 0.02, high_low),
                                   xytext=(self.render_arr[i, 0] - 0.02, ycoords),
