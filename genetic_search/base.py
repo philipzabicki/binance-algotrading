@@ -1,8 +1,9 @@
 import os
 from csv import writer
-from os import makedirs, path
+from os import makedirs, path, mkdir
 
 import matplotlib
+
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from datetime import datetime as dt
@@ -22,13 +23,13 @@ def save_results(filename, result):
         for f, x in zip(result.pop.get("F"), result.pop.get("X")):
             _row = [-1 * f[0], *x.values()]
             writer(file).writerow(_row)
-            print(f'writing row {_row}')
+            # print(f'writing row {_row}')
 
 
 def get_callback_plot(callback, fname):
     plt.figure(figsize=(16, 9))
     plt.title("Convergence")
-    #plt.ylabel('Reward (min/avg/max)')
+    # plt.ylabel('Reward (min/avg/max)')
     plt.ylabel('% return (min/avg/max)')
     plt.xlabel('Population No.')
     plt.plot(-1 * array(callback.opt), "--")
@@ -71,7 +72,7 @@ class VariablesPlotCallback(Callback):
         self.gen_n = 0
         _date = str(dt.today()).replace(":", "-")[:-7]
         self.file_location = f'frames/{self.problem.env.__class__.__name__}_{_date}/'
-        dir = REPORT_DIR+self.file_location
+        dir = REPORT_DIR + self.file_location
         makedirs(path.dirname(dir), exist_ok=True)
 
     def notify(self, algorithm):
@@ -85,6 +86,35 @@ class VariablesPlotCallback(Callback):
             self.opt.append([min_rew, avg_rew, max_rew])
         else:
             self.opt.append([0.0, 0.0, 0.0])
+
+
+class GenerationSavingCallback(Callback):
+    def __init__(self, problem, dir_name, verbose=False) -> None:
+        super().__init__()
+        self.verbose = verbose
+        self.problem = problem
+        self.opt = []
+        self.gen_n = 0
+        full_path = REPORT_DIR + dir_name
+        mkdir(full_path)
+        self.dir_name = dir_name
+
+    def notify(self, algorithm):
+        filepath = f'{self.dir_name}/{self.gen_n}'
+        get_variables_plot(algorithm.pop.get("X"), self.problem, filepath, save=True, dpi=50)
+        save_results(filepath, algorithm)
+        if self.verbose:
+            print(f'Best gen: reward={-algorithm.pop.get("F")[0]} vars={algorithm.pop.get("X")[0]}')
+        # print(f'algorithm.pop.get("F") {algorithm.pop.get("F")}')
+        # print(f'algorithm.pop.get("X") {algorithm.pop.get("X")}')
+        avg_rew = mean(algorithm.pop.get("F"))
+        if avg_rew < 0:
+            min_rew = min(algorithm.pop.get("F"))
+            max_rew = max(algorithm.pop.get("F"))
+            self.opt.append([min_rew, avg_rew, max_rew])
+        else:
+            self.opt.append([0.0, 0.0, 0.0])
+        self.gen_n += 1
 
 
 class MinAvgMaxNonzeroSingleObjCallback(Callback):

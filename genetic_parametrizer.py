@@ -8,8 +8,9 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
 from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
 
+from definitions import REPORT_DIR
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
-    AverageNonzeroSingleObjCallback
+    GenerationSavingCallback
 from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem
 from genetic_search.bands_parametrizer import BandsFuturesMixedVariableProblem
 from genetic_search.chosc_parametrizer import ChaikinOscillatorFuturesMixedVariableProblem
@@ -19,7 +20,7 @@ from utils.utility import get_slippage_stats
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
 POP_SIZE = 256
-N_GEN = 25_000
+N_GEN = 500
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
@@ -84,15 +85,16 @@ def main():
                           mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
                           eliminate_duplicates=MixedVariableDuplicateElimination())
 
+    _date = str(dt.today()).replace(":", "-")[:-7]
+    dir_name = f'{TICKER}{ITV}_{MARKET_TYPE}_Pop{POP_SIZE}_{problem.env.__class__.__name__}_{_date}'
     res = minimize(problem,
                    algorithm,
                    save_history=False,
-                   callback=AverageNonzeroSingleObjCallback(problem),
+                   callback=GenerationSavingCallback(problem, dir_name, verbose=True),
                    termination=TERMINATION,
                    verbose=True)
 
     print(f'Exec time: {res.exec_time:.2f}s')
-    _date = str(dt.today()).replace(":", "-")[:-7]
     filename = f'{TICKER}{ITV}_{MARKET_TYPE}_Pop{POP_SIZE}_ngen{res.algorithm.n_iter - 1}_{problem.env.__class__.__name__}_{_date}'
     save_results(filename, res)
 
