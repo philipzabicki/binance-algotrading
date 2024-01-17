@@ -241,8 +241,12 @@ def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray
                     for cur_sig, cur_macd, prev_sig, prev_macd in
                     zip(signal_col[1:], macd_col[1:], signal_col[:-1], macd_col[:-1])]
 ```
-As you can see the strongest signal values are 1 and -1, which are generated when macd and signal lines cross above(for short) or below(for long) 0 line. Crossing logic is as usual, signal line crosses macd froma above - short, from below - long.
+As you can see the highest signal values are 1 and -1, which are generated when macd and signal lines cross above(for short) or below(for long) 0 line.
+
+Crossing logic is as usual, signal line crosses macd froma above - short, from below - long.
+
 Slightly weaker singlas (0.75, -0,75) are generated when lines cross but without additional above or below zero logic.
+
 0,5 and -0,5 signal values are generated when lines are getting closer to each other(approaching crossing).
 
 #### Keltner Channel(Bands) strategy environment
