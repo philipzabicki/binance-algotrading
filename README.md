@@ -1,11 +1,14 @@
 # binance-algotrading
 
-Collection of personal tools used for strategies analysis and algorithmic trading on Binance exchange.
+This repository is a collection of personal tools designed for strategy analysis and algorithmic trading on the Binance exchange.
 
-Main purpose of this repo is downloading historical data from exchanges, using them to create and evaluate trading
-strategies and finally deplot it on server for live automatic trading on Binance exchange.
-I use 2 approaches to develop trading strategies. First one is using genetic algorithm for optimizing common technical analysis indcators and other trading variables (stop_loss etc.).
-The second one is to use reinforcement learning and create profitable trading agent.
+The main objective of this repository is to download historical data from exchange, utilize them for creating and evaluating trading strategies, and ultimately deploy them on a server for live automatic trading on the Binance exchange. I employ two approaches to develop trading strategies.
+
+1. **Genetic Algorithm Approach:**
+   Utilizes a genetic algorithm to optimize common technical analysis indicators and other trading variables (e.g., stop_loss). This approach aims to enhance the performance of trading strategies through evolutionary optimization.
+
+2. **Reinforcement Learning Approach:**
+   Applies reinforcement learning to create a profitable trading agent. This approach focuses on developing an intelligent agent that learns and adapts its trading strategies based on feedback from the market.
 
 ## Requirements
 ### Pre-requirements
