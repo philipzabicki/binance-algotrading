@@ -361,7 +361,54 @@ Slightly weaker singlas 0.75 and -0.75 are generated when lines cross but withou
 0.5 and -0.5 signal values are generated when lines are getting closer to each other(approaching crossing).
 
 #### Keltner Channel(Bands) strategy environment
+```python
+class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
+    def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,
+              atr_multi=1.0, atr_period=1,
+              ma_type=0, ma_period=1, **kwargs):
+        _ret = super().reset(*args, stop_loss=stop_loss, enter_at=enter_at, close_at=close_at, **kwargs)
+        self.ma_type = ma_type
+        self.ma_period = ma_period
+        self.atr_period = atr_period
+        self.atr_multi = atr_multi
+        _max_period = max(self.ma_period, self.atr_period)
+        if _max_period > self.total_steps:
+            raise ValueError('One of indicator periods is greater than df size.')
+        # Calculate only the data length necessary, with additional length caused by indicator periods
+        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
+        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, :5],
+                                          self.ma_type, self.ma_period,
+                                          self.atr_period, self.atr_multi)[self.start_step - prev_values:]
+        return _ret
+```
 #### Chaikin Oscillator strategy environment
+```python
+class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.adl = AD(self.df[:, 1], self.df[:, 2], self.df[:, 3], self.df[:, 4])
+
+    def reset(self, *args, stop_loss=None,
+              fast_period=3, slow_period=10,
+              fast_ma_type=0, slow_ma_type=0, **kwargs):
+        _ret = super().reset(*args, stop_loss=stop_loss, **kwargs)
+        self.fast_period = fast_period
+        self.slow_period = slow_period
+        self.fast_ma_type = fast_ma_type
+        self.slow_ma_type = slow_ma_type
+        _max_period = max(self.fast_period, self.slow_period)
+        if _max_period > self.total_steps:
+            raise ValueError('One of indicator periods is greater than df size.')
+        # Calculate only the data length necessary, with additional length caused by indicator periods
+        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
+        # print(self.df[self.start_step:self.end_step, :5])
+        chaikin_oscillator = custom_ChaikinOscillator(self.adl[prev_values:self.end_step, ],
+                                                      fast_ma_type=fast_ma_type, fast_period=fast_period,
+                                                      slow_ma_type=slow_ma_type, slow_period=slow_period)
+        self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step - prev_values:])
+        # print(f'len sig {len(self.signals)}')
+        return _ret
+```
 #### Ayn other new strategy environment
 ## Genetic Algorithm trading strategies
 DESC
