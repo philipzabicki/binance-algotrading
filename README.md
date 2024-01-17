@@ -364,7 +364,7 @@ Slightly weaker singlas 0.75 and -0.75 are generated when lines cross but withou
 #### Chaikin Oscillator strategy environment
 #### Ayn other new strategy environment
 ## Genetic Algorithm trading strategies
-<DESC>
+DESC
 ### Environments
 #### Base
 #### Env1
