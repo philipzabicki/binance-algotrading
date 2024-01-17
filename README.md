@@ -363,10 +363,18 @@ Slightly weaker singlas 0.75 and -0.75 are generated when lines cross but withou
 #### Keltner Channel(Bands) strategy environment
 #### Chaikin Oscillator strategy environment
 #### Ayn other new strategy environment
-## Trading strategies
-
+## Genetic Algorithm trading strategies
+<DESC>
+### Environments
+#### Base
+#### Env1
+#### Env2
+#### Env3
+## Reinforcement Learning trading agent
+<DESC>
+### RL Environment
 ...
 
-## Launch live bot
+## Live trading bot
 
 ...
