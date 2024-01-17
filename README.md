@@ -35,7 +35,7 @@ pip install -r requirements.txt
 ```
 It may take some time...
 
-## Download data
+## Getting data
 All data used in this project is either downloaded via [binance_data](https://github.com/uneasyguy/binance_data.git) package or [Binance Vision](https://data.binance.vision/) website.
 Website approach uses most efficient way to get data as it starts downloading from current date and goes back in time as long as there is data on website.
 It also downloads data in monthly batches if available, if not daily are used.
