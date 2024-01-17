@@ -306,9 +306,9 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 37: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
     return ma_types[ma_type](np_df.astype(np.float64), ma_period)
 ```
-#### MACD strategy environment
+#### MACD
 Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD made with arguments provided to reset method.
-
+##### Execute environment
 ```python
 (...)
 class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -359,8 +359,9 @@ As you can see the highest signal values are 1 and -1, which are generated when 
 Slightly weaker singlas 0.75 and -0.75 are generated when lines cross but without additional above or below zero level logic.
 
 0.5 and -0.5 signal values are generated when lines are getting closer to each other(approaching crossing).
-
-#### Keltner Channel(Bands) strategy environment
+##### Strategy environment
+#### Keltner Channel(Bands)
+##### Execute environment
 ```python
 class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
     def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,
@@ -381,7 +382,9 @@ class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
                                           self.atr_period, self.atr_multi)[self.start_step - prev_values:]
         return _ret
 ```
-#### Chaikin Oscillator strategy environment
+##### Strategy environment
+#### Chaikin Oscillator
+##### Execute environment
 ```python
 class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
     def __init__(self, *args, **kwargs):
@@ -407,10 +410,11 @@ class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
         self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step - prev_values:])
         return _ret
 ```
+##### Strategy environment
 #### Any other new strategy environment
-You can create any other TA indicator trading strategy, using ones already existing as template, just take care that your generated signals are valid ones.
+You can create any other TA indicator trading environment, using ones already existing as template, just take care that your generated signals are properly calculated.
 ## Genetic Algorithm trading strategies
-DESC
+One way to finding optimal technical analysis parameters for trading is to use Genetic Algorithm. All previously showed strategy environments can be optimized with it.
 ### Environments
 #### Base
 #### Env1
