@@ -4,6 +4,8 @@ Collection of personal tools used for strategies analysis and algorithmic tradin
 
 Main purpose of this repo is downloading historical data from exchanges, using them to create and evaluate trading
 strategies and finally deplot it on server for live automatic trading on Binance exchange.
+I use 2 approaches to develop trading strategies. First one is using genetic algorithm for optimizing common technical analysis indcators and other trading variables (stop_loss etc.).
+The second one is to use reinforcement learning and create profitable trading agent.
 
 ## Requirements
 ### Pre-requirements
