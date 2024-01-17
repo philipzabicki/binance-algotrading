@@ -95,7 +95,7 @@ It imitates Binance Exchnage Spot market to some degree. Requires two dataframes
 
 Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss for whole backtest period.
 
-Always trades with current candle close price, allows to provide price slippage data for better imitation of real world scenario.
+It always trades with current candle close price, you can provide price slippage data for better imitation of real world scenario.
 
 Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, episode ends or balance is so low it does not allow for any market action for given coin.
 #### FuturesBacktest
