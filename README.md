@@ -112,9 +112,10 @@ In generic base class implementation signals are empty numpy array. Other inheri
 SignalExecute-like object when called, executes whole trading episode on given signals array using position enter/close threshold values to determine position side for all trades. Negative values are reserved for short/sell singals. Positive for long/buy.
 
 For e.g. parameters:
-* signals = [0.52, 0, 0, -0.78],
-* enter_threshold = 0.5,
+* signals = [0.52, 0, 0, -0.78]
+* enter_threshold = 0.5
 * close_threshold = 0.75
+
 will result in trading episode of BUY -> HOLD -> HOLD -> SELL  actions.
 ##### SignalExecuteSpotEnv
 ```python
