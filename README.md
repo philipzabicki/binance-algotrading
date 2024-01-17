@@ -17,7 +17,7 @@ Whole project runs with python 3.11.4, but it should work fine with any 3.11.x v
 Before installing TA-lib via pip you need to satisfy dependencies.
 Just follow this [TA-Lib](https://github.com/TA-Lib/ta-lib-python?tab=readme-ov-file#dependencies).
 
-Otherwise, you can download this file [ta_lib-0.4.25-cp311-cp311-win_amd64.whl](https://drive.google.com/file/d/117WDdPpTAJK_IX2yWpliBRy14m9uUWSD/view?usp=sharing).
+Otherwise, you can download this file [ta_lib-0.4.25-cp311-cp311-win_amd64.whl](https://drive.google.com/file/d/117WDdPpTAJK_IX2yWpliBRy14m9uUWSD/view?usp=sharing)(TA-lib for python 3.11.4).
 Then inside directory where you downloaded run 
 ```
 pip install ta_lib-0.4.25-cp311-cp311-win_amd64.whl
