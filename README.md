@@ -227,6 +227,7 @@ class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         return _ret
 ```
 Custom MACD is calculated using [known formula](https://www.investopedia.com/terms/m/macd.asp) implemented as function inside [utils/ta_tools.pl](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1131)
+
 What's less known is way I derive signals from this indicator:
 ```python
 @jit(nopython=True, nogil=True, cache=True)
