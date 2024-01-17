@@ -109,6 +109,8 @@ Allows for asymmetrical enter position(enter_threshold) and close position(close
 
 In generic base class implementation signals are empty numpy array. Other inheriting environments extend this.
 
+SignalExecute-like object when called, executes whole trading episode on given signals array. Negative values are reserved for short/sell singals. Positive for long/buy.
+
 ##### SignalExecuteSpotEnv
 ```python
 (...)
@@ -164,6 +166,7 @@ In generic base class implementation signals are empty numpy array. Other inheri
         self.signals = empty(self.total_steps)
 
    (...)
+
     def __call__(self, *args, **kwargs):
      while not self.done:
          # step must be start_step adjusted cause one can start and end backtest at any point in df
@@ -192,9 +195,11 @@ In generic base class implementation signals are empty numpy array. Other inheri
 Inherited from SignalExecuteSpotEnv or SignalExecuteFuturesEnv.
 Currently only MACD, MACD+RSI, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
 
-All of them can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages and any valid periods instead of just 12/26 periods EMAs.
-Ex. MACD using TEMA for slow ma, HullMA for fast ma and HammingMA for signal line.
+All of MA based indicators can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages and any valid periods.
+Ex. MACD using TEMA-42 for slow ma, HullMA-37 for fast ma and HammingMA-8 for signal line.
 #### MACD strategy environment
+Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD made with arguments provided with reset method.
+
 ```python
 (...)
 class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -220,9 +225,29 @@ class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         self.signals = MACD_cross_signal(macd[self.start_step - prev_values:],
                                          macd_signal[self.start_step - prev_values:])
         return _ret
-
 ```
+Custom MACD is calculated using [known formula](https://www.investopedia.com/terms/m/macd.asp) implemented as function inside [utils/ta_tools.pl](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1131)
+What's less known is way I derive signals from this indicator:
+```python
+@jit(nopython=True, nogil=True, cache=True)
+def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray) -> list[float | int]:
+    return [0.0] + [1 if (cur_sig < 0) and (cur_macd < 0) and (cur_macd > cur_sig) and (prev_macd < prev_sig) else
+                    .75 if (cur_macd > cur_sig) and (prev_macd < prev_sig) else
+                    -1 if (cur_sig > 0) and (cur_macd > 0) and cur_macd < cur_sig and prev_macd > prev_sig else
+                    -.75 if cur_macd < cur_sig and prev_macd > prev_sig else
+                    0.5 if cur_macd > prev_macd and cur_sig < prev_sig else
+                    -0.5 if cur_macd < prev_macd and cur_sig > prev_sig else
+                    0
+                    for cur_sig, cur_macd, prev_sig, prev_macd in
+                    zip(signal_col[1:], macd_col[1:], signal_col[:-1], macd_col[:-1])]
+```
+As you can see the strongest signal values are 1 and -1, which are generated when macd and signal lines cross above(for short) or below(for long) 0 line. Crossing logic is as usual, signal line crosses macd froma above - short, from below - long.
+Slightly weaker singlas (0.75, -0,75) are generated when lines cross but without additional above or below zero logic.
+0,5 and -0,5 signal values are generated when lines are getting closer to each other(approaching crossing).
 
+#### Keltner Channel(Bands) strategy environment
+#### Chaikin Oscillator strategy environment
+#### Ayn other new strategy environment
 ## Trading strategies
 
 ...
