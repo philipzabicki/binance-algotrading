@@ -395,6 +395,7 @@ class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
 class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # AD is not period dependent so we only need to calculate it once as there is no variable to optimize.
         self.adl = AD(self.df[:, 1], self.df[:, 2], self.df[:, 3], self.df[:, 4])
 
     def reset(self, *args, stop_loss=None,
