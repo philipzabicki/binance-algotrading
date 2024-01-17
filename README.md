@@ -91,7 +91,7 @@ Project has 2 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.gi
 All other environments inherit from them.
 ### Base environments
 #### SpotBacktest
-It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with OHLCV values. One trading session is called episode and can use whole dataframe or randomly picked max_steps size data from df.
+It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with OHLCV values. One trading session is called episode and can use whole dataframe or randomly picked max_steps sized data from df.
 
 Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss for whole backtest period.
 
