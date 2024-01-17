@@ -197,6 +197,7 @@ Currently only MACD, MACD+RSI, Keltner Channel(Bands) and Chaikin Oscillator are
 
 All of MA based indicators can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages with any valid periods.
 Ex. MACD using TEMA-42 for slow ma, HullMA-37 for fast ma and HammingMA-8 for signal line.
+
 The MAs used for optimizations are listed in function inside utils/ta_tools.py
 ```python
 def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
