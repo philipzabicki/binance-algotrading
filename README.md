@@ -109,6 +109,7 @@ Allows for asymmetrical enter position(enter_threshold) and close position(close
 
 In generic base class implementation signals are empty numpy array. Other inheriting environments extend this.
 
+##### SignalExecuteSpotEnv
 ```python
 (...)
 
@@ -143,6 +144,50 @@ In generic base class implementation signals are empty numpy array. Other inheri
                 self.current_step += 1
         return None, self.reward, self.done, False, self.info
 ```
+
+##### SignalExecuteFuturesEnv
+    ```python
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'close_at' in kwargs and 'long_enter_at' in kwargs and 'short_close_at' in kwargs:
+            self.long_enter_threshold = kwargs['long_enter_at']
+            self.long_close_threshold = kwargs['long_close_at']
+            self.short_enter_threshold = kwargs['short_enter_at']
+            self.short_close_threshold = kwargs['short_close_at']
+            self.leverage = kwargs['leverage']
+        else:
+            self.long_enter_threshold = 1.0
+            self.long_close_threshold = 1.0
+            self.short_enter_threshold = 1.0
+            self.short_close_threshold = 1.0
+            self.leverage = 5
+        self.signals = empty(self.total_steps)
+
+   (...)
+    def __call__(self, *args, **kwargs):
+     while not self.done:
+         # step must be start_step adjusted cause one can start and end backtest at any point in df
+         _step = self.current_step - self.start_step
+         if self.qty == 0 and self.signals[_step] >= self.long_enter_threshold:
+             action = 1
+         elif self.qty == 0 and self.signals[_step] <= -self.short_enter_threshold:
+             action = 2
+         elif self.qty > 0 and self.signals[_step] <= -self.long_close_threshold:
+             action = 2
+         elif self.qty < 0 and self.signals[_step] >= self.short_close_threshold:
+             action = 1
+         else:
+             action = 0
+         self.step(action)
+         if self.visualize:
+             # current_step manipulation just to synchronize plot rendering
+             # could be fixed by calling .render() inside .step() just before return statement
+             self.current_step -= 1
+             self.render(indicator_or_reward=self.signals[_step])
+             self.current_step += 1
+     return None, self.reward, self.done, False, self.info
+    ```
+
 ### Technical analysis single signal trading environments
 Inherited from SignalExecuteSpotEnv or SignalExecuteFuturesEnv.
 Currently only MACD, MACD+RSI, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
