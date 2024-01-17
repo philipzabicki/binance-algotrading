@@ -414,7 +414,7 @@ class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
 #### Any other new strategy environment
 You can create any other TA indicator trading environment, using ones already existing as template, just take care that your generated signals are properly calculated.
 ## Genetic Algorithm trading strategies
-One way to finding optimal technical analysis parameters for trading is to use Genetic Algorithm. All previously showed strategy environments can be optimized with it.
+One way to finding optimal technical analysis parameters for trading is to use Genetic Algorithm. All previously showed strategy environments can be used for optimization.
 ### Environments
 #### Base
 #### Env1
