@@ -401,15 +401,14 @@ class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
             raise ValueError('One of indicator periods is greater than df size.')
         # Calculate only the data length necessary, with additional length caused by indicator periods
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        # print(self.df[self.start_step:self.end_step, :5])
         chaikin_oscillator = custom_ChaikinOscillator(self.adl[prev_values:self.end_step, ],
                                                       fast_ma_type=fast_ma_type, fast_period=fast_period,
                                                       slow_ma_type=slow_ma_type, slow_period=slow_period)
         self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step - prev_values:])
-        # print(f'len sig {len(self.signals)}')
         return _ret
 ```
-#### Ayn other new strategy environment
+#### Any other new strategy environment
+You can create any other TA indicator trading strategy, using ones already existing as template, just take care that your generated signals are valid ones.
 ## Genetic Algorithm trading strategies
 DESC
 ### Environments
