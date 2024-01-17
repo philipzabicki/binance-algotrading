@@ -195,8 +195,116 @@ SignalExecute-like object when called, executes whole trading episode on given s
 Inherited from SignalExecuteSpotEnv or SignalExecuteFuturesEnv.
 Currently only MACD, MACD+RSI, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
 
-All of MA based indicators can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages and any valid periods.
+All of MA based indicators can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages with any valid periods.
 Ex. MACD using TEMA-42 for slow ma, HullMA-37 for fast ma and HammingMA-8 for signal line.
+The MAs used for optimizations are listed in function inside utils/ta_tools.py
+```python
+def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
+    """
+        Calculate Moving Average (MA) based on the specified MA type and period.
+        Parameters:
+        - np_df (np.ndarray): Numpy array containing OHLCV (Open, High, Low, Close, Volume) data.
+        - ma_type (int): Type of Moving Average to calculate. Choose from the following options:
+            0: Simple Moving Average (SMA)
+            1: Exponential Moving Average (EMA)
+            2: Weighted Moving Average (WMA)
+            3: Kaufman's Adaptive Moving Average (KAMA)
+            4: Triangular Moving Average (TRIMA)
+            5: Double Exponential Moving Average (DEMA)
+            6: Triple Exponential Moving Average (TEMA)
+            7: Triple Exponential Moving Average (T3)
+            8: MESA Adaptive Moving Average (MAMA)
+            9: Linear Regression Moving Average (LINEARREG)
+            10: Simple Moving Median (SMM)
+            11: Smoothed Simple Moving Average (SSMA)
+            12: Volume Adjusted Moving Average (VAMA)
+            13: Zero Lag Exponential Moving Average (ZLEMA)
+            14: Exponential Volume Weighted Moving Average (EVWMA)
+            15: Smoothed Moving Average (SMMA)
+            16: Volume Weighted Moving Average (VWMA)
+            17: Symmetrically Weighted Moving Average (SWMA) - Ascending
+            18: Symmetrically Weighted Moving Average (SWMA) - Descending
+            19: Exponential Hull Moving Average (EHMA)
+            20: Leo Moving Average (LMA)
+            21: Sharp Modified Moving Average (SHMMA)
+            22: Ahrens Moving Average (AHMA)
+            23: Hull Moving Average (HullMA)
+            24: Volume Weighted Moving Average (VWMA)
+            25: Relative Moving Average (RMA)
+            26: Arnaud Legoux Moving Average (ALMA)
+            27: Hamming Moving Average (HammingMA)
+            28: Linear Weighted Moving Average (LWMA)
+            29: McGinley Dynamic (MGD)
+            30: Geometric Moving Average (GMA)
+            31: Fibonacci Based Average (FBA)
+            32: Nadaray-Watson Moving Average (kernel 0 - gaussian)
+            33: Nadaray-Watson Moving Average (kernel 1 - epanechnikov)
+            34: Nadaray-Watson Moving Average (kernel 2 - rectangular)
+            35: Nadaray-Watson Moving Average (kernel 3 - triangular)
+            36: Nadaray-Watson Moving Average (kernel 4 - biweight)
+            37: Nadaray-Watson Moving Average (kernel 5 - cosine)
+        - ma_period (int): Number of periods for the Moving Average calculation.
+        Returns:
+        - np.ndarray: Numpy array containing the calculated Moving Average values.
+        """
+    ma_types = {0: lambda ohlcv_array, period: talib.SMA(ohlcv_array[:, 3], timeperiod=period),
+                1: lambda ohlcv_array, period: talib.EMA(ohlcv_array[:, 3], timeperiod=period),
+                2: lambda ohlcv_array, period: talib.WMA(ohlcv_array[:, 3], timeperiod=period),
+                3: lambda ohlcv_array, period: talib.KAMA(ohlcv_array[:, 3], timeperiod=period),
+                4: lambda ohlcv_array, period: talib.TRIMA(ohlcv_array[:, 3], timeperiod=period),
+                5: lambda ohlcv_array, period: talib.DEMA(ohlcv_array[:, 3], timeperiod=period),
+                6: lambda ohlcv_array, period: talib.TEMA(ohlcv_array[:, 3], timeperiod=period),
+                7: lambda ohlcv_array, period: talib.T3(ohlcv_array[:, 3], timeperiod=period),
+                8: lambda ohlcv_array, period: talib.MAMA(ohlcv_array[:, 3])[0],
+                9: lambda ohlcv_array, period: talib.LINEARREG(ohlcv_array[:, 3], timeperiod=period),
+                10: lambda ohlcv_array, period: finTA.SMM(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                11: lambda ohlcv_array, period: finTA.SSMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                12: lambda ohlcv_array, period: finTA.VAMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                13: lambda ohlcv_array, period: finTA.ZLEMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    max(4, period)).to_numpy(),
+                14: lambda ohlcv_array, period: finTA.EVWMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                15: lambda ohlcv_array, period: finTA.SMMA(
+                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
+                    period).to_numpy(),
+                16: lambda ohlcv_array, period: p_ta.vwma(pd.Series(ohlcv_array[:, 3]),
+                                                          pd.Series(ohlcv_array[:, 4]),
+                                                          length=period).to_numpy(),
+                17: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
+                                                          length=period,
+                                                          asc=True).to_numpy(),
+                18: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
+                                                          length=period,
+                                                          asc=False).to_numpy(),
+                19: lambda ohlcv_array, period: ti.ehma(ohlcv_array[:, 3], period),
+                20: lambda ohlcv_array, period: ti.lma(ohlcv_array[:, 3], period),
+                21: lambda ohlcv_array, period: ti.shmma(ohlcv_array[:, 3], period),
+                22: lambda ohlcv_array, period: ti.ahma(ohlcv_array[:, 3], period),
+                23: lambda ohlcv_array, period: HullMA(ohlcv_array[:, 3], max(period, 4)),
+                24: lambda ohlcv_array, period: VWMA(ohlcv_array[:, 3], ohlcv_array[:, 4], timeperiod=period),
+                25: lambda ohlcv_array, period: RMA(ohlcv_array[:, 3], timeperiod=period),
+                26: lambda ohlcv_array, period: ALMA(ohlcv_array[:, 3], timeperiod=period),
+                27: lambda ohlcv_array, period: HammingMA(ohlcv_array[:, 3], period),
+                28: lambda ohlcv_array, period: LWMA(ohlcv_array[:, 3], period),
+                29: lambda ohlcv_array, period: MGD(ohlcv_array[:, 3], period),
+                30: lambda ohlcv_array, period: GMA(ohlcv_array[:, 3], period),
+                31: lambda ohlcv_array, period: FBA(ohlcv_array[:, 3], period),
+                32: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=0),
+                33: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=1),
+                34: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=2),
+                35: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=3),
+                36: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=4),
+                37: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
+    return ma_types[ma_type](np_df.astype(np.float64), ma_period)
+```
 #### MACD strategy environment
 Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD made with arguments provided to reset method.
 
