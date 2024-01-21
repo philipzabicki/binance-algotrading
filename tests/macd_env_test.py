@@ -6,17 +6,17 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 
-from enviroments import MACDStratFuturesEnv
+from enviroments import MACDOptimizeFuturesEnv, MACDOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
 from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
-N_TEST = 16
-N_STEPS = 5_760
+N_TEST = 10_000
+N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-ENV = MACDStratFuturesEnv
-ACTION = [0.5027873928638713, 0.011830748094424587, 0.08935921017781712, 0.7720605257945228, 77, 259, 74, 36, 33, 9, 54]
+ENV = MACDOptimizeSavingFuturesEnv
+ACTION = [0.6475115181123919, 0.5297173347774123, 0.014974237015917472, 0.3044166004254543, 0.7859960687858871, 0.1341780439224835, 0.3674320596238021, 678, 927, 627, 35, 36, 17, 24]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):

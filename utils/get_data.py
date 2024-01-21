@@ -3,6 +3,7 @@ from io import BytesIO
 from os import path, listdir
 from time import time
 from zipfile import ZipFile, BadZipFile
+from sys import argv
 
 import pandas as pd
 import requests
@@ -10,7 +11,6 @@ from binance_data import DataClient
 from dateutil.relativedelta import relativedelta
 
 from definitions import DATA_DIR
-
 
 LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
 ITV_ALIASES = {'1m': '1T', '3m': '3T', '5m': '5T', '15m': '15T', '30m': '30T'}

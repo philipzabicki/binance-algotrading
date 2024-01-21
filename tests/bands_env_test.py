@@ -3,7 +3,7 @@ from multiprocessing import Pool, cpu_count
 from matplotlib import pyplot as plt
 from numpy import inf, mean, std
 
-from enviroments.bands_env import BandsStratFuturesEnv
+from enviroments.bands_env import BandsOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_MA_band_signal
 from utils.utility import get_slippage_stats
@@ -12,8 +12,8 @@ CPU_CORES = cpu_count()
 N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-ENV = BandsStratFuturesEnv
-ACTION = [0.415170717080191,0.01269748657203422,0.1703498088155482,0.14914492845218685,0.09296887618281602,0.41787559563339494,0.08488439426780392,399,14,733,10]
+ENV = BandsOptimizeSavingFuturesEnv
+ACTION = [0.15887990641058514, 0.9908226937087141, 0.013266578940987, 0.01756003632650411, 0.5809911843121047, 0.09671433849901524, 0.6419714775741978, 9.201360108735196, 491, 15, 800, 16]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):

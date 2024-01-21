@@ -994,6 +994,55 @@ def FWMA(close, period):
 
 # @feature_timeit
 def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
+    """
+        Calculate Moving Average (MA) based on the specified MA type and period.
+
+        Parameters:
+        - np_df (np.ndarray): Numpy array containing OHLCV (Open, High, Low, Close, Volume) data.
+        - ma_type (int): Type of Moving Average to calculate. Choose from the following options:
+            0: Simple Moving Average (SMA)
+            1: Exponential Moving Average (EMA)
+            2: Weighted Moving Average (WMA)
+            3: Kaufman's Adaptive Moving Average (KAMA)
+            4: Triangular Moving Average (TRIMA)
+            5: Double Exponential Moving Average (DEMA)
+            6: Triple Exponential Moving Average (TEMA)
+            7: Triple Exponential Moving Average (T3)
+            8: MESA Adaptive Moving Average (MAMA)
+            9: Linear Regression Moving Average (LINEARREG)
+            10: Simple Moving Median (SMM)
+            11: Smoothed Simple Moving Average (SSMA)
+            12: Volume Adjusted Moving Average (VAMA)
+            13: Zero Lag Exponential Moving Average (ZLEMA)
+            14: Exponential Volume Weighted Moving Average (EVWMA)
+            15: Smoothed Moving Average (SMMA)
+            16: Volume Weighted Moving Average (VWMA)
+            17: Symmetrically Weighted Moving Average (SWMA) - Ascending
+            18: Symmetrically Weighted Moving Average (SWMA) - Descending
+            19: Exponential Hull Moving Average (EHMA)
+            20: Leo Moving Average (LMA)
+            21: Sharp Modified Moving Average (SHMMA)
+            22: Ahrens Moving Average (AHMA)
+            23: Hull Moving Average (HullMA)
+            24: Volume Weighted Moving Average (VWMA)
+            25: Relative Moving Average (RMA)
+            26: Arnaud Legoux Moving Average (ALMA)
+            27: Hamming Moving Average (HammingMA)
+            28: Linear Weighted Moving Average (LWMA)
+            29: McGinley Dynamic (MGD)
+            30: Geometric Moving Average (GMA)
+            31: Fibonacci Based Average (FBA)
+            32: Nadaray-Watson Moving Average (kernel 0 - gaussian)
+            33: Nadaray-Watson Moving Average (kernel 1 - epanechnikov)
+            34: Nadaray-Watson Moving Average (kernel 2 - rectangular)
+            35: Nadaray-Watson Moving Average (kernel 3 - triangular)
+            36: Nadaray-Watson Moving Average (kernel 4 - biweight)
+            37: Nadaray-Watson Moving Average (kernel 5 - cosine)
+        - ma_period (int): Number of periods for the Moving Average calculation.
+
+        Returns:
+        - np.ndarray: Numpy array containing the calculated Moving Average values.
+        """
     # print(f'{np_df} {type} {MA_period}')
     ma_types = {0: lambda ohlcv_array, period: talib.SMA(ohlcv_array[:, 3], timeperiod=period),
                 1: lambda ohlcv_array, period: talib.EMA(ohlcv_array[:, 3], timeperiod=period),
@@ -1132,12 +1181,6 @@ def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
                 fast_ma_type, slow_ma_type, signal_ma_type):
     slow = get_MA(ohlcv, slow_ma_type, slow_period)
     fast = get_MA(ohlcv, fast_ma_type, fast_period)
-    # print(f'slow {slow}')
-    # print(f'fast {fast}')
-    # plt.plot(slow[-1_000:])
-    # plt.show()
-    # plt.plot(fast[-1_000:])
-    # plt.show()
     macd = np.nan_to_num(fast) - np.nan_to_num(slow)
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 

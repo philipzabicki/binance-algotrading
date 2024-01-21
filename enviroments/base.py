@@ -15,7 +15,7 @@ from utils.visualize import TradingGraph
 
 class SpotBacktest(Env):
     def __init__(self, df, dates_df=None, max_steps=0, exclude_cols_left=0, no_action_finish=2_880,
-                 init_balance=1_000, position_ratio=1.0, stop_loss=None, fee=0.0002, coin_step=0.001,
+                 init_balance=1_000, position_ratio=1.0, save_ratio=None, stop_loss=None, fee=0.0002, coin_step=0.001,
                  slippage=None, slipp_std=0, render_range=120, verbose=True, visualize=False,
                  write_to_file=False, *args, **kwargs):
         self.creation_t = time()
@@ -56,6 +56,8 @@ class SpotBacktest(Env):
             self.stop_loss_factor = slippage['stop_loss'][0] - slippage['stop_loss'][1] * slipp_std
         else:
             self.buy_factor, self.sell_factor, self.stop_loss_factor = 1.0, 1.0, 1.0
+        self.save_ratio = save_ratio
+        self.save_balance = 0.0
         self.total_steps = len(self.df)
         self.exclude_cols_left = exclude_cols_left
         self.no_action_finish = no_action_finish
@@ -111,6 +113,7 @@ class SpotBacktest(Env):
         self.max_drawdown, self.max_profit = 0, 0
         self.loss_hold_counter, self.profit_hold_counter = 0, 0
         self.max_balance = self.min_balance = self.balance
+        self.save_balance = 0.0
         if self.max_steps > 0:
             self.start_step = randint(0, self.total_steps - self.max_steps)
             self.end_step = self.start_step + self.max_steps - 1
@@ -180,6 +183,10 @@ class SpotBacktest(Env):
         # print(f'SOLD {self.qty} at {price}({adj_price}) profit ${self.balance-self.prev_bal:.2f}')
         # PROFIT #
         if percentage_profit > 0:
+            if self.save_ratio is not None:
+                save_amount = self.absolute_profit * self.save_ratio
+                self.save_balance += save_amount
+                self.balance -= save_amount
             if self.balance >= self.max_balance: self.max_balance = self.balance
             self.good_trades_count += 1
             if self.max_profit == 0 or percentage_profit > self.max_profit:
@@ -248,6 +255,7 @@ class SpotBacktest(Env):
         self.done = True
         # Summary
         self.PNL_arrays = array(self.PLs_and_ratios)
+        self.balance += self.save_balance
         gain = self.balance - self.init_balance
         total_return = (self.balance / self.init_balance) - 1
         risk_free_return = (self.df[self.end_step, 3] / self.df[self.start_step, 3]) - 1
@@ -301,6 +309,7 @@ class SpotBacktest(Env):
                 f'Episode finished: gain:${gain:.2f}({total_return * 100:.2f}%), gain/step:${gain / (self.end_step - self.start_step):.5f}, ',
                 end='')
             print(f'cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}')
+            print(f' save_ratio:{self.save_ratio}, saved_balance:${self.save_balance:.2f}')
             print(
                 f' trades:{self.episode_orders:_}, trades_with(profit/loss):{self.good_trades_count - 1:_}/{self.bad_trades_count - 1:_}, ',
                 end='')
@@ -522,6 +531,10 @@ class FuturesBacktest(SpotBacktest):
         self.absolute_profit = self.balance - self.prev_bal
         ### PROFIT
         if percentage_profit > 0:
+            if self.save_ratio is not None:
+                save_amount = self.absolute_profit * self.save_ratio
+                self.save_balance += save_amount
+                self.balance -= save_amount
             self.good_trades_count += 1
             if self.balance >= self.max_balance:
                 self.max_balance = self.balance

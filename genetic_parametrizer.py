@@ -11,8 +11,8 @@ from pymoo.optimize import minimize
 from definitions import REPORT_DIR
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     GenerationSavingCallback
-from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem
-from genetic_search.bands_parametrizer import BandsFuturesMixedVariableProblem
+from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem, MACDSavingFuturesMixedVariableProblem
+from genetic_search.bands_parametrizer import BandsFuturesMixedVariableProblem, BandsSavingFuturesMixedVariableProblem
 from genetic_search.chosc_parametrizer import ChaikinOscillatorFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
@@ -20,15 +20,15 @@ from utils.utility import get_slippage_stats
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
 POP_SIZE = 256
-N_GEN = 500
+N_GEN = 50
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = BandsFuturesMixedVariableProblem
+PROBLEM = MACDSavingFuturesMixedVariableProblem
 ALGORITHM = NSGA2
-# TERMINATION = ("time", "08:30:00")
+#TERMINATION = ("time", "09:00:00")
 TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 2_880,
               'init_balance': 50,
@@ -36,7 +36,7 @@ ENV_KWARGS = {'max_steps': 2_880,
               'fee': 0.0005,
               'coin_step': 0.001,
               #'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              'verbose': False}
+              'verbose': True}
 
 
 def main():
@@ -77,7 +77,7 @@ def main():
     problem = PROBLEM(df,
                       df_mark,
                       env_kwargs=ENV_KWARGS,
-                      n_evals=5,
+                      n_evals=10,
                       elementwise_runner=runner)
 
     algorithm = ALGORITHM(pop_size=POP_SIZE,
