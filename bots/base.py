@@ -30,6 +30,8 @@ ITV_AS_MS = {'1m': 60_000,
              '1w': 604_800_000,
              '1M': 2_419_200_000}
 
+# Data from:
+# https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin
 POSITION_TIER = {1: (125, .0040, 0), 2: (100, .005, 50),
                  3: (50, .01, 2_550), 4: (20, .025, 122_550),
                  5: (10, .05, 1_372_550), 6: (5, .10, 5_372_550),
@@ -257,14 +259,13 @@ class FuturesTaker:
         self.start_t = time()
         if settings is None:
             raise ValueError("Settings must be dict type.")
+        else:
+            print(f'Settings provided: {settings}')
         self.base, self.quote = base, quote
         self.symbol = base + quote
-        if ('enter_at' not in settings.keys()) or ('close_at' not in settings.keys()) or (
-                'stop_loss' not in settings.keys()):
-            raise AttributeError(
-                "You should provide at least 'enter_at', 'close_at' and 'stop_loss' inside settings dict.")
         for key, value in settings.items():
             setattr(self, key, value)
+        # Slippage reporting files
         self.buy_slipp_file = f'{SLIPPAGE_DIR}{market}/{self.symbol}{itv}/market_buy.csv'
         self.sell_slipp_file = f'{SLIPPAGE_DIR}{market}/{self.symbol}{itv}/market_sell.csv'
         self.stoploss_slipp_file = f'{SLIPPAGE_DIR}{market}/{self.symbol}{itv}/limit_stop_loss.csv'
@@ -283,9 +284,14 @@ class FuturesTaker:
         self.OHLCV_data = self._collect_previous_candles(itv, prev_size, multi)
         self.close = self.OHLCV_data[-1][3]
 
+        # Balance
         self.available_balance = self._get_available_balance(self.quote)
         self.init_balance = self.available_balance
-        self.trade_balance = self.available_balance * self.position_ratio
+        self.position_balance = self.trade_balance * self.position_ratio
+        if self.trade_balance > self.available_balance:
+            raise RuntimeError(f'Account does not have required quote balance. Available: {self.available_balance}, required:{self.trade_balance}')
+        self.save_balance = self.available_balance-self.trade_balance
+        self.pre_trade_balance = self.trade_balance
         self.q = 0.0
         self._check_tier()
 
@@ -312,15 +318,15 @@ class FuturesTaker:
         self.signal = 0.0
         self.cum_pnl = 0.0
         self.SL_placed = False
-        self.in_position = False
+        self.in_long_position, self.in_short_position = False, False
         self.stoploss_price = 0.0
         self.buy_order, self.sell_order, self.SL_order = None, None, None
         print(f'prev_data[-5:]: {asarray(self.OHLCV_data)[-5:, :]}, len: {len(self.OHLCV_data)}')
         print(f'last close: {self.close}')
         print(
-            f'usdt_balance: {self.available_balance}, trade_balance: {self.trade_balance}, leverage_balance: {self.trade_balance * self.leverage}')
+            f'pos_bal:${self.position_balance:.2f} trade_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} available_bal:${self.available_balance:.2f}')
         print(
-            f'step_size: {self.step_size} min_qty: {self.min_qty} max_qty: {self.max_qty} trade_qty: {(self.trade_balance * self.leverage) / self.close}')
+            f'step_size: {self.step_size} min_qty: {self.min_qty} max_qty: {self.max_qty} trade_qty: {(self.position_balance * self.leverage) / self.close}')
         print(f'last orders {self.orders}')
 
     def on_error(self, ws, error):
@@ -342,87 +348,64 @@ class FuturesTaker:
             self.OHLCV_data.append(
                 array(list(map(float, [data_k['o'], data_k['h'], data_k['l'], self.close, fixed_volume]))))
             self._analyze()
-            if not self.in_position:
+            if (not self.in_long_position) and (not self.in_short_position):
                 self.cum_pnl = self.available_balance - self.init_balance
             print(
-                f'INFO close:{self.close:.2f} trade_bal:${self.trade_balance:.2f} available_bal:${self.available_balance:.2f} q:{self.q}',
+                f'INFO close:{self.close:.2f} q:{self.q} pos_bal:${self.position_balance:.2f} trade_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} available_bal:${self.available_balance:.2f}',
                 end=' ')
             print(f'cum_pnl:${self.cum_pnl:.2f}')
-        if self.SL_order is not None:
-            order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
-            if order['status'] == 'FILLED':
-                self.in_position = False
-                self.available_balance = self._get_available_balance(self.quote)
-                self.q = 0.0
-                self.trade_balance = self.available_balance * self.position_ratio
+        # Stop Loss filling handle
+        if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or ((float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
+            if self.SL_order is not None:
+                order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
+                if order['status'] == 'FILLED':
+                    self.SL_order = None
+                    self.in_long_position, self.in_short_position = False, False
+                    self._update_balances()
+                    self.q = 0.0
+                else:
+                    self._partially_filled_problem()
+        # Reopen websocket connection just to avoid timeout DC
         if time() - self.start_t >= 86_340:
             self.ws.close()
             self.start_t = time()
             self.ws.run_forever()
 
-        # if float(data_k['l']) <= self.stoploss_price:
-        #     _order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
-        #     if _order['status'] == 'FILLED':
-        #         self.SL_placed = False
-        #         self.stoploss_price = 0.0
-        #         self.available_balance = self._get_available_balance(self.quote)
-        #         self.trade_balance = self.available_balance * self.position_ratio
-        #         self.q = '0.00000'
-        #         self._report_slipp(_order, self.stoploss_price, 'stoploss')
-        #     else:
-        #         self._partially_filled_problem()
-
     def _analyze(self):
         # print(f'(on_message to _analyze: {(time() - self.on_message_t) / 1_000}ms)')
         self.analyze_t = time()
         self._check_signal()
-        if self.signal >= self.enter_at:
-            if not self.in_position:
-                trade_q = (self.trade_balance * self.leverage) / self.close
+        if self.in_long_position and (self.signal <= -self.long_close_at):
+            self._close_open_orders()
+            if self._market_sell(self.q):
+                self.in_long_position = False
+                self._report_slipp(self.sell_order, self.close, 'sell')
+                self._update_balances()
+        elif self.in_short_position and (self.signal >= self.short_close_at):
+            self._close_open_orders()
+            if self._market_buy(self.q):
+                self.in_short_position = False
+                self._report_slipp(self.buy_order, self.close, 'buy')
+                self._update_balances()
+        else:
+            if self.signal >= self.long_enter_at:
+                trade_q = (self.position_balance * self.leverage) / self.close
                 q = str(trade_q)[:len(str(self.step_size))]
                 if self._market_buy(q):
                     self.stoploss_price = round_step_size(self.close * (1 - self.stop_loss), self.tick_size)
-                    #print(f'self.stoploss_price {self.stoploss_price}')
                     self._stop_loss(q, self.stoploss_price, 'SELL')
                     self._report_slipp(self.buy_order, self.close, 'buy')
-                    self.in_position = True
-            else:
-                try:
-                    self._cancel_order(self.SL_order['orderId'])
-                except Exception as e:
-                    self._cancel_all_orders()
-                    print(f'exception at _cancel_order(): {e}')
-                if self._market_buy(self.q):
-                    self.in_position = False
-                    self._report_slipp(self.buy_order, self.close, 'buy')
-                    self.available_balance = self._get_available_balance(self.quote)
-                    self.q = 0.0
-                    self.trade_balance = self.available_balance * self.position_ratio
-        elif self.signal <= -self.close_at:
-            if not self.in_position:
-                trade_q = (self.trade_balance * self.leverage) / self.close
+                    self.q = q
+                    self.in_long_position = True
+            elif self.signal <= -self.short_enter_at:
+                trade_q = (self.position_balance * self.leverage) / self.close
                 q = str(trade_q)[:len(str(self.step_size))]
                 if self._market_sell(q):
                     self.stoploss_price = round_step_size(self.close * (1 + self.stop_loss), self.tick_size)
-                    #print(f'self.stoploss_price {self.stoploss_price}')
                     self._stop_loss(q, self.stoploss_price, 'BUY')
                     self._report_slipp(self.sell_order, self.close, 'sell')
-                    self.in_position = True
-            else:
-                try:
-                    self._cancel_order(self.SL_order['orderId'])
-                except Exception as e:
-                    self._cancel_all_orders()
-                    print(f'exception at _cancel_order(): {e}')
-                if self._market_sell(self.q):
-                    self.in_position = False
-                    self._report_slipp(self.sell_order, self.close, 'sell')
-                    self.available_balance = self._get_available_balance(self.quote)
-                    self.q = 0.0
-                    self.trade_balance = self.available_balance * self.position_ratio
-        # else:
-        #     self.init_balance = float(self.client.get_asset_balance(asset='FDUSD')['free'])
-        #     self.q = str(self.client.get_asset_balance(asset='BTC')['free'])[:7]
+                    self.q = q
+                    self.in_short_position = True
 
     def _check_signal(self):
         self.signal = 0.0
@@ -453,14 +436,22 @@ class FuturesTaker:
         # return value / quantity
 
     def _partially_filled_problem(self):
-        self._cancel_all_orders()
+        self._close_open_orders()
         self.q = self._get_available_balance(self.base)
+
         if self._market_sell(self.q):
             self._report_slipp(self.sell_order, self.stoploss_price, 'unfilled_stoploss')
             self.SL_placed = False
             self.stoploss_price = 0.0
         else:
             print(f'FAILED AT _partially_filled_problem()')
+
+    def _close_open_orders(self):
+        try:
+            self._cancel_order(self.SL_order['orderId'])
+        except Exception as e:
+            self._cancel_all_orders()
+            print(f'exception at _cancel_order(): {e}')
 
     def _cancel_all_orders(self):
         try:
@@ -478,12 +469,12 @@ class FuturesTaker:
         try:
             self.SL_order = self.client.new_order(symbol=self.symbol,
                                                   side=side,
-                                                  type='STOP',
-                                                  quantity=q,
+                                                  type='STOP_MARKET',
+                                                  #quantity=q,
                                                   stopPrice=price,
-                                                  price=price)
+                                                  closePosition='true')
             self.SL_placed = True
-            print(f' {dt.today()} STOPLOSS_LIMIT q:{q} price:{price}')
+            print(f'STOP_MARKET q:{q} stopPrice:{price} {dt.today()} ')
             return True
         except Exception as e:
             print(f'exception at _stop_loss(): {e}')
@@ -497,15 +488,12 @@ class FuturesTaker:
                                                    type='MARKET',
                                                    quantity=q)
             print(f'(sending buy order: {(time() - order_t) * 1_000}ms)')
-            # print(f'self.buy_order {self.buy_order}')
-            self.q = q
-            self.trade_balance = 0.0
-            print(f' {dt.today()} BUY_MARKET q:{q} self.balance:{self.trade_balance} self.q:{self.q}')
+            print(f'(_analyze to _market_buy: {(time() - self.analyze_t) * 1_000}ms)')
+            print(f'BUY_MARKET q:{q} position_balance:{self.position_balance} {dt.today()}')
             return True
         except Exception as e:
             print(f'exception at _market_buy(): {e}')
             return False
-        # print(self.buy_order)
 
     def _market_sell(self, q):
         try:
@@ -514,12 +502,9 @@ class FuturesTaker:
                                                     side='SELL',
                                                     type='MARKET',
                                                     quantity=q)
-            # print(f'self.sell_order {self.sell_order}')
             print(f'(sending sell order: {(time() - order_t) * 1_000}ms)')
             print(f'(_analyze to _market_sell: {(time() - self.analyze_t) * 1_000}ms)')
-            self.trade_balance = 0.0
-            self.q = q
-            print(f' {dt.today()} SELL_MARKET q:{q} self.balance:{self.trade_balance} self.q:{self.q}')
+            print(f'SELL_MARKET q:{q} position_balance:{self.position_balance} {dt.today()}{dt.today()}')
             return True
         except Exception as e:
             print(f'exception at _market_sell(): {e}')
@@ -555,6 +540,18 @@ class FuturesTaker:
         for bal in self.client.balance():
             if bal['asset'] == asset:
                 return float(bal['availableBalance'])
+
+    def _update_balances(self):
+        self.available_balance = self._get_available_balance(self.quote)
+        gain = self.available_balance-self.save_balance-self.trade_balance
+        if gain > 0:
+            self.save_balance += gain*self.save_ratio
+            self.trade_balance += gain*(1-self.save_ratio)
+            self.position_balance = self.trade_balance * self.position_ratio
+        else:
+            self.trade_balance += gain
+            self.position_balance = self.trade_balance * self.position_ratio
+        self.q = 0.0
 
     def _check_tier(self):
         # print('_check_tier')
