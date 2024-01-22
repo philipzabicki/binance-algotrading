@@ -6,7 +6,6 @@ from numpy import inf, mean, std
 from enviroments.bands_env import BandsOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_MA_band_signal
-from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000

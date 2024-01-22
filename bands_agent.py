@@ -1,7 +1,6 @@
 from numpy import inf
 from stable_baselines3 import DDPG
 
-from enviroments import BandsStratSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 

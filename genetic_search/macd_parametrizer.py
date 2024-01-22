@@ -1,8 +1,9 @@
-from numpy import array, mean, median
+from numpy import array, median
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
-from enviroments.macd_env import MACDOptimizeSpotEnv, MACDOptimizeFuturesEnv, MACDOptimizeSavingFuturesEnv, MACDOptimizeSavingSpotEnv
+from enviroments.macd_env import MACDOptimizeSpotEnv, MACDOptimizeFuturesEnv, MACDOptimizeSavingFuturesEnv, \
+    MACDOptimizeSavingSpotEnv
 
 
 class MACDSpotMixedVariableProblem(ElementwiseProblem):

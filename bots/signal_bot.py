@@ -1,10 +1,9 @@
-from collections import deque
 from time import time
 
-from numpy import array, where, asarray
+from numpy import asarray
 from talib import RSI, ATR, AD
 
-from bots import SpotTaker, FuturesTaker
+from bots import SpotTaker
 from utils.ta_tools import custom_MACD, MACD_cross_signal, anyMA_sig, get_MA, RSI_like_signal, custom_ChaikinOscillator, \
     ChaikinOscillator_signal
 

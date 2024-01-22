@@ -3,17 +3,16 @@ from csv import writer
 from datetime import datetime as dt
 from json import loads
 from os import makedirs, path
-from time import time, sleep
+from time import time
 
-from binance.um_futures import UMFutures
-from binance.helpers import round_step_size
 from binance.client import Client
 from binance.enums import *
+from binance.helpers import round_step_size
+from binance.um_futures import UMFutures
 from numpy import array, where, asarray
 from websocket import WebSocketApp
 
 from definitions import SLIPPAGE_DIR
-
 
 ITV_AS_MS = {'1m': 60_000,
              '3m': 180_000,

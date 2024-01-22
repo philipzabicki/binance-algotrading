@@ -8,14 +8,10 @@ from pymoo.core.mixed import MixedVariableMating, MixedVariableSampling, \
 from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
 
-from definitions import REPORT_DIR
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     GenerationSavingCallback
-from genetic_search.macd_parametrizer import MACDFuturesMixedVariableProblem, MACDSavingFuturesMixedVariableProblem
-from genetic_search.bands_parametrizer import BandsFuturesMixedVariableProblem, BandsSavingFuturesMixedVariableProblem
-from genetic_search.chosc_parametrizer import ChaikinOscillatorFuturesMixedVariableProblem
+from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
-from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1

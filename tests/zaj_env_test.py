@@ -1,15 +1,13 @@
 from multiprocessing import Pool, cpu_count
 from statistics import mean, stdev
-import pandas as pd
 
+import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 from talib import AD
 
 from enviroments.zajeciowy_env import ChaikinOscillatorStratSpotEnv
-from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
-from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
 CPU_CORES = 1

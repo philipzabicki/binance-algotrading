@@ -3,7 +3,6 @@ from io import BytesIO
 from os import path, listdir
 from time import time
 from zipfile import ZipFile, BadZipFile
-from sys import argv
 
 import pandas as pd
 import requests

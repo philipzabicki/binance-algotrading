@@ -1,15 +1,14 @@
-from statistics import mean, stdev
 from multiprocessing import cpu_count, Pool
+from statistics import mean, stdev
 
 import mplfinance as mpf
 import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 
-from enviroments import MACDOptimizeFuturesEnv, MACDOptimizeSavingFuturesEnv
+from enviroments import MACDOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
-from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000

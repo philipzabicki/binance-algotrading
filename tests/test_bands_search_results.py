@@ -3,7 +3,6 @@ from os import getcwd
 import pandas as pd
 
 from definitions import REPORT_DIR
-from enviroments import BandsStratSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 

@@ -45,6 +45,8 @@ Code used for handling data downloads can be found there: [utils/get_data.py](ht
 Main functions in this file are:
 ### by_BinanceVision()
 ```python
+LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
+
 def by_BinanceVision(ticker='BTCBUSD',
                      interval='1m',
                      market_type='um',
@@ -66,16 +68,14 @@ delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date 
 
 ### by_DataClient()
 ```python
-(...)
 LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
-(...)
 
 def by_DataClient(ticker='BTCUSDT',
                   interval='1m',
                   futures=True,
                   statements=True,
                   split=False,
-                  delay=LAST_DATA_POINT_DELAY): (...)
+                  delay=LAST_DATA_POINT_DELAY): ...
 ```
 **Parameters:**
 
@@ -119,82 +119,80 @@ For e.g. parameters:
 will result in trading episode of BUY -> HOLD -> HOLD -> SELL  actions.
 ##### SignalExecuteSpotEnv
 ```python
-(...)
+from numpy.random import choice
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if 'close_at' in kwargs and 'enter_at' in kwargs:
-            self.enter_threshold = kwargs['enter_at']
-            self.close_threshold = kwargs['close_at']
-        else:
-            self.enter_threshold = 1.0
-            self.close_threshold = 1.0
-        self.signals = empty(self.total_steps)
+def __init__(self, *args, **kwargs):
+  super().__init__(*args, **kwargs)
+  if 'close_at' in kwargs and 'enter_at' in kwargs:
+      self.enter_threshold = kwargs['enter_at']
+      self.close_threshold = kwargs['close_at']
+  else:
+      self.enter_threshold = 1.0
+      self.close_threshold = 1.0
+  self.signals = choice([-1, 0, 1], size=self.total_steps)
 
-(...)
-
-    def __call__(self, *args, **kwargs):
-        while not self.done:
-            # step must be start_step adjusted cause one can start and end backtest at any point in df
-            _step = self.current_step - self.start_step
-            if self.signals[_step] >= self.enter_threshold:
-                action = 1
-            elif self.signals[_step] <= -self.close_threshold:
-                action = 2
-            else:
-                action = 0
-            self.step(action)
-            if self.visualize:
-                # current_step manipulation just to synchronize plot rendering
-                # could be fixed by calling .render() inside .step() just before return statement
-                self.current_step -= 1
-                self.render(indicator_or_reward=self.signals[_step])
-                self.current_step += 1
-        return None, self.reward, self.done, False, self.info
+def __call__(self, *args, **kwargs):
+  while not self.done:
+      # step must be start_step adjusted cause one can start and end backtest at any point in df
+      _step = self.current_step - self.start_step
+      if self.signals[_step] >= self.enter_threshold:
+          action = 1
+      elif self.signals[_step] <= -self.close_threshold:
+          action = 2
+      else:
+          action = 0
+      self.step(action)
+      if self.visualize:
+          # current_step manipulation just to synchronize plot rendering
+          # could be fixed by calling .render() inside .step() just before return statement
+          self.current_step -= 1
+          self.render(indicator_or_reward=self.signals[_step])
+          self.current_step += 1
+  return None, self.reward, self.done, False, self.info
 ```
 
 ##### SignalExecuteFuturesEnv
 ```python
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if 'close_at' in kwargs and 'long_enter_at' in kwargs and 'short_close_at' in kwargs:
-            self.long_enter_threshold = kwargs['long_enter_at']
-            self.long_close_threshold = kwargs['long_close_at']
-            self.short_enter_threshold = kwargs['short_enter_at']
-            self.short_close_threshold = kwargs['short_close_at']
-            self.leverage = kwargs['leverage']
-        else:
-            self.long_enter_threshold = 1.0
-            self.long_close_threshold = 1.0
-            self.short_enter_threshold = 1.0
-            self.short_close_threshold = 1.0
-            self.leverage = 5
-        self.signals = empty(self.total_steps)
+from numpy.random import choice
 
-   (...)
+def __init__(self, *args, **kwargs):
+  super().__init__(*args, **kwargs)
+  if 'close_at' in kwargs and 'long_enter_at' in kwargs and 'short_close_at' in kwargs:
+      self.long_enter_threshold = kwargs['long_enter_at']
+      self.long_close_threshold = kwargs['long_close_at']
+      self.short_enter_threshold = kwargs['short_enter_at']
+      self.short_close_threshold = kwargs['short_close_at']
+      self.leverage = kwargs['leverage']
+  else:
+      self.long_enter_threshold = 1.0
+      self.long_close_threshold = 1.0
+      self.short_enter_threshold = 1.0
+      self.short_close_threshold = 1.0
+      self.leverage = 5
+  self.signals = choice([-1, 0, 1], size=self.total_steps)
 
-    def __call__(self, *args, **kwargs):
-     while not self.done:
-         # step must be start_step adjusted cause one can start and end backtest at any point in df
-         _step = self.current_step - self.start_step
-         if self.qty == 0 and self.signals[_step] >= self.long_enter_threshold:
-             action = 1
-         elif self.qty == 0 and self.signals[_step] <= -self.short_enter_threshold:
-             action = 2
-         elif self.qty > 0 and self.signals[_step] <= -self.long_close_threshold:
-             action = 2
-         elif self.qty < 0 and self.signals[_step] >= self.short_close_threshold:
-             action = 1
-         else:
-             action = 0
-         self.step(action)
-         if self.visualize:
-             # current_step manipulation just to synchronize plot rendering
-             # could be fixed by calling .render() inside .step() just before return statement
-             self.current_step -= 1
-             self.render(indicator_or_reward=self.signals[_step])
-             self.current_step += 1
-     return None, self.reward, self.done, False, self.info
+def __call__(self, *args, **kwargs):
+   while not self.done:
+      # step must be start_step adjusted cause one can start and end backtest at any point in df
+      _step = self.current_step - self.start_step
+      if self.qty == 0 and self.signals[_step] >= self.long_enter_threshold:
+          action = 1
+      elif self.qty == 0 and self.signals[_step] <= -self.short_enter_threshold:
+          action = 2
+      elif self.qty > 0 and self.signals[_step] <= -self.long_close_threshold:
+          action = 2
+      elif self.qty < 0 and self.signals[_step] >= self.short_close_threshold:
+          action = 1
+      else:
+          action = 0
+      self.step(action)
+      if self.visualize:
+          # current_step manipulation just to synchronize plot rendering
+          # could be fixed by calling .render() inside .step() just before return statement
+          self.current_step -= 1
+          self.render(indicator_or_reward=self.signals[_step])
+          self.current_step += 1
+   return None, self.reward, self.done, False, self.info
 ```
 
 ### Technical analysis single signal trading environments
@@ -206,6 +204,14 @@ Ex. MACD using TEMA-42 for slow ma, HullMA-37 for fast ma and HammingMA-8 for si
 
 The MAs used for optimizations are listed in function inside utils/ta_tools.py. Ones used now are the fast enough ones, some new may appear in future.
 ```python
+import numpy as np
+import talib
+from finta import TA as finTA
+import pandas_ta as p_ta
+from tindicators import ti
+
+...
+
 def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     """
         Calculate Moving Average (MA) based on the specified MA type and period.
@@ -316,7 +322,6 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
 Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD made with arguments provided to reset method.
 ##### Execute environment
 ```python
-(...)
 class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
     def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,
               fast_period=12, slow_period=26, signal_period=9,

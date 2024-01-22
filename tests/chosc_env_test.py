@@ -5,16 +5,15 @@ from matplotlib import pyplot as plt
 from numpy import inf
 from talib import AD
 
-from enviroments.chaikinosc_env import ChaikinOscillatorStratFuturesEnv
+from enviroments.chaikinosc_env import ChaikinOscillatorOptimizeFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
-from utils.utility import get_slippage_stats
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000
 N_STEPS = 5_760
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-ENV = ChaikinOscillatorStratFuturesEnv
+ENV = ChaikinOscillatorOptimizeFuturesEnv
 ACTION = [0.5176180660228993,0.009081368528904019,74,439,17,3,44]
 
 

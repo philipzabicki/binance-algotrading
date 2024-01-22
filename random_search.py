@@ -8,14 +8,14 @@ from numpy import isnan, inf
 from pandas import read_csv
 
 from definitions import REPORT_DIR
-from enviroments import MACDStratSpotEnv
+from enviroments import MACDOptimizeSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
 CPU_CORES_COUNT = 8  # cpu_count()
 EPISODES_PER_CORE = 1024
 TICKER, ITV, M_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', '2023-09-11'
-ENVIRONMENT = MACDStratSpotEnv
+ENVIRONMENT = MACDOptimizeSpotEnv
 SLIPP = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
 REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{M_TYPE}{ITV}since{START_DATE}.csv'
 
