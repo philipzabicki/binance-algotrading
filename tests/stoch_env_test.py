@@ -6,16 +6,16 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 
-from enviroments import MACDOptimizeSavingFuturesEnv
+from utils.ta_tools import custom_StochasticOscillator, StochasticOscillator_signal
+from enviroments import StochOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
-from utils.ta_tools import custom_MACD, MACD_cross_signal
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000
-N_STEPS = 17_280
+N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.9877652053541754,0.962510345255785,0.014439316903777609,0.4351151759752898,0.5342028619854183,0.41333153505515546,0.7662871885549944,294,812,699,31,37,26,50]
+ENV = StochOptimizeSavingFuturesEnv
+ACTION = [0.713501980814903, 0.37828432488195035, 0.011868467666535366, 0.03353168187115066, 0.7049741738332238, 0.20714253656320508, 0.5415026178476368, 46.22146195909787, 56.456617242221355, 767, 247, 567, 20, 21, 12]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -64,25 +64,37 @@ if __name__ == "__main__":
                                   start_date=START_DATE,
                                   split=True,
                                   delay=259_200)
-    macd, signal = custom_MACD(df.iloc[:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5], ACTION[-4], ACTION[-3],
-                               ACTION[-2])
-    signals = MACD_cross_signal(macd, signal)
-    df['MACD'] = macd
-    df['signal'] = signal
+    slowK, slowD = custom_StochasticOscillator(df.iloc[:, 1:6].to_numpy(),
+                                               fastK_period=ACTION[-6],
+                                               slowK_period=ACTION[-5],
+                                               slowD_period=ACTION[-4],
+                                               slowK_ma_type=ACTION[-3],
+                                               slowD_ma_type=ACTION[-2])
+    # print(slowK)
+    # print(slowD)
+    signals = StochasticOscillator_signal(slowK,
+                                          slowD,
+                                          oversold_threshold=ACTION[-3],
+                                          overbought_threshold=ACTION[-2])
+    df['slowK'] = slowK
+    df['slowD'] = slowD
     df['signals'] = signals
     df.index = pd.DatetimeIndex(df['Opened'])
-    df_plot = df.tail(500)
+    df_plot = df.tail(5_000)
 
     fig = plt.figure(figsize=(21, 9))
     gs = fig.add_gridspec(3, 1, height_ratios=[2, 1, 1])
     axs = gs.subplots(sharex=False)
     mpf.plot(df_plot, type='candle', style='yahoo', ylabel='Price', ax=axs[0])
-    axs[1].plot(df_plot.index, df_plot['MACD'], label='MACD')
-    axs[1].plot(df_plot.index, df_plot['signal'], label='Signal')
+    axs[1].plot(df_plot.index, df_plot['slowK'], label='slowK')
+    axs[1].plot(df_plot.index, df_plot['slowD'], label='slowD')
+    axs[1].axhline(y=ACTION[-8], label='oversold threshold', color='grey', linestyle='--')
+    axs[1].axhline(y=ACTION[-7], label='overbought threshold', color='grey', linestyle='--')
+    axs[1].axhline(y=50, color='black', linestyle='dashed')
     axs[1].legend(loc='upper left')
     axs[2].plot(df_plot.index, df_plot['signals'], label='Trade signals')
-    axs[2].axhline(y=sig_map(ACTION[2]), label='Buy threshold', color='green', linestyle='--')
-    axs[2].axhline(y=-sig_map(ACTION[3]), label='Sell threshold', color='red', linestyle='--')
+    axs[2].axhline(y=sig_map(ACTION[3]), label='Long enter threshold', color='green', linestyle='--')
+    axs[2].axhline(y=-sig_map(ACTION[4]), label='Long close threshold', color='red', linestyle='--')
     axs[2].legend(loc='upper left')
 
     plt.tight_layout()

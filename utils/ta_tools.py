@@ -194,6 +194,29 @@ def RSI_oversold_signal(rsi_like_indicator: list[float] | np.ndarray, timeperiod
                                  zip(rsi_like_indicator[timeperiod:], rsi_like_indicator[timeperiod - 1:-1])]
 
 
+@jit(nopython=True, nogil=True, cache=True)
+def StochasticOscillator_signal(k_line: list[float] | np.ndarray, d_line: list[float] | np.ndarray,
+                                oversold_threshold: float = 20.0, overbought_threshold: float = 80.0) -> list[float]:
+    # signal logic:
+    # * 1s - cross above/below threshold
+    # * .75s cross above/below 0
+    # * 0.5s both above/below threshold
+    # * 0.25s - one above/below threshold
+    return [0.0] + [1 if (cur_k < oversold_threshold) and (cur_d < oversold_threshold) and (cur_k > cur_d) \
+                         and (prev_k < prev_d) else
+                    -1 if (cur_k > overbought_threshold) and (cur_d > overbought_threshold) and (cur_k < cur_d) \
+                          and (prev_k > prev_d) else
+                    .75 if (cur_k < 50.0) and (cur_d < 50.0) and (cur_k > cur_d) and (prev_k < prev_d) else
+                    -.75 if (cur_k > 50.0) and (cur_d > 50.0) and (cur_k < cur_d) and (prev_k > prev_d) else
+                    0.5 if (cur_k < oversold_threshold) and (cur_d < oversold_threshold) else
+                    -0.5 if (cur_k > overbought_threshold) and (cur_d > overbought_threshold) else
+                    0.25 if (cur_k < oversold_threshold) or (cur_d < oversold_threshold) else
+                    -0.25 if (cur_k > overbought_threshold) or (cur_d > overbought_threshold) else
+                    0
+                    for cur_k, cur_d, prev_k, prev_d in
+                    zip(k_line[1:], d_line[1:], k_line[:-1], d_line[:-1])]
+
+
 @feature_timeit
 def ADX_signal(adx_col: list | np.ndarray, minus_di: list | np.ndarray, plus_di: list | np.ndarray) -> list[float]:
     """
@@ -1171,6 +1194,14 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
     return np.nan_to_num(ma_types[ma_type](close.astype(np.float64), ma_period))
+
+
+def custom_StochasticOscillator(ohlcv, fastK_period, slowK_period, slowD_period, slowK_ma_type, slowD_ma_type):
+    fastK, _ = talib.STOCHF(ohlcv[:, 1], ohlcv[:, 2], ohlcv[:, 3], fastk_period=fastK_period, fastd_period=1, fastd_matype=0)
+    #print(f'fastK {fastK}')
+    slowK = get_1D_MA(fastK, slowK_ma_type, slowK_period)
+    slowD = get_1D_MA(slowK, slowD_ma_type, slowD_period)
+    return slowK, slowD
 
 
 def custom_ChaikinOscillator(adl, fast_period, slow_period, fast_ma_type, slow_ma_type):

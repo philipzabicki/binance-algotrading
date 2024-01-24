@@ -8,7 +8,7 @@ INTERVAL = '1m'
 stop_loss, enter_at, close_at = 0.013184332141448296, 0.5151211725660106, 0.013831228965725608
 fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type = 760, 677, 7, 36, 11, 4
 # MAs require previous data longer than just calculation period size
-PREV_DATA_MULTIPLAYER = 25
+PREV_DATA_MULTIPLAYER = 1
 SETTINGS = {'stop_loss': stop_loss,
             'enter_at': enter_at,
             'close_at': close_at,

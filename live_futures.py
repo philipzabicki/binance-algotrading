@@ -10,7 +10,7 @@ position_ratio, save_ratio, stop_loss, long_enter_at, long_close_at, short_enter
 fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 12, 26, 9, 1, 1, 1, 54
 trade_balance = 10.0
 # MAs require previous data longer than just calculation period size
-PREV_DATA_MULTIPLAYER = 25
+PREV_DATA_MULTIPLAYER = 1
 SETTINGS = {"trade_balance": trade_balance,
             "position_ratio": position_ratio,
             "save_ratio": save_ratio,

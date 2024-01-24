@@ -9,7 +9,7 @@ websocket-client~=1.6.4
 requests~=2.31.0
 ta-lib
 tindicators~=0.9.12
-git+https://github.com/philipzabicki/finta.git
+git+https://github.com/philipzabicki/finta.git@philipzabicki-patch-1
 ta~=0.10.2
 pandas_ta
 pympler~=1.0.1

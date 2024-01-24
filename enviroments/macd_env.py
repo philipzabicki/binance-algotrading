@@ -19,11 +19,12 @@ class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
         self.signal_ma_type = signal_ma_type
+        # Some MAs need as much additional previous data as 25 times period length to return repetitive values.
+        # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
         _max_period = max(self.fast_period, self.slow_period) + self.signal_period
         if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        # print(self.df[self.start_step:self.end_step, :5])
         macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
                                         slow_ma_type=slow_ma_type, slow_period=slow_period,
