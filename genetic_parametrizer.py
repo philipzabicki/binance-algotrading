@@ -17,7 +17,7 @@ from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 256
+POP_SIZE = 512
 N_GEN = 50
 TICKER = 'BTCUSDT'
 ITV = '15m'
@@ -26,7 +26,7 @@ DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
 PROBLEM = StochSavingFuturesMixedVariableProblem
 ALGORITHM = NSGA2
-TERMINATION = ("time", "00:25:00")
+TERMINATION = ("time", "12:00:00")
 #TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 2_880,
               'init_balance': 50,

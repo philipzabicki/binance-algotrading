@@ -12,21 +12,21 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
         macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.015)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
+                          "oversold_threshold": Real(bounds=(0, 50)),
+                          "overbought_threshold": Real(bounds=(50, 100)),
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
                           "slowK_ma_type": Integer(bounds=(0, 26)),
-                          "slowD_ma_type": Integer(bounds=(0, 26)),
-                          "oversold_threshold": Real(bounds=(0, 50)),
-                          "overbought_threshold": Real(bounds=(50, 100))}
+                          "slowD_ma_type": Integer(bounds=(0, 26))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
         action = [X['stop_loss'], X['enter_at'], X['close_at'],
+                  X['oversold_threshold'], X['overbought_threshold'],
                   X['fastK_period'], X['slowK_period'], X['slowD_period'],
-                  X['slowK_ma_type'], X['slowD_ma_type'],
-                  X['oversold_threshold'], X['overbought_threshold']]
+                  X['slowK_ma_type'], X['slowD_ma_type']]
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
@@ -45,13 +45,13 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
                           "long_close_at": Real(bounds=(0.001, 1.000)),
                           "short_enter_at": Real(bounds=(0.001, 1.000)),
                           "short_close_at": Real(bounds=(0.001, 1.000)),
+                          "oversold_threshold": Real(bounds=(0, 50)),
+                          "overbought_threshold": Real(bounds=(50, 100)),
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
                           "slowK_ma_type": Integer(bounds=(0, 26)),
                           "slowD_ma_type": Integer(bounds=(0, 26)),
-                          "oversold_threshold": Real(bounds=(0, 50)),
-                          "overbought_threshold": Real(bounds=(50, 100)),
                           "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
@@ -60,9 +60,9 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
         action = [X['position_ratio'], X['stop_loss'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
+                  X['oversold_threshold'], X['overbought_threshold'],
                   X['fastK_period'], X['slowK_period'], X['slowD_period'],
                   X['slowK_ma_type'], X['slowD_ma_type'],
-                  X['oversold_threshold'], X['overbought_threshold'],
                   X['leverage']]
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
@@ -82,22 +82,22 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
+                          "oversold_threshold": Real(bounds=(0, 50)),
+                          "overbought_threshold": Real(bounds=(50, 100)),
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
                           "slowK_ma_type": Integer(bounds=(0, 26)),
-                          "slowD_ma_type": Integer(bounds=(0, 26)),
-                          "oversold_threshold": Real(bounds=(0, 50)),
-                          "overbought_threshold": Real(bounds=(50, 100))}
+                          "slowD_ma_type": Integer(bounds=(0, 26))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
         action = [X['save_ratio'], X['stop_loss'],
                   X['enter_at'], X['close_at'],
+                  X['oversold_threshold'], X['overbought_threshold'],
                   X['fastK_period'], X['slowK_period'], X['slowD_period'],
-                  X['slowK_ma_type'], X['slowD_ma_type'],
-                  X['oversold_threshold'], X['overbought_threshold']]
+                  X['slowK_ma_type'], X['slowD_ma_type']]
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
@@ -117,13 +117,13 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
                           "long_close_at": Real(bounds=(0.001, 1.000)),
                           "short_enter_at": Real(bounds=(0.001, 1.000)),
                           "short_close_at": Real(bounds=(0.001, 1.000)),
+                          "oversold_threshold": Real(bounds=(0, 50)),
+                          "overbought_threshold": Real(bounds=(50, 100)),
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
                           "slowK_ma_type": Integer(bounds=(0, 26)),
                           "slowD_ma_type": Integer(bounds=(0, 26)),
-                          "oversold_threshold": Real(bounds=(0, 50)),
-                          "overbought_threshold": Real(bounds=(50, 100)),
                           "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
@@ -132,9 +132,9 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
         action = [X['position_ratio'], X['save_ratio'], X['stop_loss'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
+                  X['oversold_threshold'], X['overbought_threshold'],
                   X['fastK_period'], X['slowK_period'], X['slowD_period'],
                   X['slowK_ma_type'], X['slowD_ma_type'],
-                  X['oversold_threshold'], X['overbought_threshold'],
                   X['leverage']]
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
