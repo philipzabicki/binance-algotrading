@@ -3,6 +3,7 @@ from stable_baselines3 import DDPG
 
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
+from enviroments import BandsOptimizeSpotEnv
 
 if __name__ == "__main__":
     slippages = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
@@ -14,7 +15,7 @@ if __name__ == "__main__":
                              start_date='2023-09-11 00:00:00',
                              split=True,
                              delay=0)
-    env = BandsStratSpotEnv(df=df,
+    env = BandsOptimizeSpotEnv(df=df,
                             # max_steps=259_200,
                             init_balance=300,
                             no_action_finish=inf,

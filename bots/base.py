@@ -289,8 +289,9 @@ class FuturesTaker:
         self.init_balance = self.available_balance
         self.position_balance = self.trade_balance * self.position_ratio
         if self.trade_balance > self.available_balance:
-            raise RuntimeError(f'Account does not have required quote balance. Available: {self.available_balance}, required:{self.trade_balance}')
-        self.save_balance = self.available_balance-self.trade_balance
+            raise RuntimeError(
+                f'Account does not have required quote balance. Available: {self.available_balance}, required:{self.trade_balance}')
+        self.save_balance = self.available_balance - self.trade_balance
         self.pre_trade_balance = self.trade_balance
         self.q = 0.0
         self._check_tier()
@@ -355,7 +356,8 @@ class FuturesTaker:
                 end=' ')
             print(f'cum_pnl:${self.cum_pnl:.2f}')
         # Stop Loss filling handle
-        if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or ((float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
+        if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
+                (float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
             if self.SL_order is not None:
                 order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
                 if order['status'] == 'FILLED':
@@ -470,7 +472,7 @@ class FuturesTaker:
             self.SL_order = self.client.new_order(symbol=self.symbol,
                                                   side=side,
                                                   type='STOP_MARKET',
-                                                  #quantity=q,
+                                                  # quantity=q,
                                                   stopPrice=price,
                                                   closePosition='true')
             self.SL_placed = True
@@ -543,10 +545,10 @@ class FuturesTaker:
 
     def _update_balances(self):
         self.available_balance = self._get_available_balance(self.quote)
-        gain = self.available_balance-self.save_balance-self.trade_balance
+        gain = self.available_balance - self.save_balance - self.trade_balance
         if gain > 0:
-            self.save_balance += gain*self.save_ratio
-            self.trade_balance += gain*(1-self.save_ratio)
+            self.save_balance += gain * self.save_ratio
+            self.trade_balance += gain * (1 - self.save_ratio)
             self.position_balance = self.trade_balance * self.position_ratio
         else:
             self.trade_balance += gain

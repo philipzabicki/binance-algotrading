@@ -14,7 +14,7 @@ N_TEST = 10_000
 N_STEPS = 5_760
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = ChaikinOscillatorOptimizeFuturesEnv
-ACTION = [0.5176180660228993,0.009081368528904019,74,439,17,3,44]
+ACTION = [0.5176180660228993, 0.009081368528904019, 74, 439, 17, 3, 44]
 
 
 def sig_map(value):
@@ -37,7 +37,7 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               fee=0.0005,
               coin_step=0.001,
               # slipp_std=0,
-              #slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+              # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
               verbose=False, visualize=False, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):

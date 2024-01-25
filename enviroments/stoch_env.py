@@ -42,7 +42,8 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
     def _finish_episode(self):
         super()._finish_episode()
         if self.verbose:
-            print(f' fastK_period={self.fastK_period}, slowK_period={self.slowK_period}, slowD_period={self.slowD_period}')
+            print(
+                f' fastK_period={self.fastK_period}, slowK_period={self.slowK_period}, slowD_period={self.slowD_period}')
             print(f' slowK_ma_type={self.slowK_ma_type}, slowD_ma_type={self.slowD_ma_type}')
             print(f' oversold_threshold={self.oversold_threshold}, overbought_threshold={self.overbought_threshold}')
         if self.balance >= 1_000_000:
@@ -78,8 +79,8 @@ class _StochExecuteFuturesEnv(SignalExecuteFuturesEnv):
                                                    slowD_period=slowD_period,
                                                    slowK_ma_type=slowK_ma_type,
                                                    slowD_ma_type=slowD_ma_type)
-        #print(slowK)
-        #print(slowD)
+        # print(slowK)
+        # print(slowD)
         self.signals = StochasticOscillator_signal(slowK[self.start_step - prev_values:],
                                                    slowD[self.start_step - prev_values:],
                                                    oversold_threshold=oversold_threshold,

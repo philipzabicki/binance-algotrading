@@ -1,49 +1,72 @@
 # binance-algotrading
 
-This repository is a collection of personal tools designed for strategy analysis and algorithmic trading on the Binance exchange.
+This repository is a collection of personal tools designed for strategy analysis and algorithmic trading on the Binance
+exchange.
 
-The main objective of this repository is to download historical data from exchange, utilize them for creating and evaluating trading strategies, and ultimately deploy them on a server for live automatic trading on the Binance exchange. I employ two approaches to develop trading strategies.
+The main objective of this repository is to download historical data from exchange, utilize them for creating and
+evaluating trading strategies, and ultimately deploy them on a server for live automatic trading on the Binance
+exchange. I employ two approaches to develop trading strategies.
 
 1. **Genetic Algorithm Approach:**
-   Utilizes a genetic algorithm to optimize common technical analysis indicators and other trading variables (e.g., stop_loss). This approach aims to enhance the performance of trading strategies through evolutionary optimization.
+   Utilizes a genetic algorithm to optimize common technical analysis indicators and other trading variables (e.g.,
+   stop_loss). This approach aims to enhance the performance of trading strategies through evolutionary optimization.
 
 2. **Reinforcement Learning Approach:**
-   Applies reinforcement learning to create a profitable trading agent. This approach focuses on developing an intelligent agent that learns and adapts its trading strategies based on feedback from the market.
+   Applies reinforcement learning to create a profitable trading agent. This approach focuses on developing an
+   intelligent agent that learns and adapts its trading strategies based on feedback from the market.
 
 ## Requirements
+
 ### Pre-requirements
+
 Whole project runs with python 3.11.4, but it should work fine with any 3.11.x version.
 
 Before installing TA-lib via pip you need to satisfy dependencies.
 Just follow this [TA-Lib](https://github.com/TA-Lib/ta-lib-python?tab=readme-ov-file#dependencies).
 
-Otherwise, you can download this file [ta_lib-0.4.25-cp311-cp311-win_amd64.whl](https://drive.google.com/file/d/117WDdPpTAJK_IX2yWpliBRy14m9uUWSD/view?usp=sharing)(TA-lib for python 3.11.4).
-Then inside directory where you downloaded run 
+Otherwise, you can download this
+file [ta_lib-0.4.25-cp311-cp311-win_amd64.whl](https://drive.google.com/file/d/117WDdPpTAJK_IX2yWpliBRy14m9uUWSD/view?usp=sharing)(
+TA-lib for python 3.11.4).
+Then inside directory where you downloaded run
+
 ```
 pip install ta_lib-0.4.25-cp311-cp311-win_amd64.whl
 ```
+
 ### Install via pip
-After satisfying TA-lib dependencies from above, you can download this repo as [zip](https://codeload.github.com/philipzabicki/binance-algotrading/zip/refs/heads/main) 
+
+After satisfying TA-lib dependencies from above, you can download this repo
+as [zip](https://codeload.github.com/philipzabicki/binance-algotrading/zip/refs/heads/main)
 
 or by git CLI:
+
 ```
 git clone https://github.com/philipzabicki/binance-algotrading.git
 ```
+
 Then inside binance-algotrading directory run:
+
 ```
 pip install -r requirements.txt
 ```
+
 It may take some time...
 
 ## Getting data
-All data used in this project is either downloaded via [binance_data](https://github.com/uneasyguy/binance_data.git) package or [Binance Vision](https://data.binance.vision/) website.
-Website approach uses most efficient way to get data as it starts downloading from current date and goes back in time as long as there is data on website.
+
+All data used in this project is either downloaded via [binance_data](https://github.com/uneasyguy/binance_data.git)
+package or [Binance Vision](https://data.binance.vision/) website.
+Website approach uses most efficient way to get data as it starts downloading from current date and goes back in time as
+long as there is data on website.
 It also downloads data in monthly batches if available, if not daily are used.
 
-Code used for handling data downloads can be found there: [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
+Code used for handling data downloads can be found
+there: [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
 
 Main functions in this file are:
+
 ### by_BinanceVision()
+
 ```python
 LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
 
@@ -55,18 +78,26 @@ def by_BinanceVision(ticker='BTCBUSD',
                      split=False,
                      delay=LAST_DATA_POINT_DELAY): ...
 ```
+
 **Parameters:**
 Name | Type | Mandatory | Description
 ------------ | ------------ | ------------ | ------------
 ticker | STR | YES | Any cryptocurrency pair traded on Binance ex. 'ETHUSDT'
 interval | STR | YES | Any trading interval existing on Binance Vision ex. '30m'
 market_type | STR | YES | Options: 'um' - USDT-M Futures 'cm' - COIN-M Futures, 'spot' - Spot market
-data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', 'liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'. Spot options: 'aggTrades', 'klines', 'trades'. Better explained with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
-start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just 'YYYY-MM-DD'.
-split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (Opened_col, OHLCV_cols). Otherwise, returns single df.
-delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by default.
+data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', '
+liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'. Spot options: 'aggTrades', '
+klines', 'trades'. Better explained
+with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
+start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just '
+YYYY-MM-DD'.
+split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (
+Opened_col, OHLCV_cols). Otherwise, returns single df.
+delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by
+default.
 
 ### by_DataClient()
+
 ```python
 LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
 
@@ -77,47 +108,76 @@ def by_DataClient(ticker='BTCUSDT',
                   split=False,
                   delay=LAST_DATA_POINT_DELAY): ...
 ```
+
 **Parameters:**
 
 'split' and 'delay' are same as for by_BinanceVision().
 
-'interval' and 'statements' are ones from [binance_data](https://github.com/uneasyguy/binance_data#kline_data). Instead of 'pair_list' it handles only single ticker.
+'interval' and 'statements' are ones from [binance_data](https://github.com/uneasyguy/binance_data#kline_data). Instead
+of 'pair_list' it handles only single ticker.
 
 'futures' if false, downloads spot data.
 
 ## Backtesting environments
-Project has 2 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible environments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16) and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (inheriting from SpotBacktest).
+
+Project has 2
+base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible
+environments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16)
+and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (
+inheriting from SpotBacktest).
 
 All other environments inherit from them.
+
 ### Base environments
+
 #### SpotBacktest
-It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with OHLCV values. One trading session is called episode and can use whole dataframe or randomly picked max_steps sized data from df.
 
-Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss for whole backtest period.
+It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with
+OHLCV values. One trading session is called episode and can use whole dataframe or randomly picked max_steps sized data
+from df.
 
-It always trades with current candle close price, you can provide price slippage data for better imitation of real world scenario.
+Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss
+for whole backtest period.
 
-Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, episode ends or balance is so low it does not allow for any market action for given coin.
+It always trades with current candle close price, you can provide price slippage data for better imitation of real world
+scenario.
+
+Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, episode ends or balance
+is so low it does not allow for any market action for given coin.
+
 #### FuturesBacktest
-It imitates Binance Exchange Futures market. Inherits from SpotBacktest. Requires additional dataframe with mark price ohlc values as binance uses mark prices for unrealized pnl calculation and liquidation price, see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087)
 
-Adds new methods to allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485) etc.
+It imitates Binance Exchange Futures market. Inherits from SpotBacktest. Requires additional dataframe with mark price
+ohlc values as binance uses mark prices for unrealized pnl calculation and liquidation price,
+see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087)
+
+Adds new methods to
+allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485)
+etc.
+
 #### SignalExecuteSpotEnv and SignalExecuteFuturesEnv
-Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at once on whole episode (whole df or randomly picked max_steps size from whole dataframe).
+
+Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at
+once on whole episode (whole df or randomly picked max_steps size from whole dataframe).
 
 Allows for asymmetrical enter position(enter_threshold) and close position(close_threshold) signals.
 
 In generic base class implementation signals are empty numpy array. Other inheriting environments extend this.
 
-SignalExecute-like object when called, executes whole trading episode on given signals array using position enter/close threshold values to determine position side for all trades. Negative values are reserved for short/sell singals. Positive for long/buy.
+SignalExecute-like object when called, executes whole trading episode on given signals array using position enter/close
+threshold values to determine position side for all trades. Negative values are reserved for short/sell singals.
+Positive for long/buy.
 
 For e.g. parameters:
+
 * signals = [0.52, 0, 0, -0.78]
 * enter_threshold = 0.5
 * close_threshold = 0.75
 
-will result in trading episode of BUY -> HOLD -> HOLD -> SELL  actions.
+will result in trading episode of BUY -> HOLD -> HOLD -> SELL actions.
+
 ##### SignalExecuteSpotEnv
+
 ```python
 from numpy.random import choice
 
@@ -159,6 +219,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
 ```
 
 ##### SignalExecuteFuturesEnv
+
 ```python
 from numpy.random import choice
 
@@ -209,13 +270,18 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
 ```
 
 ### Technical analysis single signal trading environments
+
 Inherited from SignalExecuteSpotEnv or SignalExecuteFuturesEnv.
 Currently only MACD, MACD+RSI, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
 
-All of MA based indicators can use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving averages with any valid periods.
+All of MA based indicators can
+use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving
+averages with any valid periods.
 Ex. MACD using TEMA-42 for slow ma, HullMA-37 for fast ma and HammingMA-8 for signal line.
 
-The MAs used for optimizations are listed in function inside utils/ta_tools.py. Ones used now are the fast enough ones, some new may appear in future.
+The MAs used for optimizations are listed in function inside utils/ta_tools.py. Ones used now are the fast enough ones,
+some new may appear in future.
+
 ```python
 import numpy as np
 import talib
@@ -331,9 +397,14 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 37: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
     return ma_types[ma_type](np_df.astype(np.float64), ma_period)
 ```
+
 #### MACD
-Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD made with arguments provided to reset method.
+
+Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD made with arguments provided to
+reset method.
+
 ##### Execute environment
+
 ```python
 class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
     def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,
@@ -359,9 +430,12 @@ class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
                                          macd_signal[self.start_step - prev_values:])
         return _ret
 ```
-Custom MACD is calculated using [known formula](https://www.investopedia.com/terms/m/macd.asp) implemented as function inside [utils/ta_tools.pl](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1131)
+
+Custom MACD is calculated using [known formula](https://www.investopedia.com/terms/m/macd.asp) implemented as function
+inside [utils/ta_tools.pl](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1131)
 
 What's less known is way I derive signals from this indicator:
+
 ```python
 @jit(nopython=True, nogil=True, cache=True)
 def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray) -> list[float | int]:
@@ -375,17 +449,24 @@ def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray
                     for cur_sig, cur_macd, prev_sig, prev_macd in
                     zip(signal_col[1:], macd_col[1:], signal_col[:-1], macd_col[:-1])]
 ```
+
 As mentioned earlier, negative values indicate short/sell singals, positive - long/buy.
 Crossing logic is as usual, signal line crosses macd from above - short, from below - long.
 
-As you can see the highest signal values are 1 and -1, which are generated when lines cross above(for short) or below(for long) 0 level.
+As you can see the highest signal values are 1 and -1, which are generated when lines cross above(for short) or below(
+for long) 0 level.
 
-Slightly weaker singlas 0.75 and -0.75 are generated when lines cross but without additional above or below zero level logic.
+Slightly weaker singlas 0.75 and -0.75 are generated when lines cross but without additional above or below zero level
+logic.
 
 0.5 and -0.5 signal values are generated when lines are getting closer to each other(approaching crossing).
+
 ##### Strategy environment
+
 #### Keltner Channel(Bands)
+
 ##### Execute environment
+
 ```python
 class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
     def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,
@@ -406,9 +487,13 @@ class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
                                           self.atr_period, self.atr_multi)[self.start_step - prev_values:]
         return _ret
 ```
+
 ##### Strategy environment
+
 #### Chaikin Oscillator
+
 ##### Execute environment
+
 ```python
 class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
     def __init__(self, *args, **kwargs):
@@ -435,21 +520,31 @@ class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
         self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step - prev_values:])
         return _ret
 ```
+
 ##### Strategy environment
+
 #### Any other new strategy environment
-You can create any other TA indicator trading environment, using ones already existing as template, just take care that your generated signals are properly calculated.
+
+You can create any other TA indicator trading environment, using ones already existing as template, just take care that
+your generated signals are properly calculated.
+
 ## Genetic Algorithm trading strategies
-One way to finding optimal technical analysis parameters for trading is to use Genetic Algorithm. All previously showed strategy environments can be used for optimization.
+
+One way to finding optimal technical analysis parameters for trading is to use Genetic Algorithm. All previously showed
+strategy environments can be used for optimization.
+
 ### Environments
+
 #### Base
+
 #### Env1
+
 #### Env2
+
 #### Env3
+
 ## Reinforcement Learning trading agent
-<DESC>
+
 ### RL Environment
-...
 
 ## Live trading bot
-
-...

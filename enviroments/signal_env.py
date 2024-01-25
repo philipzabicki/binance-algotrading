@@ -9,7 +9,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
         self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
         self.close_threshold = kwargs['close_at'] if 'close_at' in kwargs else 1.0
         self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
-        #self.signals = empty(self.total_steps)
+        # self.signals = empty(self.total_steps)
         self.signals = choice([-1, 0, 1], size=self.total_steps)
 
     def reset(self, *args, **kwargs):

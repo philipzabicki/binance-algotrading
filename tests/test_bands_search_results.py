@@ -3,6 +3,7 @@ from os import getcwd
 import pandas as pd
 
 from definitions import REPORT_DIR
+from enviroments import BandsOptimizeSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
 
@@ -18,7 +19,7 @@ _, df = by_BinanceVision(ticker='BTCFDUSD',
                          split=True,
                          delay=0)
 
-env = BandsStratSpotEnv(df=df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
+env = BandsOptimizeSpotEnv(df=df, init_balance=1_000, fee=0.0, coin_step=0.00001, slippage=SLIPP)
 
 for _, row in results.iterrows():
     action = [row['StopLoss'], row['enter_at'], row['close_at'], row['typeMA'], row['MA_period'], row['ATR_period'],

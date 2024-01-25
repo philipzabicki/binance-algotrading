@@ -6,16 +6,17 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 
-from utils.ta_tools import custom_StochasticOscillator, StochasticOscillator_signal
 from enviroments import StochOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
+from utils.ta_tools import custom_StochasticOscillator, StochasticOscillator_signal
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = StochOptimizeSavingFuturesEnv
-ACTION = [0.7990523824126295, 0.9472797823110253, 0.013279991918375214, 0.04602172502490132, 0.720181958965162, 0.4186718111467487, 0.7725550945957258, 452, 686, 980, 34, 24, 9, 32]
+ACTION = [0.342132047840194, 0.9826050085652485, 0.010617901986693901, 0.1386556247014178, 0.08996241339216285,
+          0.0078542479677715, 0.08887278182574701, 14.916004992524869, 50.81969191382932, 913, 95, 773, 21, 7, 62]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):

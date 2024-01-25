@@ -2,7 +2,8 @@ from numpy import array, median
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
-from enviroments.stoch_env import StochOptimizeSpotEnv, StochOptimizeFuturesEnv, StochOptimizeSavingSpotEnv, StochOptimizeSavingFuturesEnv
+from enviroments.stoch_env import StochOptimizeSpotEnv, StochOptimizeFuturesEnv, StochOptimizeSavingSpotEnv, \
+    StochOptimizeSavingFuturesEnv
 
 
 class StochSpotMixedVariableProblem(ElementwiseProblem):

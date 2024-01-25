@@ -12,8 +12,8 @@ from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
 CPU_CORES = cpu_count()
 CPU_CORES = 1
 N_TEST = 1
-#N_STEPS = 5_760
-#TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
+# N_STEPS = 5_760
+# TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = ChaikinOscillatorStratSpotEnv
 ACTION = [20, 5, 6, 5]
 
@@ -30,15 +30,15 @@ def sig_map(value):
 
 def parallel_test(pool_nb, df, dates_df=None, df_mark=None):
     env = ENV(df=df,
-              #df_mark=df_mark,
+              # df_mark=df_mark,
               dates_df=dates_df,
-              #max_steps=N_STEPS,
+              # max_steps=N_STEPS,
               init_balance=1_000,
               no_action_finish=inf,
               fee=0.0,
               coin_step=0.01,
               # slipp_std=0,
-              #slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+              # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
               render_range=180,
               verbose=True, visualize=False, write_to_file=True)
     results, gains = [], []

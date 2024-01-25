@@ -24,7 +24,8 @@ class SpotBacktest(Env):
             raise ValueError("max_steps larger than rows in dataframe")
         print(f'Environment ({self.__class__.__name__}) created.')
         print(f' fee:{fee}, coin_step:{coin_step}, init_balance:{init_balance}, position_ratio:{position_ratio}')
-        print(f' df_size: {len(self.df)}, max_steps: {max_steps}({max_steps/len(self.df)*100:.2f}%), no_action_finish:{no_action_finish}')
+        print(
+            f' df_size: {len(self.df)}, max_steps: {max_steps}({max_steps / len(self.df) * 100:.2f}%), no_action_finish:{no_action_finish}')
         print(f' obs_sample(last row): {self.df[-1, exclude_cols_left:]}')
         print(f' slippage statistics (avg, stddev): {slippage}')
         if visualize and (dates_df is not None):
@@ -263,8 +264,8 @@ class SpotBacktest(Env):
             above_free = (total_return - risk_free_return) * 100
         else:
             above_free = total_return * 100
-        #if hasattr(self, 'leverage'):
-            #above_free /= self.leverage
+        # if hasattr(self, 'leverage'):
+        # above_free /= self.leverage
         hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 1 and self.profit_hold_counter > 1 else 1.0
         if len(self.PNL_arrays) > 1:
             mean_pnl, stddev_pnl = mean(self.PNL_arrays[:, 0]), std(self.PNL_arrays[:, 0])
@@ -281,11 +282,11 @@ class SpotBacktest(Env):
             in_gain_indicator = self.with_gain_c / (
                     steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
             if above_free > 0:
-                self.reward = ((above_free**3)/(10**6) * self.episode_orders * PnL_trades_ratio * (
+                self.reward = ((above_free ** 3) / (10 ** 6) * self.episode_orders * PnL_trades_ratio * (
                         hold_ratio ** (1 / 3)) * (PnL_means_ratio ** (1 / 3)) * in_gain_indicator) / steps
             else:
-                self.reward = ((above_free**3)/(10**6) * self.episode_orders * 1/PnL_trades_ratio * 1/(
-                        hold_ratio ** (1 / 3)) * 1/(PnL_means_ratio ** (1 / 3)) * 1/in_gain_indicator) / steps
+                self.reward = ((above_free ** 3) / (10 ** 6) * self.episode_orders * 1 / PnL_trades_ratio * 1 / (
+                        hold_ratio ** (1 / 3)) * 1 / (PnL_means_ratio ** (1 / 3)) * 1 / in_gain_indicator) / steps
             # self.reward = total_return*100
         else:
             mean_pnl, stddev_pnl = 0.0, 0.0
@@ -379,7 +380,8 @@ class FuturesBacktest(SpotBacktest):
         # BTCUSDTperp last 1Y mean=6.09e-05 stdev=6.52e-05, mean+2*stedv covers ~95,4% of variance
         # self.funding_rate = 0.01912 * (1/100)
         self.funding_rate = 0.01 * (1 / 100)
-        print(f' df_mark_size: {len(self.df_mark)}, max_steps: {self.max_steps}({self.max_steps / len(self.df)*100:.2f}%)')
+        print(
+            f' df_mark_size: {len(self.df_mark)}, max_steps: {self.max_steps}({self.max_steps / len(self.df) * 100:.2f}%)')
 
     def reset(self, **kwargs):
         self.margin = 0

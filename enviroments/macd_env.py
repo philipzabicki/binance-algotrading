@@ -8,7 +8,7 @@ from .signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
 ########################################################################################################################
 # EXECUTING ENVIRONMENTS
 class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
-    def reset(self, *args, stop_loss=None,  save_ratio=None, enter_at=1.0, close_at=1.0,
+    def reset(self, *args, stop_loss=None, save_ratio=None, enter_at=1.0, close_at=1.0,
               fast_period=12, slow_period=26, signal_period=9,
               fast_ma_type=0, slow_ma_type=0, signal_ma_type=0, **kwargs):
         _ret = super().reset(*args, stop_loss=stop_loss, save_ratio=save_ratio,

@@ -10,8 +10,6 @@ from pymoo.optimize import minimize
 
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     GenerationSavingCallback
-from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
-from genetic_search.bands_parametrizer import BandsSavingFuturesMixedVariableProblem
 from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 
@@ -27,13 +25,13 @@ START_DATE = '2020-01-01'
 PROBLEM = StochSavingFuturesMixedVariableProblem
 ALGORITHM = NSGA2
 TERMINATION = ("time", "12:00:00")
-#TERMINATION = ('n_gen', N_GEN)
+# TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 2_880,
               'init_balance': 50,
               'no_action_finish': inf,
               'fee': 0.0005,
               'coin_step': 0.001,
-              #'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+              # 'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
               'verbose': False}
 
 

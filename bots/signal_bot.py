@@ -5,7 +5,7 @@ from talib import RSI, ATR, AD
 
 from bots import SpotTaker
 from utils.ta_tools import custom_MACD, MACD_cross_signal, anyMA_sig, get_MA, RSI_like_signal, custom_ChaikinOscillator, \
-    ChaikinOscillator_signal
+    ChaikinOscillator_signal, custom_StochasticOscillator, StochasticOscillator_signal
 
 
 class MACDSignalsBot(object):
@@ -13,7 +13,8 @@ class MACDSignalsBot(object):
         self.__class__ = type(self.__class__.__name__,
                               (bot_type, object),
                               dict(self.__class__.__dict__))
-        previous_size = max(kwargs['settings']['slow_period'], kwargs['settings']['fast_period']) + kwargs['settings']['signal_period']
+        previous_size = max(kwargs['settings']['slow_period'], kwargs['settings']['fast_period']) + kwargs['settings'][
+            'signal_period']
         super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
 
     def _check_signal(self):
@@ -59,7 +60,8 @@ class ChaikinOscillatorSignalsBot(object):
     def _check_signal(self):
         # Can be done faster as adl does not require as much lookback data
         self.adl = AD(*asarray(self.OHLCV_data)[:, 1:5].T)
-        self.chaikin_oscillator = custom_ChaikinOscillator(self.adl, fast_ma_type=self.fast_ma_type, fast_period=self.fast_period,
+        self.chaikin_oscillator = custom_ChaikinOscillator(self.adl, fast_ma_type=self.fast_ma_type,
+                                                           fast_period=self.fast_period,
                                                            slow_ma_type=self.slow_ma_type, slow_period=self.slow_period)
         self.signals = ChaikinOscillator_signal(self.chaikin_oscillator[-3:])
         self.signal = self.signals[-1]
@@ -72,7 +74,8 @@ class MACDRSISignalsBot(object):
         self.__class__ = type(self.__class__.__name__,
                               (bot_type, object),
                               dict(self.__class__.__dict__))
-        previous_size = max((max(kwargs['settings']['slow_period'], kwargs['settings']['fast_period']) + kwargs['settings']['signal_period']),
+        previous_size = max((max(kwargs['settings']['slow_period'], kwargs['settings']['fast_period']) +
+                             kwargs['settings']['signal_period']),
                             kwargs['settings']['rsi_period'])
         super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
 
@@ -90,3 +93,28 @@ class MACDRSISignalsBot(object):
         print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]}')
         print(f'    signals1:{self.signals1} signals1:{self.signals1} signal:{self.signal}')
         raise NotImplementedError("More than single signal trading not implemented yet.")
+
+
+class StochasticOscillatorSignalsBot(object):
+    def __init__(self, *args, bot_type=SpotTaker, **kwargs):
+        self.__class__ = type(self.__class__.__name__,
+                              (bot_type, object),
+                              dict(self.__class__.__dict__))
+        previous_size = kwargs['settings']['fastK_period'] + kwargs['settings']['slowK_period'] + kwargs['settings'][
+            'slowD_period']
+        super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
+
+    def _check_signal(self):
+        slowK, slowD = custom_StochasticOscillator(asarray(self.OHLCV_data),
+                                                   fastK_period=self.fastK_period,
+                                                   slowK_period=self.slowK_period,
+                                                   slowD_period=self.slowD_period,
+                                                   slowK_ma_type=self.slowK_ma_type,
+                                                   slowD_ma_type=self.slowD_ma_type)
+        self.signals = StochasticOscillator_signal(slowK[-3:],
+                                                   slowD[-3:],
+                                                   oversold_threshold=self.oversold_threshold,
+                                                   overbought_threshold=self.overbought_threshold)
+        self.signal = self.signals[-1]
+        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        print(f'    slowK:{slowK[-3:]} slowD:{slowD[-3:]} trade_signals:{self.signals}')
