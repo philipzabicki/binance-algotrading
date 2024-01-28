@@ -3,7 +3,7 @@ from math import copysign
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
-from enviroments.chaikinosc_env import ChaikinOscillatorOptimizeSpotEnv, ChaikinOscillatorOptimizeFuturesEnv
+from enviroments.chaikinosc_env import ChaikinOscillatorOptimizeSpotEnv, ChaikinOscillatorOptimizeFuturesEnv, ChaikinOscillatorOptimizeSavingSpotEnv, ChaikinOscillatorOptimizeSavingFuturesEnv
 
 
 class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):
@@ -31,7 +31,8 @@ class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):
                 # print(f'median_of{self.n_evals}_reward: {median(rews)}')
                 if self.metric == 'mixed':
                     med = median(rews)
-                    out["F"] = array([copysign(med + mean(rews), med)])
+                    rew = med if med * mean(rews) < 0 else med * mean(rews)
+                    out["F"] = array([rew])
                 elif self.metric == 'median':
                     out["F"] = array([median(rews)])
                 elif self.metric == 'mean':
@@ -68,7 +69,8 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
                 # print(f'median_of{self.n_evals}_reward: {median(rews)}')
                 if self.metric == 'mixed':
                     med = median(rews)
-                    out["F"] = array([copysign(med + mean(rews), med)])
+                    rew = med if med * mean(rews) < 0 else med * mean(rews)
+                    out["F"] = array([rew])
                 elif self.metric == 'median':
                     out["F"] = array([median(rews)])
                 elif self.metric == 'mean':
@@ -81,7 +83,7 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
 # SAVING ONES
 class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
     def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
-        self.env = ChaikinOscillatorOptimizeSpotEnv(df=df, **env_kwargs)
+        self.env = ChaikinOscillatorOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
         chaikin_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
@@ -105,7 +107,8 @@ class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
                 # print(f'median_of{self.n_evals}_reward: {median(rews)}')
                 if self.metric == 'mixed':
                     med = median(rews)
-                    out["F"] = array([copysign(med + mean(rews), med)])
+                    rew = med if med * mean(rews) < 0 else med * mean(rews)
+                    out["F"] = array([rew])
                 elif self.metric == 'median':
                     out["F"] = array([median(rews)])
                 elif self.metric == 'mean':
@@ -116,7 +119,7 @@ class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
 
 class ChaikinOscillatorSavingFuturesMixedVariableProblem(ElementwiseProblem):
     def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
-        self.env = ChaikinOscillatorOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
+        self.env = ChaikinOscillatorOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
         chaikin_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
@@ -143,7 +146,8 @@ class ChaikinOscillatorSavingFuturesMixedVariableProblem(ElementwiseProblem):
                 # print(f'median_of{self.n_evals}_reward: {median(rews)}')
                 if self.metric == 'mixed':
                     med = median(rews)
-                    out["F"] = array([copysign(med + mean(rews), med)])
+                    rew = med if med * mean(rews) < 0 else med * mean(rews)
+                    out["F"] = array([rew])
                 elif self.metric == 'median':
                     out["F"] = array([median(rews)])
                 elif self.metric == 'mean':

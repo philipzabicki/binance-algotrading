@@ -35,7 +35,8 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
                 med = median(rews)
-                out["F"] = array([copysign(med + mean(rews), med)])
+                rew = med if med * mean(rews) < 0 else med * mean(rews)
+                out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
             elif self.metric == 'mean':
@@ -79,7 +80,8 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
                 med = median(rews)
-                out["F"] = array([copysign(med + mean(rews), med)])
+                rew = med if med * mean(rews) < 0 else med * mean(rews)
+                out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
             elif self.metric == 'mean':
@@ -120,7 +122,8 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
                 med = median(rews)
-                out["F"] = array([copysign(med + mean(rews), med)])
+                rew = med if med * mean(rews) < 0 else med * mean(rews)
+                out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
             elif self.metric == 'mean':
@@ -165,7 +168,8 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
                 med = median(rews)
-                out["F"] = array([copysign(med + mean(rews), med)])
+                rew = med if med * mean(rews) < 0 else med * mean(rews)
+                out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
             elif self.metric == 'mean':

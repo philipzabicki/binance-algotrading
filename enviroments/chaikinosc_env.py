@@ -1,3 +1,4 @@
+from warnings import warn
 from gym import spaces, Env
 from numpy import array, float64, inf
 from talib import AD
@@ -25,7 +26,7 @@ class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
         self.slow_ma_type = slow_ma_type
         _max_period = max(self.fast_period*ADDITIONAL_DATA_BY_MA[fast_ma_type], self.slow_period*ADDITIONAL_DATA_BY_MA[slow_ma_type])
         if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
+            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         # Calculate only the data length necessary, with additional length caused by indicator periods
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
@@ -64,9 +65,8 @@ class _ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
         _max_period = max(self.fast_period*ADDITIONAL_DATA_BY_MA[fast_ma_type], self.slow_period*ADDITIONAL_DATA_BY_MA[slow_ma_type])
-        if (_max_period > self.total_steps) or (_max_period > self.max_steps):
-            raise ValueError(
-                'One of indicator periods is greater than df size or max_steps size (not enough previous values).')
+        if _max_period > self.total_steps:
+            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         # Calculate only the data length necessary, with additional length caused by indicator periods
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])

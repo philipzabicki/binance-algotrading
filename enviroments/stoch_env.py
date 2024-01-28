@@ -1,3 +1,4 @@
+from warnings import warn
 from gym import spaces, Env
 from numpy import array, float64, inf
 
@@ -26,7 +27,7 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
         _max_period = self.fastK_period + self.slowK_period*ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period*ADDITIONAL_DATA_BY_MA[slowD_ma_type]
         if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
+            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, :5],
                                                    fastK_period=fastK_period,
@@ -72,7 +73,7 @@ class _StochExecuteFuturesEnv(SignalExecuteFuturesEnv):
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
         _max_period = self.fastK_period + self.slowK_period*ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period*ADDITIONAL_DATA_BY_MA[slowD_ma_type]
         if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
+            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, :5],
                                                    fastK_period=fastK_period,

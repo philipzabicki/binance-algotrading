@@ -1,6 +1,7 @@
 from csv import writer
 # import pandas as pd
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
+import cProfile
 from statistics import mean
 from time import time
 
@@ -8,25 +9,27 @@ from numpy import isnan, inf
 from pandas import read_csv
 
 from definitions import REPORT_DIR
-from enviroments import MACDOptimizeSpotEnv
+from enviroments import MACDOptimizeSavingSpotEnv
 from utils.get_data import by_BinanceVision
-from utils.utility import get_slippage_stats
+# from utils.utility import get_slippage_stats
 
-CPU_CORES_COUNT = 8  # cpu_count()
-EPISODES_PER_CORE = 1024
-TICKER, ITV, M_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', '2023-09-11'
-ENVIRONMENT = MACDOptimizeSpotEnv
-SLIPP = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
-REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{M_TYPE}{ITV}since{START_DATE}.csv'
+#CPU_CORES_COUNT = cpu_count()
+CPU_CORES_COUNT = 1
+EPISODES_PER_CORE = 256
+TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
+ENVIRONMENT = MACDOptimizeSavingSpotEnv
+# SLIPP = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
+REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{MARKET_TYPE}{ITV}since{START_DATE}.csv'
 
 
 def run_indefinitely(_, df):
-    # profiler = cProfile.Profile()
-    # profiler.enable()
+    profiler = cProfile.Profile()
+    profiler.enable()
 
     env = ENVIRONMENT(df=df, no_action_finish=inf,
                       init_balance=1_000, fee=0.0, coin_step=0.00001,
-                      slippage=SLIPP, visualize=False, verbose=False, render_range=60)
+                      # slippage=SLIPP,
+                      visualize=False, verbose=False, render_range=60)
     timers, results = [], []
     i, timer = 0, time()
     while len(results) < EPISODES_PER_CORE:
@@ -49,8 +52,8 @@ def run_indefinitely(_, df):
         # writer.writerow(header)
         _writer.writerows(results)
 
-    # profiler.disable()
-    # profiler.print_stats(sort='cumtime')
+    profiler.disable()
+    profiler.print_stats(sort='cumtime')
 
 
 def main():
@@ -58,7 +61,8 @@ def main():
     while 1:
         start_t = time()
         # df = by_DataClient(ticker=TICKER, interval=ITV, futures=FUTURES, statements=True, delay=3_600)
-        dates, df = by_BinanceVision(ticker=TICKER, interval=ITV, market_type=M_TYPE, data_type='klines', split=True,
+        dates, df = by_BinanceVision(ticker=TICKER, interval=ITV, market_type=MARKET_TYPE, data_type='klines',
+                                     split=True,
                                      start_date=START_DATE, delay=129_600)
         print(f'df {df}')
         with Pool(processes=CPU_CORES_COUNT) as pool:

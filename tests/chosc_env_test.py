@@ -3,18 +3,21 @@ from statistics import mean, stdev
 
 from matplotlib import pyplot as plt
 from numpy import inf
+import pandas as pd
+import mplfinance as mpf
 from talib import AD
 
-from enviroments.chaikinosc_env import ChaikinOscillatorOptimizeFuturesEnv
+from definitions import ADDITIONAL_DATA_BY_MA
+from enviroments.chaikinosc_env import ChaikinOscillatorOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000
-N_STEPS = 5_760
+N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
-ENV = ChaikinOscillatorOptimizeFuturesEnv
-ACTION = [0.5176180660228993, 0.009081368528904019, 74, 439, 17, 3, 44]
+ENV = ChaikinOscillatorOptimizeSavingFuturesEnv
+ACTION = [0.9174211617005024, 0.6832682194412211, 0.012171391055544963, 92, 573, 0, 3, 39]
 
 
 def sig_map(value):
@@ -53,13 +56,13 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
 
 if __name__ == "__main__":
     # df = pd.read_csv("C:/github/binance-algotrading/.other/lotos.csv")
-    dates_df, df = by_BinanceVision(ticker=TICKER,
-                                    interval=ITV,
-                                    market_type=MARKET_TYPE,
-                                    data_type=DATA_TYPE,
-                                    start_date=START_DATE,
-                                    split=True,
-                                    delay=259_200)
+    df = by_BinanceVision(ticker=TICKER,
+                          interval=ITV,
+                          market_type=MARKET_TYPE,
+                          data_type=DATA_TYPE,
+                          start_date=START_DATE,
+                          split=False,
+                          delay=259_200)
     _, df_mark = by_BinanceVision(ticker=TICKER,
                                   interval=ITV,
                                   market_type=MARKET_TYPE,
@@ -67,41 +70,45 @@ if __name__ == "__main__":
                                   start_date=START_DATE,
                                   split=True,
                                   delay=259_200)
-    print(df)
-
+    additional_periods = N_STEPS + max(ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-3]],
+                                       ACTION[-4] * ADDITIONAL_DATA_BY_MA[ACTION[-2]])
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()
     # print(adl[:10])
     # sleep(100)
-    fast_adl, slow_adl = get_1D_MA(adl, ACTION[-3], ACTION[-5]), get_1D_MA(adl, ACTION[-2], ACTION[-4])
+    fast_adl, slow_adl = get_1D_MA(adl[-additional_periods:], ACTION[-3], ACTION[-5]), get_1D_MA(
+        adl[-additional_periods:], ACTION[-2], ACTION[-4])
     chosc = fast_adl - slow_adl
     signals = ChaikinOscillator_signal(chosc)
-    df['ADL'] = adl
-    df['fast_ADL'] = fast_adl
-    df['slow_ADL'] = slow_adl
-    df['ChaikinOscillator'] = chosc
-    df['signals'] = signals
+    df_plot = df.tail(N_STEPS).copy()
+    df_plot['ADL'] = adl[-N_STEPS:]
+    df_plot['fast_ADL'] = fast_adl[-N_STEPS:]
+    df_plot['slow_ADL'] = slow_adl[-N_STEPS:]
+    df_plot['ChaikinOscillator'] = chosc[-N_STEPS:]
+    df_plot['signals'] = signals[-N_STEPS:]
+    df_plot.index = pd.DatetimeIndex(df_plot['Opened'])
     # df = df.tail(250)
 
     fig = plt.figure(figsize=(21, 9))
-    gs = fig.add_gridspec(3, 1, height_ratios=[1, 1, 1])
+    gs = fig.add_gridspec(4, 1, height_ratios=[2, 1, 1, 1])
     axs = gs.subplots(sharex=False)
-    axs[0].plot(df['ADL'], label='ADL', linestyle='solid')
-    axs[0].plot(df['fast_ADL'], label='fast_ADL', linestyle=(0, (5, 1)))
-    axs[0].plot(df['slow_ADL'], label='slow_ADL', linestyle=(0, (5, 2)))
-    axs[0].legend(loc='upper left')
-    axs[1].plot(df['ChaikinOscillator'], label='ChaikinOscillator')
-    axs[1].axhline(y=0, label='Zero-line', color='black', linestyle='dashed')
+    mpf.plot(df_plot, type='candle', style='yahoo', ylabel='Price', ax=axs[0])
+    axs[1].plot(df_plot['ADL'], label='ADL', linestyle='solid')
+    axs[1].plot(df_plot['fast_ADL'], label='fast_ADL', linestyle=(0, (5, 1)))
+    axs[1].plot(df_plot['slow_ADL'], label='slow_ADL', linestyle=(0, (5, 2)))
     axs[1].legend(loc='upper left')
-    axs[2].plot(df['signals'], label='Trade signals')
-    axs[2].axhline(y=1, label='Buy threshold', color='green', linestyle='dotted')
-    axs[2].axhline(y=-1, label='Sell threshold', color='red', linestyle='dotted')
+    axs[2].plot(df_plot['ChaikinOscillator'], label='ChaikinOscillator')
+    axs[2].axhline(y=0, label='Zero-line', color='black', linestyle='dashed')
     axs[2].legend(loc='upper left')
+    axs[3].plot(df_plot['signals'], label='Trade signals')
+    axs[3].axhline(y=1, label='Buy threshold', color='green', linestyle='dotted')
+    axs[3].axhline(y=-1, label='Sell threshold', color='red', linestyle='dotted')
+    axs[3].legend(loc='upper left')
 
     plt.tight_layout()
     plt.show()
 
     with Pool(processes=CPU_CORES) as pool:
-        results = pool.starmap(parallel_test, [(i, df.iloc[:, 0:5], df_mark, dates_df) for i in range(CPU_CORES)])
+        results = pool.starmap(parallel_test, [(i, df.iloc[:, 1:6], df_mark, df['Opened']) for i in range(CPU_CORES)])
     joined_res = []
     joined_gains = []
     for el in results:

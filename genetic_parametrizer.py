@@ -11,9 +11,9 @@ from pymoo.optimize import minimize
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     GenerationSavingCallback, MinAvgMaxNonzeroSingleObjCallback
 # from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
-from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
+# from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
 # from genetic_search.chosc_parametrizer import ChaikinOscillatorSavingFuturesMixedVariableProblem
-# from genetic_search.bands_parametrizer import BandsSavingFuturesMixedVariableProblem
+from genetic_search.bands_parametrizer import BandsSavingFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
@@ -25,7 +25,7 @@ ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = MACDSavingFuturesMixedVariableProblem
+PROBLEM = BandsSavingFuturesMixedVariableProblem
 ALGORITHM = NSGA2
 #TERMINATION = ("time", "12:00:00")
 TERMINATION = ('n_gen', N_GEN)
@@ -90,7 +90,7 @@ def main():
                    algorithm,
                    save_history=False,
                    #callback=GenerationSavingCallback(problem, dir_name, verbose=True),
-                   callable=MinAvgMaxNonzeroSingleObjCallback(problem, verbose=True),
+                   callback=MinAvgMaxNonzeroSingleObjCallback(problem, verbose=True),
                    termination=TERMINATION,
                    verbose=True)
 

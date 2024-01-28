@@ -1,3 +1,4 @@
+from warnings import warn
 from gym import spaces, Env
 from numpy import array, float64, inf
 
@@ -24,7 +25,7 @@ class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
         _max_period = max(self.fast_period*ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type], self.slow_period*ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period*ADDITIONAL_DATA_BY_MA[signal_ma_type]
         if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
+            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
@@ -62,7 +63,7 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.signal_ma_type = signal_ma_type
         _max_period = max(self.fast_period*ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type], self.slow_period*ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period*ADDITIONAL_DATA_BY_MA[signal_ma_type]
         if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
+            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
         macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
@@ -94,7 +95,7 @@ class MACDOptimizeSpotEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.001, 0.001, 2, 2, 2, 0, 0, 0]
-        action_upper = [0.0500, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26]
+        action_upper = [0.0500, 1.000, 1.000, 1_000, 1_000, 1_000, 37, 37, 26]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -120,7 +121,7 @@ class MACDOptimizeFuturesEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.0001, 0.001, 0.001, 0.001, 0.001, 2, 2, 2, 0, 0, 0, 1]
-        action_upper = [1.0, 0.0500, 1.000, 1.000, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26, 125]
+        action_upper = [1.0, 0.0500, 1.000, 1.000, 1.000, 1.000, 1_000, 1_000, 1_000, 37, 37, 26, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -156,7 +157,7 @@ class MACDOptimizeSavingSpotEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.000, 0.0001, 0.001, 0.001, 2, 2, 2, 0, 0, 0]
-        action_upper = [1.000, 0.0500, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26]
+        action_upper = [1.000, 0.0500, 1.000, 1.000, 1_000, 1_000, 1_000, 37, 37, 26]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -183,7 +184,7 @@ class MACDOptimizeSavingFuturesEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.000, 0.0001, 0.001, 0.001, 0.001, 0.001, 2, 2, 2, 0, 0, 0, 1]
-        action_upper = [1.0, 1.000, 0.0500, 1.000, 1.000, 1.000, 1.000, 10_000, 10_000, 10_000, 37, 37, 26, 125]
+        action_upper = [1.0, 1.000, 0.0500, 1.000, 1.000, 1.000, 1.000, 1_000, 1_000, 1_000, 37, 37, 26, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 

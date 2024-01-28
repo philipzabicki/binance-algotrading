@@ -1,3 +1,4 @@
+from warnings import warn
 from gym import spaces, Env
 from numpy import array, float64, inf
 
@@ -21,7 +22,7 @@ class _BandsExecuteSpotEnv(SignalExecuteSpotEnv):
         self.atr_multi = atr_multi
         _max_period = max(self.ma_period*ADDITIONAL_DATA_BY_OHLCV_MA[ma_type], self.atr_period)
         if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
+            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         # Calculate only the data length necessary, with additional length caused by indicator periods
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, :5],
@@ -53,7 +54,7 @@ class _BandsExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.atr_multi = atr_multi
         _max_period = max(self.ma_period*ADDITIONAL_DATA_BY_OHLCV_MA[ma_type], self.atr_period)
         if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
+            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         # Calculate only the data length necessary, with additional length caused by indicator periods
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, :5],
