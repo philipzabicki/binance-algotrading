@@ -6,6 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 
+from definitions import ADDITIONAL_DATA_BY_MA
 from enviroments import StochOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_StochasticOscillator, StochasticOscillator_signal
@@ -15,8 +16,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = StochOptimizeSavingFuturesEnv
-ACTION = [0.342132047840194, 0.9826050085652485, 0.010617901986693901, 0.1386556247014178, 0.08996241339216285,
-          0.0078542479677715, 0.08887278182574701, 14.916004992524869, 50.81969191382932, 913, 95, 773, 21, 7, 62]
+ACTION = [0.2561484095091862, 0.7078945113875912, 0.007327383267640606, 0.038059063008442695, 0.9653090062536993, 0.0010701025939960085, 0.38944749096475084, 35.74359956825677, 83.19718911327566, 964, 213, 154, 16, 17, 55]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -65,23 +65,23 @@ if __name__ == "__main__":
                                   start_date=START_DATE,
                                   split=True,
                                   delay=259_200)
-    slowK, slowD = custom_StochasticOscillator(df.iloc[:, 1:6].to_numpy(),
+    additional_periods = N_STEPS + ACTION[-6] + ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-3]] + ACTION[-4] * \
+                  ADDITIONAL_DATA_BY_MA[ACTION[-2]]
+    slowK, slowD = custom_StochasticOscillator(df.iloc[-additional_periods:, 1:6].to_numpy(),
                                                fastK_period=ACTION[-6],
                                                slowK_period=ACTION[-5],
                                                slowD_period=ACTION[-4],
                                                slowK_ma_type=ACTION[-3],
                                                slowD_ma_type=ACTION[-2])
-    # print(slowK)
-    # print(slowD)
     signals = StochasticOscillator_signal(slowK,
                                           slowD,
                                           oversold_threshold=ACTION[-3],
                                           overbought_threshold=ACTION[-2])
-    df['slowK'] = slowK
-    df['slowD'] = slowD
-    df['signals'] = signals
-    df.index = pd.DatetimeIndex(df['Opened'])
-    df_plot = df.tail(5_000)
+    df_plot = df.tail(N_STEPS).copy()
+    df_plot['slowK'] = slowK[-N_STEPS:]
+    df_plot['slowD'] = slowD[-N_STEPS:]
+    df_plot['signals'] = signals[-N_STEPS:]
+    df_plot.index = pd.DatetimeIndex(df_plot['Opened'])
 
     fig = plt.figure(figsize=(21, 9))
     gs = fig.add_gridspec(3, 1, height_ratios=[2, 1, 1])

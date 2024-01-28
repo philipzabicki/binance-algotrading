@@ -779,7 +779,7 @@ def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 
 @jit(nopython=True, nogil=True, cache=True)
 def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     close = np.absolute(close)
-    gma = np.empty_like(close)
+    gma = np.zeros_like(close)
     log_close = np.log(close)
     exponent = 1 / period
     window_sum = np.sum(log_close[:period])
@@ -1199,7 +1199,6 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
 def custom_StochasticOscillator(ohlcv, fastK_period, slowK_period, slowD_period, slowK_ma_type, slowD_ma_type):
     fastK, _ = talib.STOCHF(ohlcv[:, 1], ohlcv[:, 2], ohlcv[:, 3], fastk_period=fastK_period, fastd_period=1,
                             fastd_matype=0)
-    # print(f'fastK {fastK}')
     slowK = get_1D_MA(fastK, slowK_ma_type, slowK_period)
     slowD = get_1D_MA(slowK, slowD_ma_type, slowD_period)
     return slowK, slowD

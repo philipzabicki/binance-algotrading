@@ -1,6 +1,7 @@
 from gym import spaces, Env
 from numpy import array, float64, inf
 
+from definitions import ADDITIONAL_DATA_BY_OHLCV_MA, ADDITIONAL_DATA_BY_MA
 from utils.ta_tools import custom_MACD, MACD_cross_signal
 from .signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
 
@@ -21,7 +22,7 @@ class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         self.signal_ma_type = signal_ma_type
         # Some MAs need as much additional previous data as 25 times period length to return repetitive values.
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
-        _max_period = max(self.fast_period, self.slow_period) + self.signal_period
+        _max_period = max(self.fast_period*ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type], self.slow_period*ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period*ADDITIONAL_DATA_BY_MA[signal_ma_type]
         if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
@@ -59,7 +60,7 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
         self.signal_ma_type = signal_ma_type
-        _max_period = max(self.fast_period, self.slow_period) + self.signal_period
+        _max_period = max(self.fast_period*ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type], self.slow_period*ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period*ADDITIONAL_DATA_BY_MA[signal_ma_type]
         if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0

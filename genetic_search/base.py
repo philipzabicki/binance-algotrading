@@ -118,12 +118,15 @@ class GenerationSavingCallback(Callback):
 
 
 class MinAvgMaxNonzeroSingleObjCallback(Callback):
-    def __init__(self, problem) -> None:
+    def __init__(self, problem, verbose=False) -> None:
         super().__init__()
         self.opt = []
         self.problem = problem
+        self.verbose = verbose
 
     def notify(self, algorithm):
+        if self.verbose:
+            print(f'Best gen: reward={-algorithm.pop.get("F")[0]} vars={algorithm.pop.get("X")[0]}')
         avg_rew = mean(algorithm.pop.get("F"))
         if avg_rew < 0:
             min_rew = min(algorithm.pop.get("F"))
@@ -134,12 +137,15 @@ class MinAvgMaxNonzeroSingleObjCallback(Callback):
 
 
 class AverageNonzeroSingleObjCallback(Callback):
-    def __init__(self, problem) -> None:
+    def __init__(self, problem, verbose=False) -> None:
         super().__init__()
         self.opt = []
         self.problem = problem
+        self.verbose = verbose
 
     def notify(self, algorithm):
+        if self.verbose:
+            print(f'Best gen: reward={-algorithm.pop.get("F")[0]} vars={algorithm.pop.get("X")[0]}')
         avg_rew = mean(algorithm.pop.get("F"))
         if avg_rew < 0:
             self.opt.append(avg_rew)

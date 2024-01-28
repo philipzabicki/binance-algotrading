@@ -9,23 +9,26 @@ from pymoo.core.problem import StarmapParallelization
 from pymoo.optimize import minimize
 
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
-    GenerationSavingCallback
-from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
+    GenerationSavingCallback, MinAvgMaxNonzeroSingleObjCallback
+# from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
+from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
+# from genetic_search.chosc_parametrizer import ChaikinOscillatorSavingFuturesMixedVariableProblem
+# from genetic_search.bands_parametrizer import BandsSavingFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
 POP_SIZE = 512
-N_GEN = 50
+N_GEN = 25
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = StochSavingFuturesMixedVariableProblem
+PROBLEM = MACDSavingFuturesMixedVariableProblem
 ALGORITHM = NSGA2
-TERMINATION = ("time", "12:00:00")
-# TERMINATION = ('n_gen', N_GEN)
+#TERMINATION = ("time", "12:00:00")
+TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 2_880,
               'init_balance': 50,
               'no_action_finish': inf,
@@ -82,11 +85,12 @@ def main():
                           eliminate_duplicates=MixedVariableDuplicateElimination())
 
     _date = str(dt.today()).replace(":", "-")[:-7]
-    dir_name = f'{TICKER}{ITV}_{MARKET_TYPE}_Pop{POP_SIZE}_{problem.env.__class__.__name__}_{_date}'
+    # dir_name = f'{TICKER}{ITV}_{MARKET_TYPE}_Pop{POP_SIZE}_{problem.env.__class__.__name__}_{_date}'
     res = minimize(problem,
                    algorithm,
                    save_history=False,
-                   callback=GenerationSavingCallback(problem, dir_name, verbose=True),
+                   #callback=GenerationSavingCallback(problem, dir_name, verbose=True),
+                   callable=MinAvgMaxNonzeroSingleObjCallback(problem, verbose=True),
                    termination=TERMINATION,
                    verbose=True)
 

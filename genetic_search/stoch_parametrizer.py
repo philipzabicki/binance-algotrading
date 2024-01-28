@@ -1,4 +1,5 @@
-from numpy import array, median
+from numpy import array, median, mean
+from math import copysign
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
@@ -7,9 +8,10 @@ from enviroments.stoch_env import StochOptimizeSpotEnv, StochOptimizeFuturesEnv,
 
 
 class StochSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
         self.env = StochOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
+        self.metric = metric
         macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.015)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
@@ -31,15 +33,22 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            out["F"] = array([median(rews)])
+            if self.metric == 'mixed':
+                med = median(rews)
+                out["F"] = array([copysign(med + mean(rews), med)])
+            elif self.metric == 'median':
+                out["F"] = array([median(rews)])
+            elif self.metric == 'mean':
+                out["F"] = array([mean(rews)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
 
 
 class StochFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
         self.env = StochOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
+        self.metric = metric
         macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
                           "long_enter_at": Real(bounds=(0.001, 1.000)),
@@ -68,7 +77,13 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            out["F"] = array([median(rews)])
+            if self.metric == 'mixed':
+                med = median(rews)
+                out["F"] = array([copysign(med + mean(rews), med)])
+            elif self.metric == 'median':
+                out["F"] = array([median(rews)])
+            elif self.metric == 'mean':
+                out["F"] = array([mean(rews)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
 
@@ -76,9 +91,10 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
 ########################################################################################################################
 # SAVING ONES
 class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
         self.env = StochOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
+        self.metric = metric
         macd_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
@@ -102,15 +118,22 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            out["F"] = array([median(rews)])
+            if self.metric == 'mixed':
+                med = median(rews)
+                out["F"] = array([copysign(med + mean(rews), med)])
+            elif self.metric == 'median':
+                out["F"] = array([median(rews)])
+            elif self.metric == 'mean':
+                out["F"] = array([mean(rews)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
 
 
 class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
         self.env = StochOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
+        self.metric = metric
         macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                           "save_ratio": Real(bounds=(0.0, 1.0)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
@@ -140,6 +163,12 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            out["F"] = array([median(rews)])
+            if self.metric == 'mixed':
+                med = median(rews)
+                out["F"] = array([copysign(med + mean(rews), med)])
+            elif self.metric == 'median':
+                out["F"] = array([median(rews)])
+            elif self.metric == 'mean':
+                out["F"] = array([mean(rews)])
         else:
             out["F"] = array([-self.env.step(action)[1]])

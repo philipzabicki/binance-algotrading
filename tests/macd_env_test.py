@@ -6,6 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 
+from definitions import ADDITIONAL_DATA_BY_MA, ADDITIONAL_DATA_BY_OHLCV_MA
 from enviroments import MACDOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
@@ -15,8 +16,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.7990523824126295, 0.9472797823110253, 0.013279991918375214, 0.04602172502490132, 0.720181958965162,
-          0.4186718111467487, 0.7725550945957258, 452, 686, 980, 34, 24, 9, 32]
+ACTION = [0.43008587385399666, 0.9621555182967749, 0.0106663989060728, 0.496375127801902, 0.03762073563089909, 0.4496635515499027, 0.33251838254521143, 84, 679, 678, 37, 7, 22, 41]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -65,14 +65,17 @@ if __name__ == "__main__":
                                   start_date=START_DATE,
                                   split=True,
                                   delay=259_200)
-    macd, signal = custom_MACD(df.iloc[:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5], ACTION[-4], ACTION[-3],
+    additional_periods = N_STEPS + max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
+                      ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] * \
+                  ADDITIONAL_DATA_BY_MA[ACTION[-2]]
+    macd, signal = custom_MACD(df.iloc[-additional_periods:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5], ACTION[-4], ACTION[-3],
                                ACTION[-2])
     signals = MACD_cross_signal(macd, signal)
-    df['MACD'] = macd
-    df['signal'] = signal
-    df['signals'] = signals
-    df.index = pd.DatetimeIndex(df['Opened'])
-    df_plot = df.tail(500)
+    df_plot = df.tail(N_STEPS).copy()
+    df_plot['MACD'] = macd[-N_STEPS:]
+    df_plot['signal'] = signal[-N_STEPS:]
+    df_plot['signals'] = signals[-N_STEPS:]
+    df_plot.index = pd.DatetimeIndex(df_plot['Opened'])
 
     fig = plt.figure(figsize=(21, 9))
     gs = fig.add_gridspec(3, 1, height_ratios=[2, 1, 1])

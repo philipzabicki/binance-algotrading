@@ -1,6 +1,7 @@
 from gym import spaces, Env
 from numpy import array, float64, inf
 
+from definitions import ADDITIONAL_DATA_BY_OHLCV_MA
 from utils.ta_tools import get_MA_band_signal
 from .signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
 
@@ -18,7 +19,7 @@ class _BandsExecuteSpotEnv(SignalExecuteSpotEnv):
         self.ma_period = ma_period
         self.atr_period = atr_period
         self.atr_multi = atr_multi
-        _max_period = max(self.ma_period, self.atr_period)
+        _max_period = max(self.ma_period*ADDITIONAL_DATA_BY_OHLCV_MA[ma_type], self.atr_period)
         if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
         # Calculate only the data length necessary, with additional length caused by indicator periods
@@ -50,7 +51,7 @@ class _BandsExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.ma_period = ma_period
         self.atr_period = atr_period
         self.atr_multi = atr_multi
-        _max_period = max(self.ma_period, self.atr_period)
+        _max_period = max(self.ma_period*ADDITIONAL_DATA_BY_OHLCV_MA[ma_type], self.atr_period)
         if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
         # Calculate only the data length necessary, with additional length caused by indicator periods

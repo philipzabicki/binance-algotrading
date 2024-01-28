@@ -1,6 +1,7 @@
 from gym import spaces, Env
 from numpy import array, float64, inf
 
+from definitions import ADDITIONAL_DATA_BY_MA
 from utils.ta_tools import custom_StochasticOscillator, StochasticOscillator_signal
 from .signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
 
@@ -23,7 +24,7 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
         self.overbought_threshold = overbought_threshold
         # Some MAs need as much additional previous data as 25 times period length to return repetitive values.
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
-        _max_period = self.fastK_period + self.slowK_period + self.slowD_period
+        _max_period = self.fastK_period + self.slowK_period*ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period*ADDITIONAL_DATA_BY_MA[slowD_ma_type]
         if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
@@ -69,7 +70,7 @@ class _StochExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.overbought_threshold = overbought_threshold
         # Some MAs need as much additional previous data as 25 times period length to return repetitive values.
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
-        _max_period = self.fastK_period + self.slowK_period + self.slowD_period
+        _max_period = self.fastK_period + self.slowK_period*ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period*ADDITIONAL_DATA_BY_MA[slowD_ma_type]
         if _max_period > self.total_steps:
             raise ValueError('One of indicator periods is greater than df size.')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
