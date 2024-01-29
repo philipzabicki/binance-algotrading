@@ -28,7 +28,7 @@ class TradingGraph:
         # close all plots if there are open
         plt.close('all')
         # figsize attribute allows us to specify the width and height of a figure in unit inches
-        self.fig = plt.figure(figsize=(16, 9), dpi=150)
+        self.fig = plt.figure(figsize=(16, 9), dpi=50)
 
         # Create top subplot for price axis
         self.ax1 = plt.subplot2grid((6, 1), (0, 0), rowspan=5, colspan=1)
