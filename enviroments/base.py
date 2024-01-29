@@ -243,7 +243,7 @@ class SpotBacktest(Env):
         elif (not self.episode_orders) and ((self.current_step - self.start_step) > self.no_action_finish):
             self._finish_episode()
         else:
-            if self.init_balance - self.balance >= 0:
+            if self.init_balance < self.balance+self.save_balance:
                 self.with_gain_c += 1
         # Older version:
         # return self._next_observation(), self.reward, self.done, self.info
@@ -260,10 +260,7 @@ class SpotBacktest(Env):
         gain = self.balance - self.init_balance
         total_return = (self.balance / self.init_balance) - 1
         risk_free_return = (self.df[self.end_step, 3] / self.df[self.start_step, 3]) - 1
-        if risk_free_return > 0:
-            above_free = (total_return - risk_free_return) * 100
-        else:
-            above_free = total_return * 100
+        above_free = (total_return - risk_free_return) * 100
         # if hasattr(self, 'leverage'):
         # above_free /= self.leverage
         hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 1 and self.profit_hold_counter > 1 else 1.0
@@ -587,10 +584,13 @@ class FuturesBacktest(SpotBacktest):
         elif action == 2:
             close = self.df[self.current_step, 3]
             self._open_position('short', close)
-        info = {'action': action,
-                'reward': 0,
-                'step': self.current_step,
-                'exec_time': time() - self.creation_t}
+        else:
+            if self.init_balance < self.balance+self.save_balance:
+                self.with_gain_c += 1
+        # self.info = {'action': action,
+        #         'reward': 0,
+        #         'step': self.current_step,
+        #         'exec_time': time() - self.creation_t}
         return self._next_observation(), self.reward, self.done, False, self.info
 
     def _finish_episode(self):

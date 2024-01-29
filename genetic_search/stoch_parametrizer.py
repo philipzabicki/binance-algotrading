@@ -34,8 +34,9 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
-                med = median(rews)
-                rew = med if med * mean(rews) < 0 else med * mean(rews)
+                _median = median(rews)
+                _mean = mean(rews)
+                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
                 out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
@@ -79,8 +80,9 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
-                med = median(rews)
-                rew = med if med * mean(rews) < 0 else med * mean(rews)
+                _median = median(rews)
+                _mean = mean(rews)
+                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
                 out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
@@ -121,8 +123,9 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
-                med = median(rews)
-                rew = med if med * mean(rews) < 0 else med * mean(rews)
+                _median = median(rews)
+                _mean = mean(rews)
+                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
                 out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
@@ -167,8 +170,9 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
-                med = median(rews)
-                rew = med if med * mean(rews) < 0 else med * mean(rews)
+                _median = median(rews)
+                _mean = mean(rews)
+                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
                 out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])

@@ -10,32 +10,32 @@ from pymoo.optimize import minimize
 
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     GenerationSavingCallback, MinAvgMaxNonzeroSingleObjCallback
-from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
-# from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
+#from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
+from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
 # from genetic_search.chosc_parametrizer import ChaikinOscillatorSavingFuturesMixedVariableProblem
 # from genetic_search.bands_parametrizer import BandsSavingFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 512
-N_GEN = 25
+POP_SIZE = 256
+N_GEN = 50
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = StochSavingFuturesMixedVariableProblem
+PROBLEM = MACDSavingFuturesMixedVariableProblem
 ALGORITHM = NSGA2
-TERMINATION = ("time", "09:00:00")
-# TERMINATION = ('n_gen', N_GEN)
+TERMINATION = ("time", "12:00:00")
+#TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 2_880,
               'init_balance': 50,
               'no_action_finish': inf,
               'fee': 0.0005,
               'coin_step': 0.001,
               # 'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              'verbose': False}
+              'verbose': True}
 
 
 def main():
