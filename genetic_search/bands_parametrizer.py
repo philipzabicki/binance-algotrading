@@ -8,7 +8,7 @@ from enviroments.bands_env import BandsOptimizeSpotEnv, BandsOptimizeFuturesEnv,
 
 
 class BandsSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = BandsOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -43,7 +43,7 @@ class BandsSpotMixedVariableProblem(ElementwiseProblem):
 
 
 class BandsFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = BandsOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -87,7 +87,7 @@ class BandsFuturesMixedVariableProblem(ElementwiseProblem):
 ########################################################################################################################
 # SAVING ONES
 class BandsSavingSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = BandsOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -124,7 +124,7 @@ class BandsSavingSpotMixedVariableProblem(ElementwiseProblem):
 
 
 class BandsSavingFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = BandsOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric

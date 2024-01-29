@@ -30,7 +30,7 @@ def get_callback_plot(callback, fname):
     plt.figure(figsize=(16, 9))
     plt.title("Convergence")
     # plt.ylabel('Reward (min/avg/max)')
-    plt.ylabel('% return (min/avg/max)')
+    plt.ylabel('Reward metric (min/avg/max)')
     plt.xlabel('Population No.')
     plt.plot(-1 * array(callback.opt), "--")
     plt.savefig(REPORT_DIR + 'Convergence_' + fname + ".png", dpi=300)

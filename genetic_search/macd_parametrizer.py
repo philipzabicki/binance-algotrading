@@ -1,4 +1,5 @@
-from numpy import array, median, mean
+from numpy import array, median, mean, nan_to_num, sum, isfinite
+from sklearn.preprocessing import normalize
 from math import copysign
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
@@ -8,7 +9,7 @@ from enviroments.macd_env import MACDOptimizeSpotEnv, MACDOptimizeFuturesEnv, MA
 
 
 class MACDSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = MACDOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -44,7 +45,7 @@ class MACDSpotMixedVariableProblem(ElementwiseProblem):
 
 
 class MACDFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = MACDOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -90,7 +91,7 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
 ########################################################################################################################
 # SAVING ONES
 class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = MACDOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -129,7 +130,7 @@ class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
 
 
 class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = MACDOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -158,12 +159,12 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
                   X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type'],
                   X['leverage']]
         if self.n_evals > 1:
-            rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
+            rews = array([-1 * self.env.step(action)[1] for _ in range(self.n_evals)])
             # print(f'median_of{self.n_evals}_reward: {median(rews)}')
             if self.metric == 'mixed':
                 _median = median(rews)
                 _mean = mean(rews)
-                rew = (_median+_mean)/2 if (_median < 0) or (_mean < 0) else _median * _mean
+                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
                 out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])

@@ -7,7 +7,7 @@ from enviroments.chaikinosc_env import ChaikinOscillatorOptimizeSpotEnv, Chaikin
 
 
 class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = ChaikinOscillatorOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -43,7 +43,7 @@ class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):
 
 
 class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = ChaikinOscillatorOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -84,7 +84,7 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
 ########################################################################################################################
 # SAVING ONES
 class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = ChaikinOscillatorOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -121,7 +121,7 @@ class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
 
 
 class ChaikinOscillatorSavingFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = ChaikinOscillatorOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric

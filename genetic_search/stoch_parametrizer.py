@@ -8,7 +8,7 @@ from enviroments.stoch_env import StochOptimizeSpotEnv, StochOptimizeFuturesEnv,
 
 
 class StochSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = StochOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -47,7 +47,7 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
 
 
 class StochFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = StochOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -95,7 +95,7 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
 ########################################################################################################################
 # SAVING ONES
 class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = StochOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
@@ -136,7 +136,7 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
 
 
 class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
-    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='mixed', **kwargs):
+    def __init__(self, df, df_mark, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = StochOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric

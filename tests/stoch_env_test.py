@@ -16,7 +16,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = StochOptimizeSavingFuturesEnv
-ACTION = [0.014795032190654946, 0.6715970770644584, 0.014779145094820144, 0.05761650316071308, 0.010536804700134683, 0.21391635879004822, 0.34241110174005784, 47.35201794334261, 52.55439464787312, 461, 134, 145, 6, 25, 2]
+ACTION = [0.7439004227952196, 0.14161666358451155, 0.011021136496098427, 0.03611727867364349, 0.26256525221022725, 0.7035479208263712, 0.49290738887738145, 41.00895615058519, 94.69151284805822, 72, 168, 406, 15, 11, 53]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -42,7 +42,9 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
 
 def sig_map(value):
     """Maps signals into values actually used by macd strategy env"""
-    if 0 <= value < 0.5:
+    if 0 <= value < 0.25:
+        return 0.25
+    elif 0.25 <= value < 0.5:
         return 0.5
     elif 0.5 <= value < 0.75:
         return 0.75

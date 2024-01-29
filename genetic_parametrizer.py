@@ -18,8 +18,8 @@ from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 256
-N_GEN = 50
+POP_SIZE = 64
+N_GEN = 100
 TICKER = 'BTCUSDT'
 ITV = '15m'
 MARKET_TYPE = 'um'
@@ -27,15 +27,15 @@ DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
 ALGORITHM = NSGA2
-TERMINATION = ("time", "12:00:00")
-#TERMINATION = ('n_gen', N_GEN)
+#TERMINATION = ("time", "12:00:00")
+TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 2_880,
               'init_balance': 50,
               'no_action_finish': inf,
               'fee': 0.0005,
               'coin_step': 0.001,
               # 'slippage': get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              'verbose': True}
+              'verbose': False}
 
 
 def main():
@@ -77,7 +77,7 @@ def main():
                       df_mark,
                       env_kwargs=ENV_KWARGS,
                       n_evals=10,
-                      metric='mean',
+                      #metric='median',
                       elementwise_runner=runner)
 
     algorithm = ALGORITHM(pop_size=POP_SIZE,
@@ -86,12 +86,12 @@ def main():
                           eliminate_duplicates=MixedVariableDuplicateElimination())
 
     _date = str(dt.today()).replace(":", "-")[:-7]
-    # dir_name = f'{TICKER}{ITV}_{MARKET_TYPE}_Pop{POP_SIZE}_{problem.env.__class__.__name__}_{_date}'
+    dir_name = f'{TICKER}{ITV}_{MARKET_TYPE}_Pop{POP_SIZE}_{problem.env.__class__.__name__}_{_date}'
     res = minimize(problem,
                    algorithm,
                    save_history=False,
-                   #callback=GenerationSavingCallback(problem, dir_name, verbose=True),
-                   callback=MinAvgMaxNonzeroSingleObjCallback(problem, verbose=True),
+                   callback=GenerationSavingCallback(problem, dir_name, verbose=True),
+                   #callback=MinAvgMaxNonzeroSingleObjCallback(problem, verbose=True),
                    termination=TERMINATION,
                    verbose=True)
 
