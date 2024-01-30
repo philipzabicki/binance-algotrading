@@ -1,4 +1,4 @@
-from numpy import array, median, mean, nan_to_num, sum, isfinite
+from numpy import array, median, mean, nan_to_num, sum, isfinite, percentile
 from sklearn.preprocessing import normalize
 from math import copysign
 from pymoo.core.problem import ElementwiseProblem
@@ -36,6 +36,8 @@ class MACDSpotMixedVariableProblem(ElementwiseProblem):
                 _mean = mean(rews)
                 rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
                 out["F"] = array([rew])
+            elif self.metric == '10perc_x_mean':
+                out["F"] = array([percentile(rews, 10) * mean(rews)])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
             elif self.metric == 'mean':
@@ -80,6 +82,8 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
                 _mean = mean(rews)
                 rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
                 out["F"] = array([rew])
+            elif self.metric == '10perc_x_mean':
+                out["F"] = array([percentile(rews, 10) * mean(rews)])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
             elif self.metric == 'mean':
@@ -121,6 +125,8 @@ class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
                 _mean = mean(rews)
                 rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
                 out["F"] = array([rew])
+            elif self.metric == '10perc_x_mean':
+                out["F"] = array([percentile(rews, 10) * mean(rews)])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])
             elif self.metric == 'mean':
@@ -165,6 +171,11 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
                 _median = median(rews)
                 _mean = mean(rews)
                 rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
+                out["F"] = array([rew])
+            elif self.metric == '10perc_x_mean':
+                perc10 = percentile(rews, 10)
+                _mean = mean(rews)
+                rew = perc10 if (perc10 < 0) or (_mean < 0) else perc10 * _mean
                 out["F"] = array([rew])
             elif self.metric == 'median':
                 out["F"] = array([median(rews)])

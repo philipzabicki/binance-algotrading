@@ -16,7 +16,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.9926171276124999, 0.7805724880221181, 0.010205396565028635, 0.6673858399566663, 0.7409421529223962, 0.832770512061765, 0.4233155197241236, 411, 578, 196, 19, 33, 15, 16]
+ACTION = [0.9461178964834303,0.6102300509277804,0.013063668390396858,0.5364911376702247,0.9959641430691529,0.9748446517972863,0.8321291458559199,204,795,475,13,10,22,60]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -85,8 +85,8 @@ if __name__ == "__main__":
     axs[1].plot(df_plot.index, df_plot['signal'], label='Signal')
     axs[1].legend(loc='upper left')
     axs[2].plot(df_plot.index, df_plot['signals'], label='Trade signals')
-    axs[2].axhline(y=sig_map(ACTION[2]), label='Buy threshold', color='green', linestyle='--')
-    axs[2].axhline(y=-sig_map(ACTION[3]), label='Sell threshold', color='red', linestyle='--')
+    axs[2].axhline(y=sig_map(ACTION[3]), label='Buy threshold', color='green', linestyle='--')
+    axs[2].axhline(y=-sig_map(ACTION[4]), label='Sell threshold', color='red', linestyle='--')
     axs[2].legend(loc='upper left')
 
     plt.tight_layout()

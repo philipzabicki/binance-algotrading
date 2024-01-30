@@ -255,7 +255,7 @@ class SpotMakerBot:
 
 class FuturesTaker:
     def __init__(self, base='BTC', quote='USDT', market='um', itv='1m', settings=None, API_KEY='', SECRET_KEY='',
-                 prev_size=100, multi=25):
+                 prev_size=100, multi=1):
         self.start_t = time()
         if settings is None:
             raise ValueError("Settings must be dict type.")
