@@ -13,6 +13,7 @@ class BandsSpotMixedVariableProblem(ElementwiseProblem):
         self.n_evals = n_evals
         self.metric = metric
         bands_variables = {"stop_loss": Real(bounds=(0.0001, 0.0500)),
+                           "take_profit": Real(bounds=(0.0001, 1.0000)),
                            "enter_at": Real(bounds=(0.001, 1.000)),
                            "close_at": Real(bounds=(0.001, 1.000)),
                            "atr_multi": Real(bounds=(0.001, 15.000)),
@@ -22,7 +23,8 @@ class BandsSpotMixedVariableProblem(ElementwiseProblem):
         super().__init__(vars=bands_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
-        action = [X['stop_loss'], X['enter_at'], X['close_at'],
+        action = [X['stop_loss'], X['take_profit'],
+                  X['enter_at'], X['close_at'],
                   X['atr_multi'], X['atr_period'],
                   X['ma_type'], X['ma_period']]
 
@@ -51,6 +53,7 @@ class BandsFuturesMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         bands_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                            "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                           "take_profit": Real(bounds=(0.0001, 1.0000)),
                            "long_enter_at": Real(bounds=(0.001, 1.000)),
                            "long_close_at": Real(bounds=(0.001, 1.000)),
                            "short_enter_at": Real(bounds=(0.001, 1.000)),
@@ -63,7 +66,7 @@ class BandsFuturesMixedVariableProblem(ElementwiseProblem):
         super().__init__(vars=bands_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
-        action = [X['position_ratio'], X['stop_loss'],
+        action = [X['position_ratio'], X['stop_loss'], X['take_profit'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
                   X['atr_multi'], X['atr_period'],
@@ -97,6 +100,7 @@ class BandsSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         bands_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
                            "stop_loss": Real(bounds=(0.0001, 0.0500)),
+                           "take_profit": Real(bounds=(0.0001, 1.0000)),
                            "enter_at": Real(bounds=(0.001, 1.000)),
                            "close_at": Real(bounds=(0.001, 1.000)),
                            "atr_multi": Real(bounds=(0.001, 15.000)),
@@ -106,7 +110,7 @@ class BandsSavingSpotMixedVariableProblem(ElementwiseProblem):
         super().__init__(vars=bands_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
-        action = [X['save_ratio'], X['stop_loss'],
+        action = [X['save_ratio'], X['stop_loss'], X['take_profit'],
                   X['enter_at'], X['close_at'],
                   X['atr_multi'], X['atr_period'],
                   X['ma_type'], X['ma_period']]
@@ -137,6 +141,7 @@ class BandsSavingFuturesMixedVariableProblem(ElementwiseProblem):
         bands_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                            "save_ratio": Real(bounds=(0.0, 1.0)),
                            "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                           "take_profit": Real(bounds=(0.0001, 1.0000)),
                            "long_enter_at": Real(bounds=(0.001, 1.000)),
                            "long_close_at": Real(bounds=(0.001, 1.000)),
                            "short_enter_at": Real(bounds=(0.001, 1.000)),
@@ -149,7 +154,8 @@ class BandsSavingFuturesMixedVariableProblem(ElementwiseProblem):
         super().__init__(vars=bands_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
-        action = [X['position_ratio'], X['save_ratio'], X['stop_loss'],
+        action = [X['position_ratio'], X['save_ratio'],
+                  X['stop_loss'], X['take_profit'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
                   X['atr_multi'], X['atr_period'],

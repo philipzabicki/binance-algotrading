@@ -13,6 +13,7 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
         self.n_evals = n_evals
         self.metric = metric
         macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.015)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
                           "oversold_threshold": Real(bounds=(0, 50)),
@@ -26,7 +27,8 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['stop_loss'], X['enter_at'], X['close_at'],
+        action = [X['stop_loss'], X['take_profit'],
+                  X['enter_at'], X['close_at'],
                   X['oversold_threshold'], X['overbought_threshold'],
                   X['fastK_period'], X['slowK_period'], X['slowD_period'],
                   X['slowK_ma_type'], X['slowD_ma_type']]
@@ -55,6 +57,7 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
                           "long_enter_at": Real(bounds=(0.001, 1.000)),
                           "long_close_at": Real(bounds=(0.001, 1.000)),
                           "short_enter_at": Real(bounds=(0.001, 1.000)),
@@ -71,7 +74,7 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['position_ratio'], X['stop_loss'],
+        action = [X['position_ratio'], X['stop_loss'], X['take_profit'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
                   X['oversold_threshold'], X['overbought_threshold'],
@@ -105,6 +108,7 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         macd_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
                           "oversold_threshold": Real(bounds=(0, 50)),
@@ -118,7 +122,7 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['save_ratio'], X['stop_loss'],
+        action = [X['save_ratio'], X['stop_loss'], X['take_profit'],
                   X['enter_at'], X['close_at'],
                   X['oversold_threshold'], X['overbought_threshold'],
                   X['fastK_period'], X['slowK_period'], X['slowD_period'],
@@ -149,6 +153,7 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
         macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                           "save_ratio": Real(bounds=(0.0, 1.0)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
                           "long_enter_at": Real(bounds=(0.001, 1.000)),
                           "long_close_at": Real(bounds=(0.001, 1.000)),
                           "short_enter_at": Real(bounds=(0.001, 1.000)),
@@ -165,7 +170,8 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['position_ratio'], X['save_ratio'], X['stop_loss'],
+        action = [X['position_ratio'], X['save_ratio'],
+                  X['stop_loss'], X['take_profit'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
                   X['oversold_threshold'], X['overbought_threshold'],

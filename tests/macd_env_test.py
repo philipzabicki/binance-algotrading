@@ -16,7 +16,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.9461178964834303,0.6102300509277804,0.013063668390396858,0.5364911376702247,0.9959641430691529,0.9748446517972863,0.8321291458559199,204,795,475,13,10,22,60]
+ACTION = [0.9161068892357491, 0.8758720348036031, 0.01021155393729357, 0.34238382019965397, 0.6648471096607977, 0.13632194704813855, 0.8320305092648203, 0.6204794285446839, 471, 556, 945, 31, 36, 5, 53]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -57,14 +57,14 @@ if __name__ == "__main__":
                           data_type=DATA_TYPE,
                           start_date=START_DATE,
                           split=False,
-                          delay=259_200)
+                          delay=345_600)
     _, df_mark = by_BinanceVision(ticker=TICKER,
                                   interval=ITV,
                                   market_type=MARKET_TYPE,
                                   data_type='markPriceKlines',
                                   start_date=START_DATE,
                                   split=True,
-                                  delay=259_200)
+                                  delay=345_600)
     additional_periods = N_STEPS + max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
                       ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] * \
                   ADDITIONAL_DATA_BY_MA[ACTION[-2]]

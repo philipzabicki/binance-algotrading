@@ -15,19 +15,20 @@ from utils.visualize import TradingGraph
 
 class SpotBacktest(Env):
     def __init__(self, df, dates_df=None, max_steps=0, exclude_cols_left=0, no_action_finish=2_880,
-                 init_balance=1_000, position_ratio=1.0, save_ratio=None, stop_loss=None, fee=0.0002, coin_step=0.001,
-                 slippage=None, slipp_std=0, render_range=120, verbose=True, visualize=False,
-                 write_to_file=False, *args, **kwargs):
+                 init_balance=1_000, position_ratio=1.0, save_ratio=None, stop_loss=None, take_profit=None,
+                 fee=0.0002, coin_step=0.001, slippage=None, slipp_std=0,
+                 render_range=120, verbose=True, visualize=False, write_to_file=False, *args, **kwargs):
         self.creation_t = time()
         self.df = df.to_numpy()
         if len(self.df) < max_steps:
             raise ValueError("max_steps larger than rows in dataframe")
         print(f'Environment ({self.__class__.__name__}) created.')
-        print(f' fee:{fee}, coin_step:{coin_step}, init_balance:{init_balance}, position_ratio:{position_ratio}')
-        print(
-            f' df_size: {len(self.df)}, max_steps: {max_steps}({max_steps / len(self.df) * 100:.2f}%), no_action_finish:{no_action_finish}')
-        print(f' obs_sample(last row): {self.df[-1, exclude_cols_left:]}')
+        print(f' fee:{fee}, coin_step:{coin_step}')
+        print(f' df_size: {len(self.df)}, max_steps: {max_steps}({max_steps / len(self.df) * 100:.2f}%), no_action_finish:{no_action_finish}')
+        print(f' df_sample(last row): {self.df[-1, exclude_cols_left:]}')
         print(f' slippage statistics (avg, stddev): {slippage}')
+        print(f' init_balance:{init_balance}, position_ratio:{position_ratio}')
+        print(f' save_ratio:{save_ratio}, stop_loss:{stop_loss} take_profit:{take_profit}')
         if visualize and (dates_df is not None):
             self.dates_df = date2num(dates_df.to_numpy())
             self.visualize = True
@@ -55,8 +56,10 @@ class SpotBacktest(Env):
             self.buy_factor = slippage['buy'][0] + slippage['buy'][1] * slipp_std
             self.sell_factor = slippage['sell'][0] - slippage['sell'][1] * slipp_std
             self.stop_loss_factor = slippage['stop_loss'][0] - slippage['stop_loss'][1] * slipp_std
+            # TODO: handle take profit slippage data
+            self.take_profit_factor = 1.0
         else:
-            self.buy_factor, self.sell_factor, self.stop_loss_factor = 1.0, 1.0, 1.0
+            self.buy_factor, self.sell_factor, self.stop_loss_factor, self.take_profit_factor = 1.0, 1.0, 1.0, 1.0
         self.save_ratio = save_ratio
         self.save_balance = 0.0
         self.total_steps = len(self.df)
@@ -66,11 +69,11 @@ class SpotBacktest(Env):
         self.fee = fee
         self.max_steps = max_steps
         self.init_balance = init_balance
-        self.init_position_size = init_balance * position_ratio
         self.position_ratio = position_ratio
-        self.position_size = self.init_position_size
+        self.position_size = self.init_balance * self.position_ratio
         self.balance = self.init_balance
         self.stop_loss = stop_loss
+        self.take_profit = take_profit
         # Discrete action space: 0 - hold, 1 - buy, 2 - sell
         self.action_space = spaces.Discrete(3)
         # Observation space #
@@ -83,10 +86,8 @@ class SpotBacktest(Env):
     # Reset the state of the environment to an initial state
     def reset(self, **kwargs):
         self.creation_t = time()
-        self.total_steps = len(self.df)
         self.done = False
         self.reward = 0
-        self.output = False
         if self.visualize:
             self.visualization = TradingGraph(self.render_range, self.time_step)
         if self.write_to_file:
@@ -99,18 +100,16 @@ class SpotBacktest(Env):
         self.info = {}
         self.PLs_and_ratios = []
         self.balance = self.init_balance
-        self.init_position_size = self.init_balance * self.position_ratio
-        self.position_size = self.init_position_size
+        self.position_size = self.init_balance * self.position_ratio
         self.prev_bal = 0
         self.enter_price = 0
-        self.stop_loss_price = 0
+        self.stop_loss_price, self.take_profit_price = 0,0
         self.qty = 0
         self.pnl = 0
         self.absolute_profit = 0.0
-        self.SL_losses, self.cumulative_fees, self.liquidations = 0, 0, 0
-        self.in_position, self.position_closed, self.in_position_counter, self.episode_orders, self.with_gain_c = 0, 0, 0, 0, 1
+        self.SL_losses, self.cumulative_fees, self.liquidations, self.take_profits_c = 0, 0, 0, 0
+        self.in_position, self.in_position_counter, self.episode_orders, self.with_gain_c = 0, 0, 0, 1
         self.good_trades_count, self.bad_trades_count = 1, 1
-        self.profit_mean, self.loss_mean = 0, 0
         self.max_drawdown, self.max_profit = 0, 0
         self.loss_hold_counter, self.profit_hold_counter = 0, 0
         self.max_balance = self.min_balance = self.balance
@@ -138,6 +137,8 @@ class SpotBacktest(Env):
     def _buy(self, price):
         if self.stop_loss is not None:
             self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
+        if self.take_profit is not None:
+            self.take_profit_price = round((1 + self.take_profit) * price, 2)
         # Considering random factor as in real world scenario #
         # price = self._random_factor(price, 'market_buy')
         adj_price = price * self.buy_factor
@@ -148,7 +149,6 @@ class SpotBacktest(Env):
             return
         self.last_order_type = 'open_long'
         self.in_position = 1
-        self.position_closed = 0
         self.episode_orders += 1
         self.enter_price = adj_price
         self.qty = step_adj_qty * self.coin_step
@@ -163,13 +163,20 @@ class SpotBacktest(Env):
             self._write_to_file()
         # print(f'BOUGHT {self.qty} at {price}({adj_price})')
 
-    def _sell(self, price, sl=False):
+    def _sell(self, price, sl=False, tp=False):
         if sl:
             # price = self._random_factor(price, 'SL')
             # while price>self.enter_price:
             #     price = self._random_factor(price, 'SL')
             adj_price = price * self.stop_loss_factor
+            if adj_price > self.enter_price:
+                raise RuntimeError(f"Stop loss price is above position enter price. (sl_factor={self.stop_loss_factor})")
             self.last_order_type = 'stop_loss_long'
+        elif tp:
+            self.take_profits_c += 1
+            adj_price = price * self.take_profit_factor
+            # TODO: add new order type for visualizations
+            self.last_order_type = 'close_long'
         else:
             # price = self._random_factor(price, 'market_sell')
             adj_price = price * self.sell_factor
@@ -207,7 +214,6 @@ class SpotBacktest(Env):
             self._finish_episode()
         self.qty = 0
         self.in_position = 0
-        self.position_closed = 1
         self.in_position_counter = 0
         self.stop_loss_price = 0
         if self.write_to_file:
@@ -226,15 +232,18 @@ class SpotBacktest(Env):
         self.last_order_type = ''
         self.absolute_profit = 0.0
         if self.in_position:
-            low, close = self.df[self.current_step, 2:4]
+            high, low, close = self.df[self.current_step, 1:4]
             # print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
             self.in_position_counter += 1
             if close > self.enter_price:
                 self.profit_hold_counter += 1
             else:
                 self.loss_hold_counter += 1
+            # Handling stop losses and take profits
             if (self.stop_loss is not None) and (low <= self.stop_loss_price):
                 self._sell(self.stop_loss_price, sl=True)
+            elif (self.take_profit is not None) and (high >= self.take_profit_price):
+                self._sell(self.take_profit_price, tp=True)
             elif action == 2 and self.qty > 0:
                 self._sell(close)
         elif action == 1:
@@ -306,7 +315,7 @@ class SpotBacktest(Env):
             print(
                 f'Episode finished: gain:${gain:.2f}({total_return * 100:.2f}%), gain/step:${gain / (self.end_step - self.start_step):.5f}, ',
                 end='')
-            print(f'cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f}')
+            print(f'cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f} take_profits:{self.take_profits_c}')
             print(f' save_ratio:{self.save_ratio}, saved_balance:${self.save_balance:.2f}')
             print(
                 f' trades:{self.episode_orders:_}, trades_with(profit/loss):{self.good_trades_count - 1:_}/{self.bad_trades_count - 1:_}, ',
@@ -460,11 +469,17 @@ class FuturesBacktest(SpotBacktest):
     def _open_position(self, side, price):
         if side == 'long':
             adj_price = price * self.buy_factor
-            self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
+            if self.stop_loss is not None:
+                self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
+            if self.take_profit is not None:
+                self.take_profit_price = round((1 + self.take_profit) * price, 2)
             self.last_order_type = 'open_long'
         elif side == 'short':
             adj_price = price * self.sell_factor
-            self.stop_loss_price = round((1 + self.stop_loss) * price, 2)
+            if self.stop_loss is not None:
+                self.stop_loss_price = round((1 + self.stop_loss) * price, 2)
+            if self.take_profit is not None:
+                self.take_profit_price = round((1 - self.take_profit) * price, 2)
             self.last_order_type = 'open_short'
         else:
             raise RuntimeError('side should be "long" or "short"')
@@ -495,13 +510,21 @@ class FuturesBacktest(SpotBacktest):
         if self.write_to_file:
             self._write_to_file()
 
-    def _close_position(self, price, liquidated=False, SL=False):
-        if SL:
+    def _close_position(self, price, liquidated=False, sl=False, tp=False):
+        if sl:
             adj_price = price * self.stop_loss_factor
             if self.qty > 0:
                 self.last_order_type = 'stop_loss_long'
             elif self.qty < 0:
                 self.last_order_type = 'stop_loss_short'
+        if tp:
+            self.take_profits_c += 1
+            adj_price = price * self.take_profit_factor
+            # TODO: add new order type for visualizations
+            if self.qty > 0:
+                self.last_order_type = 'close_long'
+            elif self.qty < 0:
+                self.last_order_type = 'close_short'
         else:
             if self.qty > 0:
                 adj_price = price * self.sell_factor
@@ -546,8 +569,8 @@ class FuturesBacktest(SpotBacktest):
                 self.min_balance = self.balance
             if (self.max_drawdown == 0) or (percentage_profit < self.max_drawdown):
                 self.max_drawdown = percentage_profit
-            if SL:
-                self.SL_losses += (self.balance - self.prev_bal)
+            if sl:
+                self.SL_losses += self.absolute_profit
         self.PLs_and_ratios.append((percentage_profit, self.good_trades_count / self.bad_trades_count))
         self.position_size = (self.balance * self.position_ratio)
         self.qty = 0
@@ -572,7 +595,10 @@ class FuturesBacktest(SpotBacktest):
             self._get_pnl(mark_close, update=True)
             if ((low <= self.stop_loss_price) and (self.qty > 0)) or (
                     (high >= self.stop_loss_price) and (self.qty < 0)):
-                self._close_position(self.stop_loss_price, SL=True)
+                self._close_position(self.stop_loss_price, sl=True)
+            elif ((high >= self.take_profit_price) and (self.qty > 0)) or (
+                    (low <= self.take_profit_price) and (self.qty < 0)):
+                self._close_position(self.take_profit_price, tp=True)
             elif self._check_margin():
                 self.liquidations += 1
                 self._close_position(mark_close, liquidated=True)

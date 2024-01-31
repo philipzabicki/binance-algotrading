@@ -13,11 +13,11 @@ from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
 
 CPU_CORES = cpu_count()
-N_TEST = 8
+N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = ChaikinOscillatorOptimizeSavingFuturesEnv
-ACTION = [0.915170855730517, 0.7794698710510827, 0.014421558846455525, 129, 397, 18, 3, 58]
+ACTION = [0.9890912560014726, 0.7628076835628554, 0.0070163146502576655, 0.7181997711991981, 535, 262, 20, 6, 49]
 
 
 def sig_map(value):
@@ -41,7 +41,7 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               coin_step=0.001,
               # slipp_std=0,
               # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              verbose=True, visualize=True, write_to_file=True)
+              verbose=False, visualize=False, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)
@@ -62,14 +62,14 @@ if __name__ == "__main__":
                           data_type=DATA_TYPE,
                           start_date=START_DATE,
                           split=False,
-                          delay=259_200)
+                          delay=345_600)
     _, df_mark = by_BinanceVision(ticker=TICKER,
                                   interval=ITV,
                                   market_type=MARKET_TYPE,
                                   data_type='markPriceKlines',
                                   start_date=START_DATE,
                                   split=True,
-                                  delay=259_200)
+                                  delay=345_600)
     additional_periods = N_STEPS + max(ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-3]],
                                        ACTION[-4] * ADDITIONAL_DATA_BY_MA[ACTION[-2]])
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()

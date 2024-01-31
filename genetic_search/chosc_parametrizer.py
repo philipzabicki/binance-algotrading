@@ -12,6 +12,7 @@ class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):
         self.n_evals = n_evals
         self.metric = metric
         chaikin_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
+                             "take_profit": Real(bounds=(0.0001, 1.0000)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
                              "fast_ma_type": Integer(bounds=(0, 26)),
@@ -20,7 +21,7 @@ class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['stop_loss'],
+        action = [X['stop_loss'], X['take_profit'],
                   X['fast_period'], X['slow_period'],
                   X['fast_ma_type'], X['slow_ma_type']]
         if self.n_evals > 1:
@@ -51,6 +52,7 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         chaikin_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                              "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                             "take_profit": Real(bounds=(0.0001, 1.0000)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
                              "fast_ma_type": Integer(bounds=(0, 26)),
@@ -60,7 +62,7 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['position_ratio'], X['stop_loss'],
+        action = [X['position_ratio'], X['stop_loss'], X['take_profit'],
                   X['fast_period'], X['slow_period'],
                   X['fast_ma_type'], X['slow_ma_type'],
                   X['leverage']]
@@ -94,6 +96,7 @@ class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         chaikin_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
                              "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                             "take_profit": Real(bounds=(0.0001, 1.0000)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
                              "fast_ma_type": Integer(bounds=(0, 26)),
@@ -102,7 +105,7 @@ class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['save_ratio'], X['stop_loss'],
+        action = [X['save_ratio'], X['stop_loss'], X['take_profit'],
                   X['fast_period'], X['slow_period'],
                   X['fast_ma_type'], X['slow_ma_type']]
         if self.n_evals > 1:
@@ -134,6 +137,7 @@ class ChaikinOscillatorSavingFuturesMixedVariableProblem(ElementwiseProblem):
         chaikin_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                              "save_ratio": Real(bounds=(0.0, 1.0)),
                              "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                             "take_profit": Real(bounds=(0.0001, 1.0000)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
                              "fast_ma_type": Integer(bounds=(0, 26)),
@@ -143,7 +147,8 @@ class ChaikinOscillatorSavingFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['position_ratio'], X['save_ratio'], X['stop_loss'],
+        action = [X['position_ratio'], X['save_ratio'],
+                  X['stop_loss'], X['take_profit'],
                   X['fast_period'], X['slow_period'],
                   X['fast_ma_type'], X['slow_ma_type'],
                   X['leverage']]

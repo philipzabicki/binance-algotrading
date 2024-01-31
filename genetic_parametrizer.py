@@ -10,8 +10,8 @@ from pymoo.optimize import minimize
 
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     GenerationSavingCallback, MinAvgMaxNonzeroSingleObjCallback
-from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
-# from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
+from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
+# from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
 # from genetic_search.chosc_parametrizer import ChaikinOscillatorSavingFuturesMixedVariableProblem
 # from genetic_search.bands_parametrizer import BandsSavingFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
@@ -25,9 +25,9 @@ ITV = '15m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = StochSavingFuturesMixedVariableProblem
+PROBLEM = MACDSavingFuturesMixedVariableProblem
 ALGORITHM = NSGA2
-TERMINATION = ("time", "09:00:00")
+TERMINATION = ("time", "12:00:00")
 #TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 2_880,
               'init_balance': 50,
@@ -53,7 +53,7 @@ def main():
                              data_type=DATA_TYPE,
                              start_date=START_DATE,
                              split=True,
-                             delay=259_200)
+                             delay=345_600)
     print(f'df used: {df}')
     _, df_mark = by_BinanceVision(ticker=TICKER,
                                   interval=ITV,
@@ -61,7 +61,7 @@ def main():
                                   data_type='markPriceKlines',
                                   start_date=START_DATE,
                                   split=True,
-                                  delay=259_200)
+                                  delay=345_600)
     print(f'df_mark used: {df_mark}')
 
     pool = Pool(CPU_CORES_COUNT)
@@ -77,7 +77,7 @@ def main():
                       df_mark,
                       env_kwargs=ENV_KWARGS,
                       n_evals=10,
-                      metric='mean',
+                      #metric='mean',
                       elementwise_runner=runner)
 
     algorithm = ALGORITHM(pop_size=POP_SIZE,
@@ -90,8 +90,8 @@ def main():
     res = minimize(problem,
                    algorithm,
                    save_history=False,
-                   callback=GenerationSavingCallback(problem, dir_name, verbose=True),
-                   #callback=MinAvgMaxNonzeroSingleObjCallback(problem, verbose=True),
+                   #callback=GenerationSavingCallback(problem, dir_name, verbose=True),
+                   callback=MinAvgMaxNonzeroSingleObjCallback(problem, verbose=True),
                    termination=TERMINATION,
                    verbose=True)
 

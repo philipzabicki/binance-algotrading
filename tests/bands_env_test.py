@@ -12,7 +12,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = BandsOptimizeSavingFuturesEnv
-ACTION = [0.41464620138861297, 0.7775706399056528, 0.011594564779047876, 0.427143122211287, 0.30474581372929627, 0.08784173123628099, 0.9901179947572901, 9.165723707085784, 279, 15, 704, 18]
+ACTION = [0.291996613409276, 0.9161684071470824, 0.010632791330026847, 0.725177439064927, 0.70553310167604, 0.7968140280208842, 0.26966746512783524, 0.7930824376847465, 8.36203388288734, 283, 5, 817, 63]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -43,14 +43,14 @@ if __name__ == "__main__":
                                     data_type=DATA_TYPE,
                                     start_date=START_DATE,
                                     split=True,
-                                    delay=259_200)
+                                    delay=345_600)
     _, df_mark = by_BinanceVision(ticker=TICKER,
                                   interval=ITV,
                                   market_type=MARKET_TYPE,
                                   data_type='markPriceKlines',
                                   start_date=START_DATE,
                                   split=True,
-                                  delay=259_200)
+                                  delay=345_600)
     signals = get_MA_band_signal(df.to_numpy(), ACTION[-3], ACTION[-2], ACTION[-4], ACTION[-5])
     print(f'signal {signals}')
     plt.plot(signals)

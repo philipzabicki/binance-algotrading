@@ -118,6 +118,7 @@ def by_BinanceVision(ticker='BTCBUSD',
         df = pd.read_csv(output_folder + '.csv')
         df['Opened'] = pd.to_datetime(df['Opened'])
         last_timestamp = (df.iloc[-1]['Opened']).value // 10 ** 9
+        print(f'time() - last_timestamp {time() - last_timestamp}')
         if (time() - last_timestamp) > delay:
             _start_date = pd.to_datetime(last_timestamp, unit='s').date()
             # print(f'start_date {start_date}')

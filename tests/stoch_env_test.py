@@ -16,7 +16,7 @@ N_TEST = 10_000
 N_STEPS = 2_880
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '15m', 'um', 'klines', '2020-01-01'
 ENV = StochOptimizeSavingFuturesEnv
-ACTION = [0.9824915213418696, 0.00012356937590617508, 0.009613363458528543, 0.014046742707019506, 0.48814981588037426, 0.899102625855015, 0.08457514929860492, 46.30714671352345, 72.75152074675631, 242, 344, 543, 20, 18, 73]
+ACTION = [0.5127197506992778, 0.9229077150886502, 0.0040113336296856905, 0.5796247485172207, 0.16300669823738648, 0.08117639832941675, 0.5380315050715846, 0.2357042935880006, 14.583274433884618, 75.93869885517384, 152, 574, 771, 9, 7, 68]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -59,14 +59,14 @@ if __name__ == "__main__":
                           data_type=DATA_TYPE,
                           start_date=START_DATE,
                           split=False,
-                          delay=259_200)
+                          delay=345_600)
     _, df_mark = by_BinanceVision(ticker=TICKER,
                                   interval=ITV,
                                   market_type=MARKET_TYPE,
                                   data_type='markPriceKlines',
                                   start_date=START_DATE,
                                   split=True,
-                                  delay=259_200)
+                                  delay=345_600)
     additional_periods = N_STEPS + ACTION[-6] + ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-3]] + ACTION[-4] * \
                   ADDITIONAL_DATA_BY_MA[ACTION[-2]]
     slowK, slowD = custom_StochasticOscillator(df.iloc[-additional_periods:, 1:6].to_numpy(),

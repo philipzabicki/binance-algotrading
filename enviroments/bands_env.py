@@ -10,11 +10,11 @@ from .signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
 ########################################################################################################################
 # EXECUTING ENVIRONMENTS
 class _BandsExecuteSpotEnv(SignalExecuteSpotEnv):
-    def reset(self, *args, stop_loss=None, save_ratio=None,
+    def reset(self, *args, stop_loss=None, take_profit=None, save_ratio=None,
               enter_at=1.0, close_at=1.0,
               atr_multi=1.0, atr_period=1,
               ma_type=0, ma_period=1, **kwargs):
-        _ret = super().reset(*args, stop_loss=stop_loss, save_ratio=save_ratio,
+        _ret = super().reset(*args, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
                              enter_at=enter_at, close_at=close_at, **kwargs)
         self.ma_type = ma_type
         self.ma_period = ma_period
@@ -40,11 +40,12 @@ class _BandsExecuteSpotEnv(SignalExecuteSpotEnv):
 
 
 class _BandsExecuteFuturesEnv(SignalExecuteFuturesEnv):
-    def reset(self, *args, position_ratio=1.0, stop_loss=None, save_ratio=None,
+    def reset(self, *args, position_ratio=1.0, stop_loss=None, take_profit=None, save_ratio=None,
               long_enter_at=1.0, long_close_at=1.0, short_enter_at=1.0, short_close_at=1.0,
               atr_multi=1.0, atr_period=1,
               ma_type=0, ma_period=1, leverage=5, **kwargs):
-        _ret = super().reset(*args, position_ratio=position_ratio, save_ratio=save_ratio, stop_loss=stop_loss,
+        _ret = super().reset(*args, position_ratio=position_ratio, save_ratio=save_ratio,
+                             stop_loss=stop_loss, take_profit=take_profit,
                              long_enter_at=long_enter_at, long_close_at=long_close_at,
                              short_enter_at=short_enter_at, short_close_at=short_close_at,
                              leverage=leverage, **kwargs)
@@ -80,22 +81,23 @@ class BandsOptimizeSpotEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.0001, 0.001, 0.001, 0.001, 2, 0, 2]
-        action_upper = [0.0500, 1.000, 1.000, 15.0, 10_000, 37, 10_000]
+        action_lower = [0.0001, 0.0001, 0.001, 0.001, 0.001, 2, 0, 2]
+        action_upper = [0.0500, 1.0000, 1.000, 1.000, 15.0, 10_000, 37, 10_000]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, enter_at=1.0, close_at=1.0,
+    def reset(self, stop_loss=None, take_profit=None, enter_at=1.0, close_at=1.0,
               ma_type=0, ma_period=2,
               atr_period=2, atr_multi=1.0):
-        return self.exec_env.reset(stop_loss=stop_loss, enter_at=enter_at, close_at=close_at,
+        return self.exec_env.reset(stop_loss=stop_loss, take_profit=take_profit,
+                                   enter_at=enter_at, close_at=close_at,
                                    ma_type=ma_type, ma_period=ma_period,
                                    atr_period=atr_period, atr_multi=atr_multi)
 
     def step(self, action):
-        self.reset(stop_loss=action[0], enter_at=action[1], close_at=action[2],
-                   atr_multi=action[3], atr_period=int(action[4]),
-                   ma_type=int(action[5]), ma_period=int(action[6]))
+        self.reset(stop_loss=action[0], take_profit=action[1], enter_at=action[2], close_at=action[3],
+                   atr_multi=action[4], atr_period=int(action[5]),
+                   ma_type=int(action[6]), ma_period=int(action[7]))
         return self.exec_env()
 
 
@@ -106,17 +108,17 @@ class BandsOptimizeFuturesEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.01, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001, 2, 0, 2, 1]
-        action_upper = [1.00, 0.0500, 1.000, 1.000, 1.000, 1.000, 15.0, 10_000, 37, 10_000, 125]
+        action_lower = [0.01, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001, 2, 0, 2, 1]
+        action_upper = [1.00, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 15.0, 10_000, 37, 10_000, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, stop_loss=None,
+    def reset(self, position_ratio=1.0, stop_loss=None, take_profit=None,
               long_enter_at=1.0, long_close_at=1.0,
               short_enter_at=1.0, short_close_at=1.0, leverage=1,
               ma_type=0, ma_period=2,
               atr_period=2, atr_multi=1.0):
-        return self.exec_env.reset(position_ratio=position_ratio, stop_loss=stop_loss,
+        return self.exec_env.reset(position_ratio=position_ratio, stop_loss=stop_loss, take_profit=take_profit,
                                    long_enter_at=long_enter_at, long_close_at=long_close_at,
                                    short_enter_at=short_enter_at, short_close_at=short_close_at,
                                    atr_multi=atr_multi, atr_period=atr_period,
@@ -124,11 +126,11 @@ class BandsOptimizeFuturesEnv(Env):
                                    leverage=leverage)
 
     def step(self, action):
-        self.reset(position_ratio=action[0], stop_loss=action[1],
-                   long_enter_at=action[2], long_close_at=action[3],
-                   short_enter_at=action[4], short_close_at=action[5],
-                   atr_multi=action[6], atr_period=int(action[7]),
-                   ma_type=int(action[8]), ma_period=int(action[9]), leverage=int(action[10]))
+        self.reset(position_ratio=action[0], stop_loss=action[1], take_profit=action[2],
+                   long_enter_at=action[3], long_close_at=action[4],
+                   short_enter_at=action[5], short_close_at=action[6],
+                   atr_multi=action[7], atr_period=int(action[8]),
+                   ma_type=int(action[9]), ma_period=int(action[10]), leverage=int(action[11]))
         return self.exec_env()
 
 
@@ -141,25 +143,25 @@ class BandsOptimizeSavingSpotEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.000, 0.0001, 0.001, 0.001, 0.001, 2, 0, 2]
-        action_upper = [1.000, 0.0500, 1.000, 1.000, 15.0, 10_000, 37, 10_000]
+        action_lower = [0.000, 0.0001, 0.0001, 0.001, 0.001, 0.001, 2, 0, 2]
+        action_upper = [1.000, 0.0500, 1.0000, 1.000, 1.000, 15.0, 10_000, 37, 10_000]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, save_ratio=None,
+    def reset(self, stop_loss=None, take_profit=None, save_ratio=None,
               enter_at=1.0, close_at=1.0,
               ma_type=0, ma_period=2,
               atr_period=2, atr_multi=1.0):
-        return self.exec_env.reset(save_ratio=save_ratio, stop_loss=stop_loss,
+        return self.exec_env.reset(save_ratio=save_ratio, stop_loss=stop_loss, take_profit=take_profit,
                                    enter_at=enter_at, close_at=close_at,
                                    ma_type=ma_type, ma_period=ma_period,
                                    atr_period=atr_period, atr_multi=atr_multi)
 
     def step(self, action):
-        self.reset(save_ratio=action[0], stop_loss=action[1],
-                   enter_at=action[2], close_at=action[3],
-                   atr_multi=action[4], atr_period=int(action[5]),
-                   ma_type=int(action[6]), ma_period=int(action[7]))
+        self.reset(save_ratio=action[0], stop_loss=action[1], take_profit=action[2],
+                   enter_at=action[3], close_at=action[4],
+                   atr_multi=action[5], atr_period=int(action[6]),
+                   ma_type=int(action[7]), ma_period=int(action[8]))
         return self.exec_env()
 
 
@@ -170,17 +172,18 @@ class BandsOptimizeSavingFuturesEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.01, 0.000, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001, 2, 0, 2, 1]
-        action_upper = [1.00, 1.000, 0.0500, 1.000, 1.000, 1.000, 1.000, 15.0, 10_000, 37, 10_000, 125]
+        action_lower = [0.01, 0.000, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001, 2, 0, 2, 1]
+        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 15.0, 10_000, 37, 10_000, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, stop_loss=None, save_ratio=None,
+    def reset(self, position_ratio=1.0, stop_loss=None, take_profit=None, save_ratio=None,
               long_enter_at=1.0, long_close_at=1.0,
               short_enter_at=1.0, short_close_at=1.0, leverage=1,
               ma_type=0, ma_period=2,
               atr_period=2, atr_multi=1.0):
-        return self.exec_env.reset(position_ratio=position_ratio, save_ratio=save_ratio, stop_loss=stop_loss,
+        return self.exec_env.reset(position_ratio=position_ratio, save_ratio=save_ratio,
+                                   stop_loss=stop_loss, take_profit=take_profit,
                                    long_enter_at=long_enter_at, long_close_at=long_close_at,
                                    short_enter_at=short_enter_at, short_close_at=short_close_at,
                                    atr_multi=atr_multi, atr_period=atr_period,
@@ -188,9 +191,10 @@ class BandsOptimizeSavingFuturesEnv(Env):
                                    leverage=leverage)
 
     def step(self, action):
-        self.reset(position_ratio=action[0], save_ratio=action[1], stop_loss=action[2],
-                   long_enter_at=action[3], long_close_at=action[4],
-                   short_enter_at=action[5], short_close_at=action[6],
-                   atr_multi=action[7], atr_period=int(action[8]),
-                   ma_type=int(action[9]), ma_period=int(action[10]), leverage=int(action[11]))
+        self.reset(position_ratio=action[0], save_ratio=action[1],
+                   stop_loss=action[2], take_profit=action[3],
+                   long_enter_at=action[4], long_close_at=action[5],
+                   short_enter_at=action[6], short_close_at=action[7],
+                   atr_multi=action[8], atr_period=int(action[9]),
+                   ma_type=int(action[10]), ma_period=int(action[11]), leverage=int(action[12]))
         return self.exec_env()

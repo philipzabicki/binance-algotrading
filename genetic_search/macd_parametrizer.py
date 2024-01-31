@@ -14,6 +14,7 @@ class MACDSpotMixedVariableProblem(ElementwiseProblem):
         self.n_evals = n_evals
         self.metric = metric
         macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
                           "fast_period": Integer(bounds=(2, 1_000)),
@@ -26,7 +27,7 @@ class MACDSpotMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['stop_loss'], X['enter_at'], X['close_at'], X['fast_period'], X['slow_period'], X['signal_period'],
+        action = [X['stop_loss'], X['take_profit'], X['enter_at'], X['close_at'], X['fast_period'], X['slow_period'], X['signal_period'],
                   X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
         if self.n_evals > 1:
             rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
@@ -53,6 +54,7 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
                           "long_enter_at": Real(bounds=(0.001, 1.000)),
                           "long_close_at": Real(bounds=(0.001, 1.000)),
                           "short_enter_at": Real(bounds=(0.001, 1.000)),
@@ -68,7 +70,7 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['position_ratio'], X['stop_loss'],
+        action = [X['position_ratio'], X['stop_loss'], X['take_profit'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
                   X['fast_period'], X['slow_period'], X['signal_period'],
@@ -101,6 +103,7 @@ class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         macd_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
                           "enter_at": Real(bounds=(0.001, 1.000)),
                           "close_at": Real(bounds=(0.001, 1.000)),
                           "fast_period": Integer(bounds=(2, 1_000)),
@@ -113,7 +116,7 @@ class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['save_ratio'], X['stop_loss'],
+        action = [X['save_ratio'], X['stop_loss'], X['take_profit'],
                   X['enter_at'], X['close_at'],
                   X['fast_period'], X['slow_period'], X['signal_period'],
                   X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
@@ -143,6 +146,7 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
         macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                           "save_ratio": Real(bounds=(0.0, 1.0)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
                           "long_enter_at": Real(bounds=(0.001, 1.000)),
                           "long_close_at": Real(bounds=(0.001, 1.000)),
                           "short_enter_at": Real(bounds=(0.001, 1.000)),
@@ -158,7 +162,7 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['position_ratio'], X['save_ratio'], X['stop_loss'],
+        action = [X['position_ratio'], X['save_ratio'], X['stop_loss'], X['take_profit'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
                   X['fast_period'], X['slow_period'], X['signal_period'],

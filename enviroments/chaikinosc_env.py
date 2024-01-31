@@ -16,10 +16,11 @@ class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
         # AD is not period dependent so we only need to calculate it once as there is no variable to optimize.
         self.adl = AD(self.df[:, 1], self.df[:, 2], self.df[:, 3], self.df[:, 4])
 
-    def reset(self, *args, stop_loss=None, save_ratio=None,
+    def reset(self, *args, stop_loss=None, take_profit=None, save_ratio=None,
               fast_period=3, slow_period=10,
               fast_ma_type=0, slow_ma_type=0, **kwargs):
-        _ret = super().reset(*args, stop_loss=stop_loss, save_ratio=save_ratio, **kwargs)
+        _ret = super().reset(*args, stop_loss=stop_loss, take_profit=take_profit,
+                             save_ratio=save_ratio, **kwargs)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.fast_ma_type = fast_ma_type
@@ -55,11 +56,12 @@ class _ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
         # print(f'len(self.adl) {len(self.adl)}')
 
     def reset(self, *args, position_ratio=1.0,
-              stop_loss=None, save_ratio=None, leverage=5,
+              stop_loss=None, take_profit=None, save_ratio=None, leverage=5,
               fast_period=12, slow_period=26,
               fast_ma_type=0, slow_ma_type=0, **kwargs):
         _ret = super().reset(*args, position_ratio=position_ratio,
-                             leverage=leverage, save_ratio=save_ratio, stop_loss=stop_loss, **kwargs)
+                             leverage=leverage, save_ratio=save_ratio,
+                             stop_loss=stop_loss, take_profit=take_profit, **kwargs)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.fast_ma_type = fast_ma_type
@@ -95,20 +97,21 @@ class ChaikinOscillatorOptimizeSpotEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.0001, 0, 0, 2, 2]
-        action_upper = [0.0500, 26, 26, 10_000, 10_000]
+        action_lower = [0.0001, 0.0001, 0, 0, 2, 2]
+        action_upper = [0.0500, 1.0000, 26, 26, 10_000, 10_000]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, fast_period=12, slow_period=26,
+    def reset(self, stop_loss=None, take_profit=None, fast_period=12, slow_period=26,
               fast_ma_type=1, slow_ma_type=1):
-        return self.exec_env.reset(stop_loss=stop_loss, fast_period=fast_period, slow_period=slow_period,
+        return self.exec_env.reset(stop_loss=stop_loss, take_profit=take_profit,
+                                   fast_period=fast_period, slow_period=slow_period,
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
 
     def step(self, action):
-        self.reset(stop_loss=action[0],
-                   fast_period=int(action[1]), slow_period=int(action[2]),
-                   fast_ma_type=int(action[3]), slow_ma_type=int(action[4]))
+        self.reset(stop_loss=action[0], take_profit=action[1],
+                   fast_period=int(action[2]), slow_period=int(action[3]),
+                   fast_ma_type=int(action[4]), slow_ma_type=int(action[5]))
         return self.exec_env()
 
 
@@ -119,22 +122,24 @@ class ChaikinOscillatorOptimizeFuturesEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.01, 0.0001, 2, 2, 0, 0, 1]
-        action_upper = [1.0, 0.0500, 10_000, 10_000, 26, 26, 125]
+        action_lower = [0.01, 0.0001, 0.0001, 2, 2, 0, 0, 1]
+        action_upper = [1.00, 0.0500, 1.0000, 10_000, 10_000, 26, 26, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, leverage=5, stop_loss=None,
+    def reset(self, position_ratio=1.0, leverage=5,
+              stop_loss=None, take_profit=None,
               fast_period=12, slow_period=26,
               fast_ma_type=1, slow_ma_type=1):
-        return self.exec_env.reset(position_ratio=position_ratio, stop_loss=stop_loss, leverage=leverage,
+        return self.exec_env.reset(position_ratio=position_ratio, stop_loss=stop_loss,
+                                   take_profit=take_profit, leverage=leverage,
                                    fast_period=fast_period, slow_period=slow_period,
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
 
     def step(self, action):
-        self.reset(position_ratio=action[0], stop_loss=action[1],
-                   fast_period=int(action[2]), slow_period=int(action[3]),
-                   fast_ma_type=int(action[4]), slow_ma_type=int(action[5]), leverage=int(action[6]))
+        self.reset(position_ratio=action[0], stop_loss=action[1], take_profit=action[2],
+                   fast_period=int(action[3]), slow_period=int(action[4]),
+                   fast_ma_type=int(action[5]), slow_ma_type=int(action[6]), leverage=int(action[7]))
         return self.exec_env()
 
 
@@ -147,22 +152,22 @@ class ChaikinOscillatorOptimizeSavingSpotEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.000, 0.0001, 0, 0, 2, 2]
-        action_upper = [1.000, 0.0500, 26, 26, 10_000, 10_000]
+        action_lower = [0.000, 0.0001, 0.0001, 0, 0, 2, 2]
+        action_upper = [1.000, 0.0500, 1.0000, 26, 26, 10_000, 10_000]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, save_ratio=None,
+    def reset(self, stop_loss=None, take_profit=None, save_ratio=None,
               fast_period=12, slow_period=26,
               fast_ma_type=1, slow_ma_type=1):
-        return self.exec_env.reset(save_ratio=save_ratio, stop_loss=stop_loss,
+        return self.exec_env.reset(save_ratio=save_ratio, stop_loss=stop_loss, take_profit=take_profit,
                                    fast_period=fast_period, slow_period=slow_period,
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
 
     def step(self, action):
-        self.reset(save_ratio=action[0], stop_loss=action[1],
-                   fast_period=int(action[2]), slow_period=int(action[3]),
-                   fast_ma_type=int(action[4]), slow_ma_type=int(action[5]))
+        self.reset(save_ratio=action[0], stop_loss=action[1], take_profit=action[2],
+                   fast_period=int(action[3]), slow_period=int(action[4]),
+                   fast_ma_type=int(action[5]), slow_ma_type=int(action[6]))
         return self.exec_env()
 
 
@@ -173,22 +178,23 @@ class ChaikinOscillatorOptimizeSavingFuturesEnv(Env):
         obs_upper_bounds = array([inf for _ in range(8)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
-        action_lower = [0.01, 0.000, 0.0001, 2, 2, 0, 0, 1]
-        action_upper = [1.0, 1.000, 0.0500, 10_000, 10_000, 26, 26, 125]
+        action_lower = [0.01, 0.000, 0.0001, 0.0001, 2, 2, 0, 0, 1]
+        action_upper = [1.00, 1.000, 0.0500, 1.0000, 10_000, 10_000, 26, 26, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
     def reset(self, position_ratio=1.0, leverage=5,
-              stop_loss=None, save_ratio=None,
+              stop_loss=None, take_profit=None, save_ratio=None,
               fast_period=12, slow_period=26,
               fast_ma_type=1, slow_ma_type=1):
         return self.exec_env.reset(position_ratio=position_ratio, save_ratio=save_ratio,
-                                   stop_loss=stop_loss, leverage=leverage,
+                                   stop_loss=stop_loss, take_profit=take_profit, leverage=leverage,
                                    fast_period=fast_period, slow_period=slow_period,
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
 
     def step(self, action):
-        self.reset(position_ratio=action[0], save_ratio=action[1], stop_loss=action[2],
-                   fast_period=int(action[3]), slow_period=int(action[4]),
-                   fast_ma_type=int(action[5]), slow_ma_type=int(action[6]), leverage=int(action[7]))
+        self.reset(position_ratio=action[0], save_ratio=action[1],
+                   stop_loss=action[2], take_profit=action[3],
+                   fast_period=int(action[4]), slow_period=int(action[5]),
+                   fast_ma_type=int(action[6]), slow_ma_type=int(action[7]), leverage=int(action[8]))
         return self.exec_env()
