@@ -6,7 +6,7 @@ from utils.get_data import by_BinanceVision
 from utils.ta_tools import simple_rl_features_periods  # , signal_features_periods, simple_rl_features
 
 matplotlib.use('TkAgg')
-from enviroments.rl_env import SpotRL
+# from enviroments.rl_env import SpotRL
 # from time import sleep
 import torch as th
 # from stable_baselines3.common.env_checker import check_env
@@ -47,16 +47,16 @@ if __name__ == "__main__":
     dates_df = df['Opened'].to_numpy()
     df = df.drop(columns='Opened').to_numpy()
 
-    trading_env = SpotRL(df=df,
-                         dates_df=dates_df,
-                         max_steps=10_800,
-                         exclude_cols_left=5,
-                         init_balance=1_000,
-                         fee=0.0,
-                         coin_step=0.0001,
-                         # slippage=get_market_slips_stats(),
-                         render_range=120,
-                         visualize=False)
+    # trading_env = SpotRL(df=df,
+    #                      dates_df=dates_df,
+    #                      max_steps=10_800,
+    #                      exclude_cols_left=5,
+    #                      init_balance=1_000,
+    #                      fee=0.0,
+    #                      coin_step=0.0001,
+    #                      # slippage=get_market_slips_stats(),
+    #                      render_range=120,
+    #                      visualize=False)
     # print('Checking env...')
     # check_env(trading_env)
     # vec_env = make_vec_env(trading_env, n_envs=4)
@@ -67,19 +67,19 @@ if __name__ == "__main__":
     gammas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # gammas = [0.7]
     print(f'gammas tested {gammas}')
-    for g in gammas:
-        model = DQN("MlpPolicy",
-                    trading_env,
-                    gamma=g,
-                    # batch_size=10,
-                    # learning_starts=10_800,
-                    # learning_rate=.00001,
-                    # ent_coef=0.05,
-                    # policy_kwargs=policy_kwargs,
-                    # learning_starts=100_000,
-                    # target_update_interval=3_000,
-                    tensorboard_log=ROOT_DIR + '/tensorboard/',
-                    verbose=2)
+    # for g in gammas:
+    #     model = DQN("MlpPolicy",
+    #                 trading_env,
+    #                 gamma=g,
+    #                 # batch_size=10,
+    #                 # learning_starts=10_800,
+    #                 # learning_rate=.00001,
+    #                 # ent_coef=0.05,
+    #                 # policy_kwargs=policy_kwargs,
+    #                 # learning_starts=100_000,
+    #                 # target_update_interval=3_000,
+    #                 tensorboard_log=ROOT_DIR + '/tensorboard/',
+    #                 verbose=2)
         '''
         model = DQN("MlpPolicy",
                     policy_kwargs=policy_kwargs,

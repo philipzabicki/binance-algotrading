@@ -3,7 +3,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
 
-from enviroments import MACDRSIStratSpotEnv
+# from enviroments import MACDRSIStratSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
 from utils.utility import get_slippage_stats
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     #
     # plt.show()
 
-    env = MACDRSIStratSpotEnv(df=df.iloc[:, 1:6], dates_df=df['Opened'], init_balance=300, no_action_finish=inf,
-                              fee=0.0, coin_step=0.00001,
-                              slippage=get_slippage_stats(market_type, ticker, interval, 'market'),
-                              verbose=True, visualize=False)
-    env.step(action)
+    # env = MACDRSIStratSpotEnv(df=df.iloc[:, 1:6], dates_df=df['Opened'], init_balance=300, no_action_finish=inf,
+    #                           fee=0.0, coin_step=0.00001,
+    #                           slippage=get_slippage_stats(market_type, ticker, interval, 'market'),
+    #                           verbose=True, visualize=False)
+    # env.step(action)

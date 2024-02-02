@@ -1,7 +1,7 @@
+import cProfile
 from csv import writer
 # import pandas as pd
-from multiprocessing import Pool, cpu_count
-import cProfile
+from multiprocessing import Pool
 from statistics import mean
 from time import time
 
@@ -11,9 +11,10 @@ from pandas import read_csv
 from definitions import REPORT_DIR
 from enviroments import MACDOptimizeSavingSpotEnv
 from utils.get_data import by_BinanceVision
+
 # from utils.utility import get_slippage_stats
 
-#CPU_CORES_COUNT = cpu_count()
+# CPU_CORES_COUNT = cpu_count()
 CPU_CORES_COUNT = 1
 EPISODES_PER_CORE = 256
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'

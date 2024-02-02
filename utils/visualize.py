@@ -151,7 +151,7 @@ class TradingGraph:
         for i in idx:
             # print(f'i: {i} self.trades_arr[i]: {self.trades_arr[i]}')
             annotate_text = '$' + self.trades_arr[i, 1] if (self.trades_arr[i, 1] != '0.0') and (
-                        self.trades_arr[i, 1] != '-0.0') else ''
+                    self.trades_arr[i, 1] != '-0.0') else ''
             x_position = self.render_arr[i, 0]
             if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i, 0] == 'close_short':
                 high_low = self.render_arr[i, 3] - RANGE * 0.02

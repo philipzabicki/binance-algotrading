@@ -1,5 +1,5 @@
 from bots import FuturesTaker
-from bots.signal_bot import StochasticOscillatorSignalsBot, MACDSignalsBot
+from bots.signal_bot import MACDSignalsBot
 from credentials import binance_API_KEY, binance_SECRET_KEY
 
 BASE_TICKER = 'BTC'

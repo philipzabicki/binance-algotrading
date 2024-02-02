@@ -7,11 +7,9 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from datetime import datetime as dt
-from numpy import median, mean, nan_to_num, sum, isfinite, percentile, inf, array, min, mean, max, ndarray, nextafter
+from numpy import median, sum, percentile, inf, array, min, mean, max, ndarray
 from scipy.stats import hmean, gmean
-from time import sleep
-from sklearn.preprocessing import RobustScaler, MinMaxScaler, StandardScaler
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import RobustScaler, MinMaxScaler
 from pymoo.core.callback import Callback
 from pymoo.visualization.pcp import PCP
 
@@ -160,6 +158,9 @@ class AverageNonzeroSingleObjCallback(Callback):
 def reward_from_metric(rewards: ndarray, n_evals: int, metric: str) -> float:
     if metric == 'median':
         return median(rewards)
+    elif metric == 'first_quartile':
+        # print(f'rewards {rewards} 1Q {percentile(rewards, 25)}')
+        return percentile(rewards, 75)
     elif metric == 'mean':
         return mean(rewards)
     elif metric == 'max':

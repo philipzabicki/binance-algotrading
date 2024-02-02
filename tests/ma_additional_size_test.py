@@ -1,11 +1,8 @@
-import cProfile
-
 from matplotlib import pyplot as plt
 from numpy import round, array, mean, std
-import matplotx
 
 from utils.get_data import by_BinanceVision
-from utils.ta_tools import get_1D_MA, get_MA
+from utils.ta_tools import get_1D_MA
 
 
 def check_ohlcv_mas(check_size, ma_period, precision):
@@ -49,20 +46,20 @@ if __name__ == "__main__":
 
     additional_ratios = []
     for period in range(10, max_ma_period, 10):
-        check_size = period//8
+        check_size = period // 8
         print(f'checking: ma_period: {period} check_size: {check_size}')
         ratios = check_ohlcv_mas(check_size, period, precision)
         additional_ratios.append(ratios)
         print(f'ratios per MA type {round(ratios, 0)}')
     additional_ratios = array(additional_ratios)
-    #print(additional_ratios)
+    # print(additional_ratios)
 
     ma_ratio = {}
     for i in range(additional_ratios.shape[1]):
         try:
             ma_ratio[i] = round(mean(additional_ratios[:, i]) + std(additional_ratios[:, i]), 0)
         except Exception as e:
-            #print(e)
+            # print(e)
             ma_ratio[i] = 1
         if ma_ratio[i] < 1:
             ma_ratio[i] = 1

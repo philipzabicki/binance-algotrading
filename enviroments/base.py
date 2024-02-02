@@ -7,7 +7,7 @@ from time import time
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
-from numpy import array, inf, mean, std
+from numpy import array, mean, std
 
 from definitions import REPORT_DIR
 from utils.visualize import TradingGraph
@@ -24,7 +24,8 @@ class SpotBacktest(Env):
             raise ValueError("max_steps larger than rows in dataframe")
         print(f'Environment ({self.__class__.__name__}) created.')
         print(f' fee:{fee}, coin_step:{coin_step}')
-        print(f' df_size: {len(self.df)}, max_steps: {max_steps}({max_steps / len(self.df) * 100:.2f}%), no_action_finish:{no_action_finish}')
+        print(
+            f' df_size: {len(self.df)}, max_steps: {max_steps}({max_steps / len(self.df) * 100:.2f}%), no_action_finish:{no_action_finish}')
         print(f' df_sample(last row): {self.df[-1, exclude_cols_left:]}')
         print(f' slippage statistics (avg, stddev): {slippage}')
         print(f' init_balance:{init_balance}, position_ratio:{position_ratio}')
@@ -103,7 +104,7 @@ class SpotBacktest(Env):
         self.position_size = self.init_balance * self.position_ratio
         self.prev_bal = 0
         self.enter_price = 0
-        self.stop_loss_price, self.take_profit_price = 0,0
+        self.stop_loss_price, self.take_profit_price = 0, 0
         self.qty = 0
         self.pnl = 0
         self.absolute_profit = 0.0
@@ -170,7 +171,8 @@ class SpotBacktest(Env):
             #     price = self._random_factor(price, 'SL')
             adj_price = price * self.stop_loss_factor
             if adj_price > self.enter_price:
-                raise RuntimeError(f"Stop loss price is above position enter price. (sl_factor={self.stop_loss_factor})")
+                raise RuntimeError(
+                    f"Stop loss price is above position enter price. (sl_factor={self.stop_loss_factor})")
             self.last_order_type = 'stop_loss_long'
         elif tp:
             self.take_profits_c += 1
@@ -252,7 +254,7 @@ class SpotBacktest(Env):
         elif (not self.episode_orders) and ((self.current_step - self.start_step) > self.no_action_finish):
             self._finish_episode()
         else:
-            if self.init_balance < self.balance+self.save_balance:
+            if self.init_balance < self.balance + self.save_balance:
                 self.with_gain_c += 1
         # Older version:
         # return self._next_observation(), self.reward, self.done, self.info
@@ -300,7 +302,7 @@ class SpotBacktest(Env):
             PnL_trades_ratio, PnL_means_ratio = 0.0, 0.0
             in_gain_indicator = 0.0
             slope_indicator = 0.000
-            self.reward = -inf
+            self.reward = 0
 
         sharpe_ratio = (mean_pnl - risk_free_return) / stddev_pnl if stddev_pnl != 0 else -1
         sortino_ratio = (total_return - risk_free_return) / losses_stddev if losses_stddev != 0 else -1
@@ -315,7 +317,8 @@ class SpotBacktest(Env):
             print(
                 f'Episode finished: gain:${gain:.2f}({total_return * 100:.2f}%), gain/step:${gain / (self.end_step - self.start_step):.5f}, ',
                 end='')
-            print(f'cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f} take_profits:{self.take_profits_c}')
+            print(
+                f'cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f} take_profits:{self.take_profits_c}')
             print(f' save_ratio:{self.save_ratio}, saved_balance:${self.save_balance:.2f}')
             print(
                 f' trades:{self.episode_orders:_}, trades_with(profit/loss):{self.good_trades_count - 1:_}/{self.bad_trades_count - 1:_}, ',
@@ -507,7 +510,7 @@ class FuturesBacktest(SpotBacktest):
             self.qty = -1 * adj_qty * self.coin_step
         # https://www.binance.com/en/support/faq/how-to-calculate-liquidation-price-of-usd%E2%93%A2-m-futures-contracts-b3c689c1f50a44cabb3a84e663b81d93
         # 1,25% liquidation clearance fee https://www.binance.com/en/futures/trading-rules/perpetual/
-        self.liquidation_price = (self.margin*(1-0.0125) - self.qty * self.enter_price) / (
+        self.liquidation_price = (self.margin * (1 - 0.0125) - self.qty * self.enter_price) / (
                 abs(self.qty) * self.POSITION_TIER[self.tier][1] - self.qty)
         if self.write_to_file:
             self._write_to_file()
@@ -613,7 +616,7 @@ class FuturesBacktest(SpotBacktest):
             close = self.df[self.current_step, 3]
             self._open_position('short', close)
         else:
-            if self.init_balance < self.balance+self.save_balance:
+            if self.init_balance < self.balance + self.save_balance:
                 self.with_gain_c += 1
         # self.info = {'action': action,
         #         'reward': 0,

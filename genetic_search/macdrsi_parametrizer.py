@@ -1,4 +1,4 @@
-from enviroments.macdrsi_env import MACDRSIStratSpotEnv, MACDRSIStratFuturesEnv
+# from enviroments.macdrsi_env import MACDRSIStratSpotEnv, MACDRSIStratFuturesEnv
 from numpy import array, median
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
@@ -6,7 +6,7 @@ from pymoo.core.variable import Real, Integer
 
 class MACDRSIMixedVariableProblem(ElementwiseProblem):
     def __init__(self, df, env_kwargs, n_evals=1, **kwargs):
-        self.env = MACDRSIStratSpotEnv(df=df, **env_kwargs)
+        # self.env = MACDRSIStratSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
                           "enter_at1": Real(bounds=(0.001, 1.000)),
@@ -38,7 +38,7 @@ class MACDRSIMixedVariableProblem(ElementwiseProblem):
 
 class MACDRSIFuturesMixedVariableProblem(ElementwiseProblem):
     def __init__(self, df, df_mark, env_kwargs, n_evals=1, **kwargs):
-        self.env = MACDRSIStratFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
+        # self.env = MACDRSIStratFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
                           "stop_loss": Real(bounds=(0.0001, 0.0150)),

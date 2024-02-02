@@ -1,4 +1,5 @@
 from warnings import warn
+
 from gym import spaces, Env
 from numpy import array, float64, inf
 
@@ -25,9 +26,11 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
         self.overbought_threshold = overbought_threshold
         # Some MAs need as much additional previous data as 25 times period length to return repetitive values.
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
-        _max_period = self.fastK_period + self.slowK_period*ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period*ADDITIONAL_DATA_BY_MA[slowD_ma_type]
+        _max_period = self.fastK_period + self.slowK_period * ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period * \
+                      ADDITIONAL_DATA_BY_MA[slowD_ma_type]
         if _max_period > self.total_steps:
-            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, :5],
                                                    fastK_period=fastK_period,
@@ -71,9 +74,11 @@ class _StochExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.overbought_threshold = overbought_threshold
         # Some MAs need as much additional previous data as 25 times period length to return repetitive values.
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
-        _max_period = self.fastK_period + self.slowK_period*ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period*ADDITIONAL_DATA_BY_MA[slowD_ma_type]
+        _max_period = self.fastK_period + self.slowK_period * ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period * \
+                      ADDITIONAL_DATA_BY_MA[slowD_ma_type]
         if _max_period > self.total_steps:
-            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, :5],
                                                    fastK_period=fastK_period,
@@ -211,7 +216,8 @@ class StochOptimizeSavingFuturesEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.000, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0, 1]
-        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 26, 26, 125]
+        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 26,
+                        26, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 

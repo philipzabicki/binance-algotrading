@@ -1,10 +1,10 @@
-from numpy import array, median, mean, percentile
-from math import copysign
-from genetic_search.base import reward_from_metric
+from numpy import array
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
-from enviroments.chaikinosc_env import ChaikinOscillatorOptimizeSpotEnv, ChaikinOscillatorOptimizeFuturesEnv, ChaikinOscillatorOptimizeSavingSpotEnv, ChaikinOscillatorOptimizeSavingFuturesEnv
+from enviroments.chaikinosc_env import ChaikinOscillatorOptimizeSpotEnv, ChaikinOscillatorOptimizeFuturesEnv, \
+    ChaikinOscillatorOptimizeSavingSpotEnv, ChaikinOscillatorOptimizeSavingFuturesEnv
+from genetic_search.base import reward_from_metric
 
 
 class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):

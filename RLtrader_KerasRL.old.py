@@ -5,7 +5,7 @@ from rl.memory import SequentialMemory
 from rl.policy import EpsGreedyQPolicy, BoltzmannQPolicy
 from tensorflow.keras.optimizers.legacy import Adam
 
-from enviroments import SpotRL
+#from enviroments import SpotRL
 from utils.get_data import by_BinanceVision
 
 
@@ -46,15 +46,15 @@ if __name__ == "__main__":
 
     policy = BoltzmannQPolicy()
 
-    env = SpotRL(df=df[-58_111:, :], dates_df=dates_df[-58_111:], excluded_left=0, init_balance=600,
-                 postition_ratio=1.0, leverage=1, fee=0.0, slippage=0.0001, Render_range=120, visualize=False)
-    model = build_model(np.shape(env.reset())[0], 3, {0: 128, 1: 64, 2: 16}, 180)
-    # model.summary()
-    dqn = build_agent(model, 3, 180, policy=policy)
-    dqn.compile(Adam(learning_rate=1e-3), metrics=['mae'])
-    dqn.fit(env, nb_steps=500_000, visualize=env.visualize, verbose=2, log_interval=1)
-    env.visualize = False
-    scores = dqn.test(env, nb_episodes=100, visualize=env.visualize)
+    # env = SpotRL(df=df[-58_111:, :], dates_df=dates_df[-58_111:], excluded_left=0, init_balance=600,
+    #              postition_ratio=1.0, leverage=1, fee=0.0, slippage=0.0001, Render_range=120, visualize=False)
+    # model = build_model(np.shape(env.reset())[0], 3, {0: 128, 1: 64, 2: 16}, 180)
+    # # model.summary()
+    # dqn = build_agent(model, 3, 180, policy=policy)
+    # dqn.compile(Adam(learning_rate=1e-3), metrics=['mae'])
+    # dqn.fit(env, nb_steps=500_000, visualize=env.visualize, verbose=2, log_interval=1)
+    # env.visualize = False
+    # scores = dqn.test(env, nb_episodes=100, visualize=env.visualize)
 
     '''scores_l=[]
     for _ in range(10):

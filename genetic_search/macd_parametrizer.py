@@ -1,16 +1,10 @@
-import numpy
-from numpy import array, median, mean, nan_to_num, sum, isfinite, percentile, inf
-from scipy.stats import hmean, gmean
-from genetic_search.base import reward_from_metric
-from time import sleep
-from sklearn.preprocessing import RobustScaler, MinMaxScaler, StandardScaler
-from sklearn.preprocessing import normalize
-from math import copysign
+from numpy import array
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.variable import Real, Integer
 
 from enviroments.macd_env import MACDOptimizeSpotEnv, MACDOptimizeFuturesEnv, MACDOptimizeSavingFuturesEnv, \
     MACDOptimizeSavingSpotEnv
+from genetic_search.base import reward_from_metric
 
 
 class MACDSpotMixedVariableProblem(ElementwiseProblem):
@@ -32,7 +26,8 @@ class MACDSpotMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['stop_loss'], X['take_profit'], X['enter_at'], X['close_at'], X['fast_period'], X['slow_period'], X['signal_period'],
+        action = [X['stop_loss'], X['take_profit'], X['enter_at'], X['close_at'], X['fast_period'], X['slow_period'],
+                  X['signal_period'],
                   X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
         if self.n_evals > 1:
             rews = array([-1 * self.env.step(action)[1] for _ in range(self.n_evals)])

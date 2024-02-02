@@ -16,7 +16,8 @@ N_TEST = 10_000
 N_STEPS = 1_440
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '1m', 'um', 'klines', '2020-01-01'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.9640273779209039, 0.18731479767412876, 0.0104517310606857, 0.44487608552469315, 0.9763830679168031, 0.4132815472724781, 0.9790851249718628, 0.4664223253214688, 363, 143, 256, 32, 18, 5, 30]
+ACTION = [0.9741363468740917, 0.8830471784176549, 0.01431710416373785, 0.005709447558905654, 0.7864650479386663,
+          0.9109835314142626, 0.3145603671874736, 0.947646257397082, 105, 787, 484, 34, 29, 9, 51]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -66,9 +67,10 @@ if __name__ == "__main__":
                                   split=True,
                                   delay=345_600)
     additional_periods = N_STEPS + max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
-                      ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] * \
-                  ADDITIONAL_DATA_BY_MA[ACTION[-2]]
-    macd, signal = custom_MACD(df.iloc[-additional_periods:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5], ACTION[-4], ACTION[-3],
+                                       ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] * \
+                         ADDITIONAL_DATA_BY_MA[ACTION[-2]]
+    macd, signal = custom_MACD(df.iloc[-additional_periods:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5],
+                               ACTION[-4], ACTION[-3],
                                ACTION[-2])
     signals = MACD_cross_signal(macd, signal)
     df_plot = df.tail(N_STEPS).copy()

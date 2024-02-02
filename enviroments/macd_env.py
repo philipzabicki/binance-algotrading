@@ -1,4 +1,5 @@
 from warnings import warn
+
 from gym import spaces, Env
 from numpy import array, float64, inf
 
@@ -23,9 +24,12 @@ class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         self.signal_ma_type = signal_ma_type
         # Some MAs need as much additional previous data as 25 times period length to return repetitive values.
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
-        _max_period = max(self.fast_period*ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type], self.slow_period*ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period*ADDITIONAL_DATA_BY_MA[signal_ma_type]
+        _max_period = max(self.fast_period * ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type],
+                          self.slow_period * ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period * \
+                      ADDITIONAL_DATA_BY_MA[signal_ma_type]
         if _max_period > self.total_steps:
-            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
@@ -61,9 +65,12 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.fast_ma_type = fast_ma_type
         self.slow_ma_type = slow_ma_type
         self.signal_ma_type = signal_ma_type
-        _max_period = max(self.fast_period*ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type], self.slow_period*ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period*ADDITIONAL_DATA_BY_MA[signal_ma_type]
+        _max_period = max(self.fast_period * ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type],
+                          self.slow_period * ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period * \
+                      ADDITIONAL_DATA_BY_MA[signal_ma_type]
         if _max_period > self.total_steps:
-            warn(f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
         macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
@@ -171,7 +178,8 @@ class MACDOptimizeSavingSpotEnv(Env):
                                    fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type, signal_ma_type=signal_ma_type)
 
     def step(self, action):
-        self.reset(save_ratio=action[0], stop_loss=action[1], take_profit=action[2], enter_at=action[3], close_at=action[4],
+        self.reset(save_ratio=action[0], stop_loss=action[1], take_profit=action[2], enter_at=action[3],
+                   close_at=action[4],
                    fast_period=int(action[5]), slow_period=int(action[6]), signal_period=int(action[7]),
                    fast_ma_type=int(action[8]), slow_ma_type=int(action[9]), signal_ma_type=int(action[10]))
         return self.exec_env()

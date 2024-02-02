@@ -1,9 +1,9 @@
 from numpy import inf
 from stable_baselines3 import DDPG
 
+from enviroments import BandsOptimizeSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.utility import get_slippage_stats
-from enviroments import BandsOptimizeSpotEnv
 
 if __name__ == "__main__":
     slippages = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
@@ -16,13 +16,13 @@ if __name__ == "__main__":
                              split=True,
                              delay=0)
     env = BandsOptimizeSpotEnv(df=df,
-                            # max_steps=259_200,
-                            init_balance=300,
-                            no_action_finish=inf,
-                            fee=0.0,
-                            coin_step=0.00001,
-                            slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-                            verbose=False)
+                               # max_steps=259_200,
+                               init_balance=300,
+                               no_action_finish=inf,
+                               fee=0.0,
+                               coin_step=0.00001,
+                               slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
+                               verbose=False)
     # check_env(env)
     # env = make_vec_env(env, n_envs=10)
 

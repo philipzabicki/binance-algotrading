@@ -16,7 +16,9 @@ N_TEST = 10_000
 N_STEPS = 8_640
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '5m', 'um', 'klines', '2020-01-01'
 ENV = StochOptimizeSavingFuturesEnv
-ACTION = [0.3465209168803213, 0.5951004853873286, 0.010648180318328126, 0.09175892106821656, 0.7488095334013507, 0.5686028928648609, 0.8690559570740761, 0.650230803068742, 45.416244520914944, 57.83957581237964, 243, 127, 628, 2, 9, 39]
+ACTION = [0.3465209168803213, 0.5951004853873286, 0.010648180318328126, 0.09175892106821656, 0.7488095334013507,
+          0.5686028928648609, 0.8690559570740761, 0.650230803068742, 45.416244520914944, 57.83957581237964, 243, 127,
+          628, 2, 9, 39]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -68,7 +70,7 @@ if __name__ == "__main__":
                                   split=True,
                                   delay=345_600)
     additional_periods = N_STEPS + ACTION[-6] + ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-3]] + ACTION[-4] * \
-                  ADDITIONAL_DATA_BY_MA[ACTION[-2]]
+                         ADDITIONAL_DATA_BY_MA[ACTION[-2]]
     slowK, slowD = custom_StochasticOscillator(df.iloc[-additional_periods:, 1:6].to_numpy(),
                                                fastK_period=ACTION[-6],
                                                slowK_period=ACTION[-5],

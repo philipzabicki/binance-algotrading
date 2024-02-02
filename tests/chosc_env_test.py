@@ -1,10 +1,10 @@
 from multiprocessing import Pool, cpu_count
 from statistics import mean, stdev
 
+import mplfinance as mpf
+import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf
-import pandas as pd
-import mplfinance as mpf
 from talib import AD
 
 from definitions import ADDITIONAL_DATA_BY_MA

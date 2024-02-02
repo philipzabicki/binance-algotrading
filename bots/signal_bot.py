@@ -3,8 +3,8 @@ from time import time
 from numpy import asarray
 from talib import RSI, ATR, AD
 
-from definitions import ADDITIONAL_DATA_BY_OHLCV_MA, ADDITIONAL_DATA_BY_MA
 from bots import SpotTaker
+from definitions import ADDITIONAL_DATA_BY_OHLCV_MA, ADDITIONAL_DATA_BY_MA
 from utils.ta_tools import custom_MACD, MACD_cross_signal, anyMA_sig, get_MA, RSI_like_signal, custom_ChaikinOscillator, \
     ChaikinOscillator_signal, custom_StochasticOscillator, StochasticOscillator_signal
 
@@ -109,7 +109,8 @@ class StochasticOscillatorSignalsBot(object):
                               (bot_type, object),
                               dict(self.__class__.__dict__))
         settings = kwargs['settings']
-        previous_size = settings['fastK_period'] + settings['slowK_period'] * ADDITIONAL_DATA_BY_MA[settings['slowK_ma_type']] + \
+        previous_size = settings['fastK_period'] + settings['slowK_period'] * ADDITIONAL_DATA_BY_MA[
+            settings['slowK_ma_type']] + \
                         settings['slowD_period'] * ADDITIONAL_DATA_BY_MA[settings['slowD_ma_type']]
         super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
 
