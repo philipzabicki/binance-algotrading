@@ -17,19 +17,21 @@ from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProbl
 from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
-# CPU_CORES_COUNT = 1
+#CPU_CORES_COUNT = 1
 POP_SIZE = 256
 N_GEN = 100
 TICKER = 'BTCUSDT'
-ITV = '15m'
+ITV = '1m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
+PROBLEM_N_EVALS = 10
+PROBLEM_METRIC = 'median'
 ALGORITHM = NSGA2
 TERMINATION = ("time", "12:00:00")
 #TERMINATION = ('n_gen', N_GEN)
-ENV_KWARGS = {'max_steps': 2_880,
+ENV_KWARGS = {'max_steps': 1_440,
               'init_balance': 50,
               'no_action_finish': inf,
               'fee': 0.0005,
@@ -76,8 +78,8 @@ def main():
     problem = PROBLEM(df,
                       df_mark,
                       env_kwargs=ENV_KWARGS,
-                      n_evals=10,
-                      #metric='mean',
+                      n_evals=PROBLEM_N_EVALS,
+                      metric=PROBLEM_METRIC,
                       elementwise_runner=runner)
 
     algorithm = ALGORITHM(pop_size=POP_SIZE,

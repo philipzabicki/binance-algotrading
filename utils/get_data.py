@@ -59,7 +59,7 @@ def _read_partial_df(_path):
 def _collect_to_date(url, output_folder, start_date=date(year=2017, month=1, day=1), delta_itv='months'):
     if delta_itv == 'months':
         delta = relativedelta(months=1)
-        end_date = date.today() - delta
+        end_date = date.today() - 2 * delta
         print(f'Collecting monthly from {start_date} to {end_date}')
     elif delta_itv == 'days':
         delta = relativedelta(days=1)

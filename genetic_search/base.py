@@ -7,7 +7,11 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from datetime import datetime as dt
-from numpy import array, min, mean, max
+from numpy import median, mean, nan_to_num, sum, isfinite, percentile, inf, array, min, mean, max, ndarray, nextafter
+from scipy.stats import hmean, gmean
+from time import sleep
+from sklearn.preprocessing import RobustScaler, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import normalize
 from pymoo.core.callback import Callback
 from pymoo.visualization.pcp import PCP
 
@@ -151,3 +155,82 @@ class AverageNonzeroSingleObjCallback(Callback):
             self.opt.append(avg_rew)
         else:
             self.opt.append(0.0)
+
+
+def reward_from_metric(rewards: ndarray, n_evals: int, metric: str) -> float:
+    if metric == 'median':
+        return median(rewards)
+    elif metric == 'mean':
+        return mean(rewards)
+    elif metric == 'max':
+        return max(rewards)
+    elif metric == 'min':
+        return min(rewards)
+    elif metric == 'robust_mean':
+        if inf in rewards:
+            return inf
+        else:
+            scaled_rews = RobustScaler().fit_transform(rewards.reshape(n_evals, -1))
+            return mean(scaled_rews)
+    elif metric == 'robust_sum':
+        if inf in rewards:
+            return inf
+        else:
+            scaled_rews = RobustScaler().fit_transform(rewards.reshape(n_evals, -1))
+            return sum(scaled_rews)
+    elif metric == 'minmax_mean':
+        if inf in rewards:
+            return inf
+        else:
+            scaled_rews = MinMaxScaler(feature_range=(-1, 1)).fit_transform(rewards.reshape(n_evals, -1))
+            return mean(scaled_rews)
+    elif metric == 'minmax_sum':
+        if inf in rewards:
+            return inf
+        else:
+            scaled_rews = MinMaxScaler(feature_range=(-1, 1)).fit_transform(rewards.reshape(n_evals, -1))
+            return sum(scaled_rews)
+    # Supports only positive values
+    elif metric == 'hmean':
+        if inf in rewards:
+            return inf
+        else:
+            scaled_rews = MinMaxScaler(feature_range=(1, 100)).fit_transform(rewards.reshape(n_evals, -1))
+            return hmean(scaled_rews)[0]
+    # Supports only positive values
+    elif metric == 'gmean':
+        if inf in rewards:
+            return inf
+        else:
+            scaled_rews = MinMaxScaler(feature_range=(1, 100)).fit_transform(rewards.reshape(n_evals, -1))
+            return gmean(scaled_rews)[0]
+    elif metric == 'median_mean_mix':
+        _median = median(rewards)
+        _mean = mean(rewards)
+        rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
+        return rew
+    elif metric == 'error1':
+        perc10 = percentile(rewards, 10)
+        _mean = mean(rewards)
+        rew = perc10 if (perc10 < 0) or (_mean < 0) else perc10 * _mean
+        return rew
+    elif metric == 'sign_minmax_sum':
+        positive_rews = rewards[(rewards > 0) & (rewards != inf)]
+        positive_rews_len = len(positive_rews)
+        if positive_rews_len > 1:
+            positive_rews = MinMaxScaler(feature_range=(0, 1)).fit_transform(
+                positive_rews.reshape(positive_rews_len, -1))
+        elif positive_rews_len == 1:
+            positive_rews = array([1])
+        else:
+            positive_rews = array([0])
+        negative_rews = rewards[(rewards < 0) & (rewards != -inf)]
+        negative_rews_len = len(negative_rews)
+        if negative_rews_len > 1:
+            negative_rews = MinMaxScaler(feature_range=(-1, 0)).fit_transform(
+                negative_rews.reshape(negative_rews_len, -1))
+        elif negative_rews_len == 1:
+            negative_rews = array([-1])
+        else:
+            negative_rews = array([0])
+        return sum(positive_rews) + sum(negative_rews)

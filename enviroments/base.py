@@ -505,7 +505,9 @@ class FuturesBacktest(SpotBacktest):
             self.qty = adj_qty * self.coin_step
         elif side == 'short':
             self.qty = -1 * adj_qty * self.coin_step
-        self.liquidation_price = (self.margin - self.qty * self.enter_price) / (
+        # https://www.binance.com/en/support/faq/how-to-calculate-liquidation-price-of-usd%E2%93%A2-m-futures-contracts-b3c689c1f50a44cabb3a84e663b81d93
+        # 1,25% liquidation clearance fee https://www.binance.com/en/futures/trading-rules/perpetual/
+        self.liquidation_price = (self.margin*(1-0.0125) - self.qty * self.enter_price) / (
                 abs(self.qty) * self.POSITION_TIER[self.tier][1] - self.qty)
         if self.write_to_file:
             self._write_to_file()

@@ -320,8 +320,8 @@ class FuturesTaker:
         self.cum_pnl = 0.0
         self.SL_placed = False
         self.in_long_position, self.in_short_position = False, False
-        self.stoploss_price = 0.0
-        self.buy_order, self.sell_order, self.SL_order = None, None, None
+        self.stoploss_price, self.takeprofit_price = 0.0, 0.0
+        self.buy_order, self.sell_order, self.SL_order, self.TP_order = None, None, None, None
         print(f'prev_data[-5:]: {asarray(self.OHLCV_data)[-5:, :]}, len: {len(self.OHLCV_data)}')
         print(f'last close: {self.close}')
         print(
@@ -356,17 +356,31 @@ class FuturesTaker:
                 end=' ')
             print(f'cum_pnl:${self.cum_pnl:.2f}')
         # Stop Loss filling handle
-        if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
-                (float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
-            if self.SL_order is not None:
+
+        if self.SL_order is not None:
+            if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
+                    (float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
                 order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
-                if order['status'] == 'FILLED':
-                    self.SL_order = None
-                    self.in_long_position, self.in_short_position = False, False
-                    self._update_balances()
-                    self.q = 0.0
-                else:
-                    self._partially_filled_problem()
+                if order['status'] != 'FILLED':
+                    print(f'STOP_LOSS was not filled.')
+                    self._partially_filled_problem(self.stoploss_price)
+                self._cancel_all_orders()
+                self._update_balances()
+                self.SL_order, self.TP_order = None, None
+                self.in_long_position, self.in_short_position = False, False
+                self.stoploss_price, self.takeprofit_price = 0.0, 0.0
+        if self.TP_order is not None:
+            if ((float(data_k['h']) >= self.takeprofit_price) and self.in_long_position) or (
+                    (float(data_k['l']) <= self.takeprofit_price) and self.in_short_position):
+                order = self.client.query_order(symbol=self.symbol, orderId=self.TP_order['orderId'])
+                if order['status'] != 'FILLED':
+                    print(f'TAKE_PROFIT was not filled.')
+                    self._partially_filled_problem(self.takeprofit_price)
+                self._cancel_all_orders()
+                self._update_balances()
+                self.TP_order, self.SL_order = None, None
+                self.in_long_position, self.in_short_position = False, False
+                self.takeprofit_price, self.stoploss_price = 0.0, 0.0
         # Reopen websocket connection just to avoid timeout DC
         if time() - self.start_t >= 86_340:
             self.ws.close()
@@ -378,24 +392,26 @@ class FuturesTaker:
         self.analyze_t = time()
         self._check_signal()
         if self.in_long_position and (self.signal <= -self.long_close_at):
-            self._close_open_orders()
+            self._cancel_all_orders()
             if self._market_sell(self.q):
                 self.in_long_position = False
                 self._report_slipp(self.sell_order, self.close, 'sell')
                 self._update_balances()
         elif self.in_short_position and (self.signal >= self.short_close_at):
-            self._close_open_orders()
+            self._cancel_all_orders()
             if self._market_buy(self.q):
                 self.in_short_position = False
                 self._report_slipp(self.buy_order, self.close, 'buy')
                 self._update_balances()
-        else:
+        elif (not self.in_long_position) and (not self.in_short_position):
             if self.signal >= self.long_enter_at:
                 trade_q = (self.position_balance * self.leverage) / self.close
                 q = str(trade_q)[:len(str(self.step_size))]
                 if self._market_buy(q):
                     self.stoploss_price = round_step_size(self.close * (1 - self.stop_loss), self.tick_size)
+                    self.takeprofit_price = round_step_size(self.close * (1 + self.take_profit), self.tick_size)
                     self._stop_loss(q, self.stoploss_price, 'SELL')
+                    self._take_profit(q, self.takeprofit_price, 'SELL')
                     self._report_slipp(self.buy_order, self.close, 'buy')
                     self.q = q
                     self.in_long_position = True
@@ -404,7 +420,9 @@ class FuturesTaker:
                 q = str(trade_q)[:len(str(self.step_size))]
                 if self._market_sell(q):
                     self.stoploss_price = round_step_size(self.close * (1 + self.stop_loss), self.tick_size)
+                    self.takeprofit_price = round_step_size(self.close * (1 - self.take_profit), self.tick_size)
                     self._stop_loss(q, self.stoploss_price, 'BUY')
+                    self._take_profit(q, self.takeprofit_price, 'BUY')
                     self._report_slipp(self.sell_order, self.close, 'sell')
                     self.q = q
                     self.in_short_position = True
@@ -420,7 +438,7 @@ class FuturesTaker:
             file = self.buy_slipp_file
         elif order_type == 'sell':
             file = self.sell_slipp_file
-        elif (order_type == 'stoploss') or (order_type == 'unfilled_stoploss'):
+        elif (order_type == 'stoploss') or (order_type == 'unfilled_stop'):
             file = self.stoploss_slipp_file
         _slipp = float(_order['avgPrice']) / req_price
         with open(file, 'a', newline='') as file:
@@ -437,31 +455,27 @@ class FuturesTaker:
         #     quantity += float(qty)
         # return value / quantity
 
-    def _partially_filled_problem(self):
-        self._close_open_orders()
+    def _partially_filled_problem(self, req_price):
+        self._cancel_all_orders()
         self.q = self._get_available_balance(self.base)
-
-        if self._market_sell(self.q):
-            self._report_slipp(self.sell_order, self.stoploss_price, 'unfilled_stoploss')
-            self.SL_placed = False
-            self.stoploss_price = 0.0
+        if self.in_long_position:
+            if self._market_sell(self.q):
+                self._report_slipp(self.sell_order, req_price, 'unfilled_stop')
+        if self.in_short_position:
+            if self._market_buy(self.q):
+                self._report_slipp(self.buy_order, req_price, 'unfilled_stop')
         else:
             print(f'FAILED AT _partially_filled_problem()')
-
-    def _close_open_orders(self):
-        try:
-            self._cancel_order(self.SL_order['orderId'])
-        except Exception as e:
-            self._cancel_all_orders()
-            print(f'exception at _cancel_order(): {e}')
 
     def _cancel_all_orders(self):
         try:
             self.client.cancel_open_orders(symbol=self.symbol)
+            self.TP_order, self.SL_order = None, None
+            self.takeprofit_price, self.stoploss_price = 0.0, 0.0
         except Exception as e:
             print(f'exception(_cancel_all_orders): {e}')
 
-    def _cancel_order(self, order_id):
+    def _cancel_order_by_id(self, order_id):
         try:
             self.client.cancel_order(symbol=self.symbol, orderId=order_id)
         except Exception as e:
@@ -475,11 +489,24 @@ class FuturesTaker:
                                                   # quantity=q,
                                                   stopPrice=price,
                                                   closePosition='true')
-            self.SL_placed = True
             print(f'STOP_MARKET q:{q} stopPrice:{price} {dt.today()} ')
             return True
         except Exception as e:
             print(f'exception at _stop_loss(): {e}')
+            return False
+
+    def _take_profit(self, q, price, side):
+        try:
+            self.SL_order = self.client.new_order(symbol=self.symbol,
+                                                  side=side,
+                                                  type='TAKE_PROFIT_MARKET',
+                                                  # quantity=q,
+                                                  stopPrice=price,
+                                                  closePosition='true')
+            print(f'TAKE_PROFIT_MARKET q:{q} stopPrice:{price} {dt.today()} ')
+            return True
+        except Exception as e:
+            print(f'exception at _take_profit(): {e}')
             return False
 
     def _market_buy(self, q):

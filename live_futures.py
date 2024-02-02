@@ -9,12 +9,13 @@ INTERVAL = '15m'
 trade_balance = 50.0
 
 # MACD settings:
-position_ratio, save_ratio, stop_loss, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.9461178964834303, 0.6102300509277804, 0.013063668390396858, 0.5364911376702247, 0.9959641430691529, 0.9748446517972863, 0.8321291458559199
-fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 204, 795, 475, 13, 10, 22, 60
+position_ratio, save_ratio, stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.9072159833167842, 0.7372423322513152, 0.00960362116660654, 0.16486615226483145, 0.6528083087775878, 0.7024261767901294, 0.9857577115653333, 0.3596472101329867
+fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 60, 806, 403, 14, 33, 22, 62
 SETTINGS = {"trade_balance": trade_balance,
             "position_ratio": position_ratio,
             "save_ratio": save_ratio,
             "stop_loss": stop_loss,
+            "take_profit": take_profit,
             "long_enter_at": long_enter_at,
             "long_close_at": long_close_at,
             "short_enter_at": short_enter_at,
@@ -28,12 +29,13 @@ SETTINGS = {"trade_balance": trade_balance,
             "leverage": leverage}
 
 # Stoch settings:
-# position_ratio, save_ratio, stop_loss, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.6065476973780412,0.9175248886714115,0.01045884148878456,0.017092000126018532,0.04696487050922178,0.04037982558669345,0.22028872498933774
+# position_ratio, save_ratio, stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.6065476973780412,0.9175248886714115,0.01045884148878456,0.017092000126018532,0.04696487050922178,0.04037982558669345,0.22028872498933774
 # oversold_threshold, overbought_threshold, fastK_period, slowK_period, slowD_period, slowK_ma_type, slowD_ma_type, leverage = 22.63033474620837,50.34534916708502,209,6,584,15,7,45
 # SETTINGS = {"trade_balance": trade_balance,
 #             "position_ratio": position_ratio,
 #             "save_ratio": save_ratio,
 #             "stop_loss": stop_loss,
+#             "take_profit": take_profit,
 #             "long_enter_at": long_enter_at,
 #             "long_close_at": long_close_at,
 #             "short_enter_at": short_enter_at,

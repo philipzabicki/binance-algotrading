@@ -1,4 +1,9 @@
-from numpy import array, median, mean, nan_to_num, sum, isfinite, percentile
+import numpy
+from numpy import array, median, mean, nan_to_num, sum, isfinite, percentile, inf
+from scipy.stats import hmean, gmean
+from genetic_search.base import reward_from_metric
+from time import sleep
+from sklearn.preprocessing import RobustScaler, MinMaxScaler, StandardScaler
 from sklearn.preprocessing import normalize
 from math import copysign
 from pymoo.core.problem import ElementwiseProblem
@@ -30,19 +35,8 @@ class MACDSpotMixedVariableProblem(ElementwiseProblem):
         action = [X['stop_loss'], X['take_profit'], X['enter_at'], X['close_at'], X['fast_period'], X['slow_period'], X['signal_period'],
                   X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
         if self.n_evals > 1:
-            rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
-            # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            if self.metric == 'mixed':
-                _median = median(rews)
-                _mean = mean(rews)
-                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
-                out["F"] = array([rew])
-            elif self.metric == '10perc_x_mean':
-                out["F"] = array([percentile(rews, 10) * mean(rews)])
-            elif self.metric == 'median':
-                out["F"] = array([median(rews)])
-            elif self.metric == 'mean':
-                out["F"] = array([mean(rews)])
+            rews = array([-1 * self.env.step(action)[1] for _ in range(self.n_evals)])
+            out["F"] = array([reward_from_metric(rews, self.n_evals, self.metric)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
 
@@ -77,19 +71,8 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
                   X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type'],
                   X['leverage']]
         if self.n_evals > 1:
-            rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
-            # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            if self.metric == 'mixed':
-                _median = median(rews)
-                _mean = mean(rews)
-                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
-                out["F"] = array([rew])
-            elif self.metric == '10perc_x_mean':
-                out["F"] = array([percentile(rews, 10) * mean(rews)])
-            elif self.metric == 'median':
-                out["F"] = array([median(rews)])
-            elif self.metric == 'mean':
-                out["F"] = array([mean(rews)])
+            rews = array([-1 * self.env.step(action)[1] for _ in range(self.n_evals)])
+            out["F"] = array([reward_from_metric(rews, self.n_evals, self.metric)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
 
@@ -121,19 +104,8 @@ class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
                   X['fast_period'], X['slow_period'], X['signal_period'],
                   X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type']]
         if self.n_evals > 1:
-            rews = [-1 * self.env.step(action)[1] for _ in range(self.n_evals)]
-            # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            if self.metric == 'mixed':
-                _median = median(rews)
-                _mean = mean(rews)
-                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
-                out["F"] = array([rew])
-            elif self.metric == '10perc_x_mean':
-                out["F"] = array([percentile(rews, 10) * mean(rews)])
-            elif self.metric == 'median':
-                out["F"] = array([median(rews)])
-            elif self.metric == 'mean':
-                out["F"] = array([mean(rews)])
+            rews = array([-1 * self.env.step(action)[1] for _ in range(self.n_evals)])
+            out["F"] = array([reward_from_metric(rews, self.n_evals, self.metric)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
 
@@ -170,20 +142,6 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
                   X['leverage']]
         if self.n_evals > 1:
             rews = array([-1 * self.env.step(action)[1] for _ in range(self.n_evals)])
-            # print(f'median_of{self.n_evals}_reward: {median(rews)}')
-            if self.metric == 'mixed':
-                _median = median(rews)
-                _mean = mean(rews)
-                rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
-                out["F"] = array([rew])
-            elif self.metric == '10perc_x_mean':
-                perc10 = percentile(rews, 10)
-                _mean = mean(rews)
-                rew = perc10 if (perc10 < 0) or (_mean < 0) else perc10 * _mean
-                out["F"] = array([rew])
-            elif self.metric == 'median':
-                out["F"] = array([median(rews)])
-            elif self.metric == 'mean':
-                out["F"] = array([mean(rews)])
+            out["F"] = array([reward_from_metric(rews, self.n_evals, self.metric)])
         else:
             out["F"] = array([-self.env.step(action)[1]])
