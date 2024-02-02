@@ -59,11 +59,11 @@ def _read_partial_df(_path):
 def _collect_to_date(url, output_folder, start_date=date(year=2017, month=1, day=1), delta_itv='months'):
     if delta_itv == 'months':
         delta = relativedelta(months=1)
-        end_date = date.today() - 2 * delta
+        end_date = date.today() - delta
         print(f'Collecting monthly from {start_date} to {end_date}')
     elif delta_itv == 'days':
         delta = relativedelta(days=1)
-        end_date = date.today() - 2 * delta
+        end_date = date.today() - delta
         print(f'Collecting daily from {start_date} to {end_date}')
     else:
         raise ValueError("arg delta_itv should be one of 'months' or 'days'")
@@ -132,6 +132,7 @@ def by_BinanceVision(ticker='BTCBUSD',
                 return df.iloc[:, 0], df.iloc[:, 1:]
             else:
                 return df
+    # TODO: Fix problem when for the first few days of new month Binance Vision does not have aggregate monthly zip.
     else:
         data_frames = _collect_to_date(url, output_folder, delta_itv='months')
         end_date = date.today()

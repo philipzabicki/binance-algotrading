@@ -1089,6 +1089,7 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 13: lambda ohlcv_array, period: finTA.ZLEMA(
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     max(4, period)).to_numpy(),
+                # One of Top3 slowest MAs to calculate:
                 14: lambda ohlcv_array, period: finTA.EVWMA(
                     pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
                     period).to_numpy(),
@@ -1098,9 +1099,11 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 16: lambda ohlcv_array, period: p_ta.vwma(pd.Series(ohlcv_array[:, 3]),
                                                           pd.Series(ohlcv_array[:, 4]),
                                                           length=period).to_numpy(),
+                # One of Top3 slowest MAs to calculate:
                 17: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
                                                           length=period,
                                                           asc=True).to_numpy(),
+                # One of Top3 slowest MAs to calculate:
                 18: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
                                                           length=period,
                                                           asc=False).to_numpy(),
@@ -1210,9 +1213,9 @@ def custom_ChaikinOscillator(adl, fast_period, slow_period, fast_ma_type, slow_m
 
 def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
                 fast_ma_type, slow_ma_type, signal_ma_type):
-    slow = get_MA(ohlcv, slow_ma_type, slow_period)
-    fast = get_MA(ohlcv, fast_ma_type, fast_period)
-    macd = np.nan_to_num(fast) - np.nan_to_num(slow)
+    # slow = get_MA(ohlcv, slow_ma_type, slow_period)
+    # fast = get_MA(ohlcv, fast_ma_type, fast_period)
+    macd = np.nan_to_num(get_MA(ohlcv, fast_ma_type, fast_period)) - np.nan_to_num(get_MA(ohlcv, slow_ma_type, slow_period))
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 
 
