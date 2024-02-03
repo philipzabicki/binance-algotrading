@@ -7,7 +7,7 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from datetime import datetime as dt
-from numpy import median, sum, percentile, inf, array, min, mean, max, ndarray
+from numpy import median, sum, percentile, inf, array, min, mean, max, ndarray, nan_to_num, float32
 from scipy.stats import hmean, gmean
 from sklearn.preprocessing import RobustScaler, MinMaxScaler
 from pymoo.core.callback import Callback
@@ -160,7 +160,7 @@ def reward_from_metric(rewards: ndarray, n_evals: int, metric: str) -> float:
         return median(rewards)
     elif metric == 'first_quartile':
         # print(f'rewards {rewards} 1Q {percentile(rewards, 25)}')
-        return percentile(rewards, 75)
+        return percentile(nan_to_num(rewards.astype(float32)), 75)
     elif metric == 'mean':
         return mean(rewards)
     elif metric == 'max':
@@ -210,6 +210,11 @@ def reward_from_metric(rewards: ndarray, n_evals: int, metric: str) -> float:
         _mean = mean(rewards)
         rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
         return rew
+    elif metric == 'minxquartile':
+        # print(f'rewards {rewards} 1Q {percentile(rewards, 25)}')
+        quartile_1 = percentile(nan_to_num(rewards.astype(float32)), 75)
+        min_rew = min(rewards)
+        return quartile_1 if (quartile_1 > 0) or (min_rew > 0) else quartile_1*min_rew
     elif metric == 'error1':
         perc10 = percentile(rewards, 10)
         _mean = mean(rewards)

@@ -7,7 +7,7 @@ from time import time
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
-from numpy import array, mean, std
+from numpy import array, mean, std, inf
 
 from definitions import REPORT_DIR
 from utils.visualize import TradingGraph
@@ -302,7 +302,7 @@ class SpotBacktest(Env):
             PnL_trades_ratio, PnL_means_ratio = 0.0, 0.0
             in_gain_indicator = 0.0
             slope_indicator = 0.000
-            self.reward = 0
+            self.reward = -inf
 
         sharpe_ratio = (mean_pnl - risk_free_return) / stddev_pnl if stddev_pnl != 0 else -1
         sortino_ratio = (total_return - risk_free_return) / losses_stddev if losses_stddev != 0 else -1
