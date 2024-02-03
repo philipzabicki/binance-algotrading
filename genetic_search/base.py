@@ -208,19 +208,21 @@ def reward_from_metric(rewards: ndarray, n_evals: int, metric: str) -> float:
     elif metric == 'median_mean_mix':
         _median = median(rewards)
         _mean = mean(rewards)
-        rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
-        return rew
+        if (_median < 0) and (_mean < 0):
+            return (_median + _mean) / 2
+        return _median
     elif metric == 'median_min_mix':
         _median = median(rewards)
         min_rew = min(rewards)
         if (_median < 0) and (min_rew < 0):
-            return -1 * _median * min_rew
+            return (_median + min_rew) / 2
         return _median
-    elif metric == 'error1':
-        perc10 = percentile(rewards, 10)
-        _mean = mean(rewards)
-        rew = perc10 if (perc10 < 0) or (_mean < 0) else perc10 * _mean
-        return rew
+    elif metric == 'quartile_min_mix':
+        third_quartile = percentile(nan_to_num(rewards.astype(float32)), 75)
+        min_rew = min(rewards)
+        if (third_quartile < 0) and (min_rew < 0):
+            return (third_quartile + min_rew) / 2
+        return third_quartile
     elif metric == 'sign_minmax_sum':
         positive_rews = rewards[(rewards > 0) & (rewards != inf)]
         positive_rews_len = len(positive_rews)
