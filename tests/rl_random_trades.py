@@ -1,7 +1,6 @@
 # from enviroments.rl_env import SpotRL
 
 from utils.get_data import by_BinanceVision
-from utils.utility import get_slippage_stats
 
 if __name__ == "__main__":
     dates_df, df = by_BinanceVision(ticker='BTCFDUSD',
@@ -23,9 +22,9 @@ if __name__ == "__main__":
     #                      render_range=120,
     #                      visualize=True)
 
-    obs = trading_env.reset()[0]
-    terminated = False
-    while not terminated:
-        action = trading_env.action_space.sample()
-        obs, reward, terminated, truncated, info = trading_env.step(action)
-        trading_env.render()
+    # obs = trading_env.reset()[0]
+    # terminated = False
+    # while not terminated:
+    #     action = trading_env.action_space.sample()
+    #     obs, reward, terminated, truncated, info = trading_env.step(action)
+    #     trading_env.render()

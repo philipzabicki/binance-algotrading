@@ -1,11 +1,9 @@
-import numpy as np
 import tensorflow as tf
 from rl.agents import DQNAgent
 from rl.memory import SequentialMemory
 from rl.policy import EpsGreedyQPolicy, BoltzmannQPolicy
-from tensorflow.keras.optimizers.legacy import Adam
 
-#from enviroments import SpotRL
+# from enviroments import SpotRL
 from utils.get_data import by_BinanceVision
 
 

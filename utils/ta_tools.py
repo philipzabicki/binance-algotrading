@@ -1215,7 +1215,8 @@ def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
                 fast_ma_type, slow_ma_type, signal_ma_type):
     # slow = get_MA(ohlcv, slow_ma_type, slow_period)
     # fast = get_MA(ohlcv, fast_ma_type, fast_period)
-    macd = np.nan_to_num(get_MA(ohlcv, fast_ma_type, fast_period)) - np.nan_to_num(get_MA(ohlcv, slow_ma_type, slow_period))
+    macd = np.nan_to_num(get_MA(ohlcv, fast_ma_type, fast_period)) - np.nan_to_num(
+        get_MA(ohlcv, slow_ma_type, slow_period))
     return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 
 

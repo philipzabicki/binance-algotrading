@@ -210,11 +210,12 @@ def reward_from_metric(rewards: ndarray, n_evals: int, metric: str) -> float:
         _mean = mean(rewards)
         rew = (_median + _mean) / 2 if (_median < 0) or (_mean < 0) else _median * _mean
         return rew
-    elif metric == 'minxquartile':
-        # print(f'rewards {rewards} 1Q {percentile(rewards, 25)}')
-        quartile_1 = percentile(nan_to_num(rewards.astype(float32)), 75)
+    elif metric == 'median_min_mix':
+        _median = median(rewards)
         min_rew = min(rewards)
-        return quartile_1 if (quartile_1 > 0) or (min_rew > 0) else quartile_1*min_rew
+        if (_median < 0) and (min_rew < 0):
+            return -1 * _median * min_rew
+        return _median
     elif metric == 'error1':
         perc10 = percentile(rewards, 10)
         _mean = mean(rewards)

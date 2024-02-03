@@ -1,12 +1,10 @@
 import mplfinance as mpf
 import pandas as pd
 from matplotlib import pyplot as plt
-from numpy import inf
 
 # from enviroments import MACDRSIStratSpotEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
-from utils.utility import get_slippage_stats
 
 
 def sig_map(value):

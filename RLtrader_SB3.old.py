@@ -1,7 +1,6 @@
 import matplotlib
 
 # from utility import seconds_since, get_market_slips_stats
-from definitions import ROOT_DIR
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import simple_rl_features_periods  # , signal_features_periods, simple_rl_features
 
@@ -9,8 +8,8 @@ matplotlib.use('TkAgg')
 # from enviroments.rl_env import SpotRL
 # from time import sleep
 import torch as th
+
 # from stable_baselines3.common.env_checker import check_env
-from stable_baselines3 import DQN  # , PPO, A2C
 
 # from sklearn.preprocessing import StandardScaler
 # from stable_baselines3.common.env_util import make_vec_env
@@ -80,38 +79,38 @@ if __name__ == "__main__":
     #                 # target_update_interval=3_000,
     #                 tensorboard_log=ROOT_DIR + '/tensorboard/',
     #                 verbose=2)
-        '''
-        model = DQN("MlpPolicy",
-                    policy_kwargs=policy_kwargs,
-                    learning_starts=10_800,
-                    env=trading_env,
-                    # learning_rate=0.001,
-                    # n_steps=100,
-                    # batch_size=128,
-                    # target_update_interval=1_000,
-                    verbose=2,
-                    tensorboard_log=ROOT_DIR+'/tensorboard/',
-                    device='cuda')
-        '''
-        model.learn(total_timesteps=10_800 * 15, log_interval=1, progress_bar=True)
 
-    model.save("RLtrader")
-    del model
-    model = DQN.load("RLtrader")
-
-    # Test without visualization for 3 days
-    trading_env.max_steps = 10_800 * 250
-    obs, _ = trading_env.reset()
-    terminated = False
-    while not terminated:
-        action, _states = model.predict(obs)
-        obs, reward, terminated, truncated, info = trading_env.step(action)
-        trading_env.render()
-
-    trading_env.visualize = True
-    obs = trading_env.reset()[0]
-    terminated = False
-    while not terminated:
-        action, _states = model.predict(obs)
-        obs, reward, terminated, truncated, info = trading_env.step(action)
-        trading_env.render()
+    #     model = DQN("MlpPolicy",
+    #                 policy_kwargs=policy_kwargs,
+    #                 learning_starts=10_800,
+    #                 env=trading_env,
+    #                 # learning_rate=0.001,
+    #                 # n_steps=100,
+    #                 # batch_size=128,
+    #                 # target_update_interval=1_000,
+    #                 verbose=2,
+    #                 tensorboard_log=ROOT_DIR+'/tensorboard/',
+    #                 device='cuda')
+    #
+    #     model.learn(total_timesteps=10_800 * 15, log_interval=1, progress_bar=True)
+    #
+    # model.save("RLtrader")
+    # del model
+    # model = DQN.load("RLtrader")
+    #
+    # # Test without visualization for 3 days
+    # trading_env.max_steps = 10_800 * 250
+    # obs, _ = trading_env.reset()
+    # terminated = False
+    # while not terminated:
+    #     action, _states = model.predict(obs)
+    #     obs, reward, terminated, truncated, info = trading_env.step(action)
+    #     trading_env.render()
+    #
+    # trading_env.visualize = True
+    # obs = trading_env.reset()[0]
+    # terminated = False
+    # while not terminated:
+    #     action, _states = model.predict(obs)
+    #     obs, reward, terminated, truncated, info = trading_env.step(action)
+    #     trading_env.render()
