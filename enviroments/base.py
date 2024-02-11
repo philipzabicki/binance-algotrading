@@ -3,7 +3,7 @@ from csv import writer
 from datetime import datetime as dt
 from math import copysign, floor
 from random import randint
-from time import time
+from time import time, sleep
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
@@ -109,7 +109,8 @@ class SpotBacktest(Env):
         self.pnl = 0
         self.absolute_profit = 0.0
         self.SL_losses, self.cumulative_fees, self.liquidations, self.take_profits_c = 0, 0, 0, 0
-        self.in_position, self.in_position_counter, self.episode_orders, self.with_gain_c = 0, 0, 0, 1
+        self.in_position, self.in_position_counter, self.position_closed = 0, 0, 0
+        self.episode_orders, self.with_gain_c = 0, 1
         self.good_trades_count, self.bad_trades_count = 1, 1
         self.max_drawdown, self.max_profit = 0, 0
         self.loss_hold_counter, self.profit_hold_counter = 0, 0
@@ -217,6 +218,7 @@ class SpotBacktest(Env):
         self.qty = 0
         self.in_position = 0
         self.in_position_counter = 0
+        self.position_closed = 1
         self.stop_loss_price = 0
         if self.write_to_file:
             self._write_to_file()
@@ -237,7 +239,8 @@ class SpotBacktest(Env):
             high, low, close = self.df[self.current_step, 1:4]
             # print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
             self.in_position_counter += 1
-            if close > self.enter_price:
+            self.pnl = (close/self.enter_price)-1
+            if self.pnl >= 1:
                 self.profit_hold_counter += 1
             else:
                 self.loss_hold_counter += 1
@@ -512,6 +515,8 @@ class FuturesBacktest(SpotBacktest):
         # 1,25% liquidation clearance fee https://www.binance.com/en/futures/trading-rules/perpetual/
         self.liquidation_price = (self.margin * (1 - 0.0125) - self.qty * self.enter_price) / (
                 abs(self.qty) * self.POSITION_TIER[self.tier][1] - self.qty)
+        #print(f'OPENED {side} price:{price} adj_price:{adj_price} qty:{self.qty} margin:{self.margin} fee:{fee}')
+        #sleep(10)
         if self.write_to_file:
             self._write_to_file()
 
@@ -581,8 +586,11 @@ class FuturesBacktest(SpotBacktest):
         self.qty = 0
         self.in_position = 0
         self.in_position_counter = 0
+        self.position_closed = 1
         self.stop_loss_price = 0
         self.pnl = 0
+        #print(f'CLOSED {self.last_order_type} price:{price} adj_price:{adj_price} qty:{self.qty} percentage_profit:{percentage_profit} absolute_profit:{self.absolute_profit} margin:{self.margin} fee:{_fee}')
+        #sleep(10)
         if self.write_to_file:
             self._write_to_file()
 
@@ -598,11 +606,11 @@ class FuturesBacktest(SpotBacktest):
             if self.in_position_counter % 480 == 0:
                 self.margin -= (abs(self.qty) * close * self.funding_rate)
             self._get_pnl(mark_close, update=True)
-            if ((low <= self.stop_loss_price) and (self.qty > 0)) or (
-                    (high >= self.stop_loss_price) and (self.qty < 0)):
+            if (self.stop_loss is not None) and (((low <= self.stop_loss_price) and (self.qty > 0)) or (
+                    (high >= self.stop_loss_price) and (self.qty < 0))):
                 self._close_position(self.stop_loss_price, sl=True)
-            elif ((high >= self.take_profit_price) and (self.qty > 0)) or (
-                    (low <= self.take_profit_price) and (self.qty < 0)):
+            elif (self.take_profit is not None) and (((high >= self.take_profit_price) and (self.qty > 0)) or (
+                    (low <= self.take_profit_price) and (self.qty < 0))):
                 self._close_position(self.take_profit_price, tp=True)
             elif self._check_margin():
                 self.liquidations += 1

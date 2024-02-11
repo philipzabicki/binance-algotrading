@@ -4,6 +4,8 @@ ROOT_DIR = path.dirname(path.abspath(__file__))
 DATA_DIR = ROOT_DIR + '/data/'
 REPORT_DIR = ROOT_DIR + '/reports/'
 SLIPPAGE_DIR = DATA_DIR + '/slippage/'
+TENSORBOARD_DIR = ROOT_DIR + '/tensorboard/'
+MODELS_DIR = ROOT_DIR + '/model/'
 
 ADDITIONAL_DATA_BY_OHLCV_MA = {0: 1, 1: 7, 2: 1, 3: 6, 4: 1, 5: 8, 6: 9, 7: 11, 8: 2, 9: 1, 10: 1, 11: 19, 12: 1, 13: 9,
                                14: 21, 15: 19, 16: 1, 17: 1, 18: 1, 19: 6, 20: 1, 21: 1, 22: 15, 23: 63, 24: 1, 25: 15,
