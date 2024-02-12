@@ -1465,12 +1465,12 @@ def custom_features(df, suffix=''):
     _, O, H, L, C, *_ = [df[col].to_numpy() for col in df.columns]
     # OHLC simple features
     df[f'candle_size{suffix}'] = H - L
-    df[f'candle_body_size{suffix}'] = np.where(C > O, (C - O) / df['candle_size{suffix}'],
-                                               (O - C) / df['candle_size{suffix}'])
-    df[f'candle_upper_wick{suffix}'] = np.where(C > O, (H - C) / df['candle_size{suffix}'],
-                                                (H - O) / df['candle_size{suffix}'])
-    df[f'candle_lower_wick{suffix}'] = np.where(C > O, (O - L) / df['candle_size{suffix}'],
-                                                (C - L) / df['candle_size{suffix}'])
+    df[f'candle_body_size{suffix}'] = np.where(C > O, (C - O) / df[f'candle_size{suffix}'],
+                                               (O - C) / df[f'candle_size{suffix}'])
+    df[f'candle_upper_wick{suffix}'] = np.where(C > O, (H - C) / df[f'candle_size{suffix}'],
+                                                (H - O) / df[f'candle_size{suffix}'])
+    df[f'candle_lower_wick{suffix}'] = np.where(C > O, (O - L) / df[f'candle_size{suffix}'],
+                                                (C - L) / df[f'candle_size{suffix}'])
     df[f'hourly_seasonality{suffix}'] = hourly_seasonality(df)
     df[f'daily_seasonality{suffix}'] = daily_seasonality(df)
     # df['volume_probability{suffix}'] = volume_probability(V)

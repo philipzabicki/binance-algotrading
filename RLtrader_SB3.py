@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from datetime import datetime as dt
 from definitions import TENSORBOARD_DIR, MODELS_DIR
 from utils.get_data import by_BinanceVision
-from utils.ta_tools import simple_rl_features
+from utils.ta_tools import simple_rl_features, simple_rl_features_periods
 
 from enviroments.rl_env import SpotRL, FuturesRL
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
                                   split=True,
                                   delay=345_600)
     print(f'df_mark used: {df_mark}')
-    df = simple_rl_features(df)
+    df = simple_rl_features_periods(df, periods, zscore_standardization=True)
     print(df)
     # plt.plot(df['Close'], label='Close')
     # plt.plot(df_mark['Close'], label='mark Close')
