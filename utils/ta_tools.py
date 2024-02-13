@@ -1236,11 +1236,14 @@ def get_MA_band_signal(np_df: np.ndarray, ma_type: int, ma_period: int, atr_peri
                           atr,
                           atr_multi=ATR_multi)'''
     # return np_df
-    # print(f'ma {ma}')
-    return anyMA_sig(np_df[:, 3],
+    try:
+        return anyMA_sig(np_df[:, 3],
                      get_MA(np_df, ma_type, ma_period),
                      atr,
                      atr_multi)
+    except TypeError:
+        print(f'len(np_df) {len(np_df)}')
+        print(f'np_df[:, 3] {np_df[:, 3]}')
 
 
 # @feature_timeit
@@ -1448,8 +1451,8 @@ def simple_rl_features_periods(df: pd.DataFrame, periods: list[int], zscore_stan
     df[f'TRANGE{suffix}'] = talib.TRANGE(H, L, C)
     df = custom_features(df)
     # To avoid NaN indicator values at the beginning
-    longest_period = max(periods) * 3
-    df = df.tail(len(df) - longest_period)
+    # longest_period = max(periods) * 25
+    # df = df.tail(len(df) - longest_period)
     if not zscore_standardization:
         print(df.columns[df.isna().any()].tolist())
         return df

@@ -28,18 +28,18 @@ def save_results(filename, result):
             # print(f'writing row {_row}')
 
 
-def get_callback_plot(callback, fname):
+def get_callback_plot(callback, fname, dpi=50):
     plt.figure(figsize=(16, 9))
     plt.title("Convergence")
     # plt.ylabel('Reward (min/avg/max)')
     plt.ylabel('Reward metric (min/avg/max)')
     plt.xlabel('Population No.')
     plt.plot(-1 * array(callback.opt), "--")
-    plt.savefig(REPORT_DIR + 'Convergence_' + fname + ".png", dpi=300)
+    plt.savefig(REPORT_DIR + 'Convergence_' + fname + ".png", dpi=dpi)
     return plt
 
 
-def get_variables_plot(x_variables, problem, fname, save=True, dpi=300):
+def get_variables_plot(x_variables, problem, fname, save=True, dpi=50):
     sample_gen = x_variables[0]
     if not isinstance(sample_gen, dict):
         raise NotImplementedError("Currently supports only list of dict type populations")
@@ -79,7 +79,7 @@ class VariablesPlotCallback(Callback):
 
     def notify(self, algorithm):
         filename = f'{self.file_location}/{self.gen_n}'
-        get_variables_plot(algorithm.pop.get("X"), self.problem, filename, save=True, dpi=50)
+        get_variables_plot(algorithm.pop.get("X"), self.problem, filename, save=True, dpi=25)
         self.gen_n += 1
         avg_rew = mean(algorithm.pop.get("F"))
         if avg_rew < 0:

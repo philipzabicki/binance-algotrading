@@ -14,8 +14,6 @@ class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
     def reset(self, *args, stop_loss=None, take_profit=None, save_ratio=None, enter_at=1.0, close_at=1.0,
               fast_period=12, slow_period=26, signal_period=9,
               fast_ma_type=0, slow_ma_type=0, signal_ma_type=0, **kwargs):
-        _ret = super().reset(*args, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
-                             enter_at=enter_at, close_at=close_at, **kwargs)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.signal_period = signal_period
@@ -30,6 +28,8 @@ class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         if _max_period > self.total_steps:
             warn(
                 f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
+                             enter_at=enter_at, close_at=close_at, **kwargs)
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
@@ -55,10 +55,6 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
               long_enter_at=1.0, long_close_at=1.0, short_enter_at=1.0, short_close_at=1.0,
               fast_period=12, slow_period=26, signal_period=9,
               fast_ma_type=0, slow_ma_type=0, signal_ma_type=0, leverage=5, **kwargs):
-        _ret = super().reset(*args, position_ratio=position_ratio, save_ratio=save_ratio,
-                             leverage=leverage, stop_loss=stop_loss, take_profit=take_profit,
-                             long_enter_at=long_enter_at, long_close_at=long_close_at,
-                             short_enter_at=short_enter_at, short_close_at=short_close_at, **kwargs)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.signal_period = signal_period
@@ -71,6 +67,10 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
         if _max_period > self.total_steps:
             warn(
                 f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+        _ret = super().reset(*args, offset=_max_period, position_ratio=position_ratio, save_ratio=save_ratio,
+                             leverage=leverage, stop_loss=stop_loss, take_profit=take_profit,
+                             long_enter_at=long_enter_at, long_close_at=long_close_at,
+                             short_enter_at=short_enter_at, short_close_at=short_close_at, **kwargs)
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
         macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],

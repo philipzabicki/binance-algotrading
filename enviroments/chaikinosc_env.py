@@ -20,8 +20,6 @@ class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
     def reset(self, *args, stop_loss=None, take_profit=None, save_ratio=None,
               fast_period=3, slow_period=10,
               fast_ma_type=0, slow_ma_type=0, **kwargs):
-        _ret = super().reset(*args, stop_loss=stop_loss, take_profit=take_profit,
-                             save_ratio=save_ratio, **kwargs)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.fast_ma_type = fast_ma_type
@@ -31,6 +29,8 @@ class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
         if _max_period > self.total_steps:
             warn(
                 f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit,
+                             save_ratio=save_ratio, **kwargs)
         # Calculate only the data length necessary, with additional length caused by indicator periods
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])
@@ -62,9 +62,6 @@ class _ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
               stop_loss=None, take_profit=None, save_ratio=None, leverage=5,
               fast_period=12, slow_period=26,
               fast_ma_type=0, slow_ma_type=0, **kwargs):
-        _ret = super().reset(*args, position_ratio=position_ratio,
-                             leverage=leverage, save_ratio=save_ratio,
-                             stop_loss=stop_loss, take_profit=take_profit, **kwargs)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.fast_ma_type = fast_ma_type
@@ -74,6 +71,9 @@ class _ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
         if _max_period > self.total_steps:
             warn(
                 f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+        _ret = super().reset(*args, offset=_max_period, position_ratio=position_ratio,
+                             leverage=leverage, save_ratio=save_ratio,
+                             stop_loss=stop_loss, take_profit=take_profit, **kwargs)
         # Calculate only the data length necessary, with additional length caused by indicator periods
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         # print(self.df[self.start_step:self.end_step, :5])

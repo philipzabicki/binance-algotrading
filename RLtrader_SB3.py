@@ -24,7 +24,7 @@ DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
 
 if __name__ == "__main__":
-    periods = [3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
+    periods = [3, 5, 8, 13, 21, 34]
     # periods = [3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765]
     df = by_BinanceVision(ticker=TICKER,
                           interval=ITV,
@@ -42,7 +42,7 @@ if __name__ == "__main__":
                                   split=True,
                                   delay=345_600)
     print(f'df_mark used: {df_mark}')
-    df = simple_rl_features_periods(df, periods, zscore_standardization=True)
+    df = simple_rl_features_periods(df, periods, zscore_standardization=True).fillna(0.0)
     print(df)
     # plt.plot(df['Close'], label='Close')
     # plt.plot(df_mark['Close'], label='mark Close')
@@ -60,7 +60,7 @@ if __name__ == "__main__":
                           max_steps=1_440,
                           exclude_cols_left=5,
                           init_balance=1_000,
-                          #leverage=33,
+                          leverage=15,
                           fee=0.0005,
                           coin_step=0.001,
                           # slippage=get_market_slips_stats(),

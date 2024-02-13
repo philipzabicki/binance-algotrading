@@ -15,14 +15,14 @@ class SignalExecuteSpotEnv(SpotBacktest):
         # self.signals = empty(self.total_steps)
         self.signals = choice([-1, 0, 1], size=self.total_steps)
 
-    def reset(self, *args, **kwargs):
+    def reset(self, *args, offset=0, **kwargs):
         self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
         self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
         self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
         self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
         self.close_threshold = kwargs['close_at'] if 'close_at' in kwargs else 1.0
-        return super().reset()
+        return super().reset(offset=offset)
 
     def _finish_episode(self):
         super()._finish_episode()
@@ -66,7 +66,7 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         self.short_close_threshold = kwargs['short_close_at'] if 'short_close_at' in kwargs else 1.0
         self.signals = choice([-1, 0, 1], size=self.total_steps)
 
-    def reset(self, *args, **kwargs):
+    def reset(self, *args, offset=0, **kwargs):
         self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
         self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
         self.leverage = kwargs['leverage'] if 'leverage' in kwargs else 1
@@ -76,7 +76,7 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         self.long_close_threshold = kwargs['long_close_at'] if 'long_close_at' in kwargs else 1.0
         self.short_enter_threshold = kwargs['short_enter_at'] if 'short_enter_at' in kwargs else 1.0
         self.short_close_threshold = kwargs['short_close_at'] if 'short_close_at' in kwargs else 1.0
-        return super().reset()
+        return super().reset(offset=offset)
 
     def _finish_episode(self):
         super()._finish_episode()

@@ -5,7 +5,7 @@ from credentials import binance_API_KEY, binance_SECRET_KEY
 BASE_TICKER = 'BTC'
 QUOTE_TICKER = 'USDT'
 MARKET = 'um'
-INTERVAL = '15m'
+INTERVAL = '1m'
 trade_balance = 50.0
 
 # MACD settings:

@@ -131,14 +131,14 @@ class FuturesRL(FuturesBacktest):
         if self.position_closed:
             last_pnl = self.PLs_and_ratios[-1][0]
             if last_pnl > 0:
-                self.reward = 10 * last_pnl * (self.good_trades_count / self.bad_trades_count)
+                self.reward = last_pnl * (self.good_trades_count / self.bad_trades_count)
             elif last_pnl < 0:
-                self.reward = 10 * last_pnl * (self.bad_trades_count / self.good_trades_count)
+                self.reward = last_pnl * (self.bad_trades_count / self.good_trades_count)
             self.position_closed = 0
         # In Position #
         elif self.in_position:
-            self.reward = self.pnl
-            # self.reward = 0
+            #self.reward = self.pnl
+            self.reward = 0
         else:
             self.reward = 0
         # print(f'reward: {self.reward}')

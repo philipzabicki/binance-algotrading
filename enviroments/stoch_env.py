@@ -15,8 +15,6 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
               fastK_period=14, slowK_period=1, slowD_period=3,
               slowK_ma_type=0, slowD_ma_type=0,
               oversold_threshold=20.0, overbought_threshold=80.0, **kwargs):
-        _ret = super().reset(*args, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
-                             enter_at=enter_at, close_at=close_at, **kwargs)
         self.fastK_period = fastK_period
         self.slowK_period = slowK_period
         self.slowD_period = slowD_period
@@ -31,6 +29,8 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
         if _max_period > self.total_steps:
             warn(
                 f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
+                             enter_at=enter_at, close_at=close_at, **kwargs)
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, :5],
                                                    fastK_period=fastK_period,
@@ -61,10 +61,6 @@ class _StochExecuteFuturesEnv(SignalExecuteFuturesEnv):
               fastK_period=14, slowK_period=1, slowD_period=3,
               slowK_ma_type=0, slowD_ma_type=0,
               oversold_threshold=20.0, overbought_threshold=80.0, leverage=5, **kwargs):
-        _ret = super().reset(*args, position_ratio=position_ratio, save_ratio=save_ratio,
-                             leverage=leverage, stop_loss=stop_loss, take_profit=take_profit,
-                             long_enter_at=long_enter_at, long_close_at=long_close_at,
-                             short_enter_at=short_enter_at, short_close_at=short_close_at, **kwargs)
         self.fastK_period = fastK_period
         self.slowK_period = slowK_period
         self.slowD_period = slowD_period
@@ -79,6 +75,10 @@ class _StochExecuteFuturesEnv(SignalExecuteFuturesEnv):
         if _max_period > self.total_steps:
             warn(
                 f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+        _ret = super().reset(*args, offset=_max_period, position_ratio=position_ratio, save_ratio=save_ratio,
+                             leverage=leverage, stop_loss=stop_loss, take_profit=take_profit,
+                             long_enter_at=long_enter_at, long_close_at=long_close_at,
+                             short_enter_at=short_enter_at, short_close_at=short_close_at, **kwargs)
         prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
         slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, :5],
                                                    fastK_period=fastK_period,

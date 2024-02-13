@@ -85,7 +85,7 @@ class SpotBacktest(Env):
         # self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
 
     # Reset the state of the environment to an initial state
-    def reset(self, **kwargs):
+    def reset(self, offset=0, **kwargs):
         self.creation_t = time()
         self.done = False
         self.reward = 0
@@ -117,7 +117,7 @@ class SpotBacktest(Env):
         self.max_balance = self.min_balance = self.balance
         self.save_balance = 0.0
         if self.max_steps > 0:
-            self.start_step = randint(0, self.total_steps - self.max_steps)
+            self.start_step = randint(offset, self.total_steps - self.max_steps)
             self.end_step = self.start_step + self.max_steps - 1
         else:
             self.start_step = 0
@@ -402,7 +402,7 @@ class FuturesBacktest(SpotBacktest):
         # self.stop_loss /= self.leverage
         self.liquidations = 0
         self.liquidation_losses = 0
-        return super().reset()
+        return super().reset(**kwargs)
 
     def _check_tier(self):
         # print('_check_tier')
