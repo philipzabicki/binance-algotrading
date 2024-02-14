@@ -28,7 +28,7 @@ def save_results(filename, result):
             # print(f'writing row {_row}')
 
 
-def get_callback_plot(callback, fname, dpi=50):
+def get_callback_plot(callback, fname, dpi=75):
     plt.figure(figsize=(16, 9))
     plt.title("Convergence")
     # plt.ylabel('Reward (min/avg/max)')
@@ -39,7 +39,7 @@ def get_callback_plot(callback, fname, dpi=50):
     return plt
 
 
-def get_variables_plot(x_variables, problem, fname, save=True, dpi=50):
+def get_variables_plot(x_variables, problem, fname, save=True, dpi=75):
     sample_gen = x_variables[0]
     if not isinstance(sample_gen, dict):
         raise NotImplementedError("Currently supports only list of dict type populations")
@@ -47,7 +47,7 @@ def get_variables_plot(x_variables, problem, fname, save=True, dpi=50):
     pop_size = len(X_array)
     labels = [*sample_gen.keys()]
     bounds = array([problem.vars[name].bounds for name in labels]).T
-    plot = PCP(figsize=(16, 9), labels=labels, bounds=bounds, tight_layout=True)
+    plot = PCP(figsize=(21, 9), labels=labels, bounds=bounds, tight_layout=True)
     plot.set_axis_style(color="grey", alpha=1)
     plot.add(X_array, color="grey", alpha=0.3)
     plot.add(X_array[int(pop_size * .9) + 1:], linewidth=1.9, color='#a4f0ff')
