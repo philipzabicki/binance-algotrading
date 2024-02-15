@@ -491,7 +491,7 @@ class FuturesTaker:
 
     def _take_profit(self, q, price, side):
         try:
-            self.SL_order = self.client.new_order(symbol=self.symbol,
+            self.TP_order = self.client.new_order(symbol=self.symbol,
                                                   side=side,
                                                   type='TAKE_PROFIT_MARKET',
                                                   # quantity=q,
