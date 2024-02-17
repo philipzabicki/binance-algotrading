@@ -25,13 +25,13 @@ ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 START_DATE = '2020-01-01'
-PROBLEM = MACDSavingFuturesMixedVariableProblem
+PROBLEM = StochSavingFuturesMixedVariableProblem
 PROBLEM_N_EVALS = 25
 PROBLEM_METRIC = 'median'
 ALGORITHM = NSGA2
 TERMINATION = ("time", "12:00:00")
 # TERMINATION = ('n_gen', N_GEN)
-ENV_KWARGS = {'max_steps': 288,
+ENV_KWARGS = {'max_steps': 864,
               'init_balance': 50,
               'no_action_finish': inf,
               'fee': 0.0005,
