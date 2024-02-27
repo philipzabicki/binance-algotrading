@@ -96,8 +96,11 @@ def by_BinanceVision(ticker='BTCBUSD',
                      market_type='um',
                      data_type='klines',
                      start_date='',
+                     end_date='',
                      split=False,
                      delay=LAST_DATA_POINT_DELAY):
+    if end_date == "":
+        end_date = date.today()
     # print("saved_args is", locals())
     ### example url #1 https://data.binance.vision/data/spot/daily/klines/BTCTUSD/1m/BTCTUSD-1m-2023-08-09.zip
     ### example url #2 https://data.binance.vision/data/futures/um/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2023-08-09.zip
@@ -122,12 +125,12 @@ def by_BinanceVision(ticker='BTCBUSD',
         if (time() - last_timestamp) > delay:
             _start_date = pd.to_datetime(last_timestamp, unit='s').date()
             # print(f'start_date {start_date}')
-            end_date = date.today()
+            _end_date = date.today()
             data_frames = [df]
         else:
             if start_date != '':
                 # print(fixed_df.loc[fixed_df['Opened'] >= start_date])
-                df = df.loc[df['Opened'] >= start_date]
+                df = df.loc[(df['Opened'] >= start_date) & (df['Opened'] <= end_date)]
             if split:
                 return df.iloc[:, 0], df.iloc[:, 1:]
             else:
@@ -135,8 +138,8 @@ def by_BinanceVision(ticker='BTCBUSD',
     # TODO: Fix problem when for the first few days of new month Binance Vision does not have aggregate monthly zip.
     else:
         data_frames = _collect_to_date(url, output_folder, delta_itv='months')
-        end_date = date.today()
-        _start_date = date(end_date.year, end_date.month, 1)
+        _end_date = date.today()
+        _start_date = date(_end_date.year, _end_date.month, 1)
     url = url.replace('monthly', 'daily')
     data_frames += _collect_to_date(url, output_folder, start_date=_start_date, delta_itv='days')
     df = pd.concat(data_frames, ignore_index=True)
@@ -146,7 +149,7 @@ def by_BinanceVision(ticker='BTCBUSD',
     # print(fixed_df)
     if start_date != '':
         # print(fixed_df.loc[fixed_df['Opened'] >= start_date])
-        fixed_df = fixed_df.loc[fixed_df['Opened'] >= start_date]
+        fixed_df = fixed_df.loc[(fixed_df['Opened'] >= start_date) & (fixed_df['Opened'] <= end_date)]
     if split:
         return fixed_df.iloc[:, 0], fixed_df.iloc[:, 1:]
     else:

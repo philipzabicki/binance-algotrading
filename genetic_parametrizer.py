@@ -18,20 +18,21 @@ from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 1024
+POP_SIZE = 128
 N_GEN = 100
 TICKER = 'BTCUSDT'
 ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-START_DATE = '2020-01-01'
-PROBLEM = StochSavingFuturesMixedVariableProblem
-PROBLEM_N_EVALS = 25
-PROBLEM_METRIC = 'median'
+START_DATE = '2020-11-24'
+END_DATE = '2021-07-21'
+PROBLEM = MACDSavingFuturesMixedVariableProblem
+PROBLEM_N_EVALS = 1
+PROBLEM_METRIC = 'mean'
 ALGORITHM = NSGA2
-TERMINATION = ("time", "12:00:00")
-# TERMINATION = ('n_gen', N_GEN)
-ENV_KWARGS = {'max_steps': 864,
+TERMINATION = ("time", "00:45:00")
+#TERMINATION = ('n_gen', N_GEN)
+ENV_KWARGS = {#'max_steps': 2_016,
               'init_balance': 50,
               'no_action_finish': inf,
               'fee': 0.0005,
@@ -54,6 +55,7 @@ def main():
                              market_type=MARKET_TYPE,
                              data_type=DATA_TYPE,
                              start_date=START_DATE,
+                             end_date=END_DATE,
                              split=True,
                              delay=345_600)
     print(f'df used: {df}')
@@ -62,6 +64,7 @@ def main():
                                   market_type=MARKET_TYPE,
                                   data_type='markPriceKlines',
                                   start_date=START_DATE,
+                                  end_date=END_DATE,
                                   split=True,
                                   delay=345_600)
     print(f'df_mark used: {df_mark}')

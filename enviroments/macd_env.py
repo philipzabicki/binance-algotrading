@@ -67,6 +67,9 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
         if _max_period > self.total_steps:
             warn(
                 f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
+        else:
+            pass
+            #warn(f'First {_max_period} rows of df will be omitted as TA requires additional previous data for proper calculation.')
         _ret = super().reset(*args, offset=_max_period, position_ratio=position_ratio, save_ratio=save_ratio,
                              leverage=leverage, stop_loss=stop_loss, take_profit=take_profit,
                              long_enter_at=long_enter_at, long_close_at=long_close_at,

@@ -11,12 +11,13 @@ from enviroments import MACDOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
 
-CPU_CORES = cpu_count()
-N_TEST = 10_000
-N_STEPS = 8_640
-TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '5m', 'um', 'klines', '2020-01-01'
+#CPU_CORES = cpu_count()
+CPU_CORES = 1
+N_TEST = 1
+N_STEPS = 0
+TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE, END_DATE = 'BTCUSDT', '5m', 'um', 'klines', '2020-11-24', '2021-07-21'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.8829012227960467, 0.9477855764497398, 0.014775137919252074, 0.013036743886036095, 0.161648037358929, 0.39477503912803136, 0.4796578991091341, 0.62315290277979, 494, 7, 301, 15, 18, 22, 48]
+ACTION = [0.6749533199095961, 0.001412989211544308, 0.009982073792348287, 0.4621297732007819, 0.6718099676958855, 0.5741510175132574, 0.9200132016074777, 0.318170388934131, 454, 560, 977, 25, 10, 22, 68]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -30,7 +31,7 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               coin_step=0.001,
               # slipp_std=0,
               # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              verbose=False, visualize=False, write_to_file=False)
+              verbose=True, visualize=True, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)
@@ -56,6 +57,7 @@ if __name__ == "__main__":
                           market_type=MARKET_TYPE,
                           data_type=DATA_TYPE,
                           start_date=START_DATE,
+                          end_date=END_DATE,
                           split=False,
                           delay=345_600)
     _, df_mark = by_BinanceVision(ticker=TICKER,
@@ -63,19 +65,21 @@ if __name__ == "__main__":
                                   market_type=MARKET_TYPE,
                                   data_type='markPriceKlines',
                                   start_date=START_DATE,
+                                  end_date=END_DATE,
                                   split=True,
                                   delay=345_600)
-    additional_periods = N_STEPS + max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
+    _size = N_STEPS if N_STEPS > 0 else len(df)
+    additional_periods = _size + max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
                                        ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] * \
                          ADDITIONAL_DATA_BY_MA[ACTION[-2]]
     macd, signal = custom_MACD(df.iloc[-additional_periods:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5],
                                ACTION[-4], ACTION[-3],
                                ACTION[-2])
     signals = MACD_cross_signal(macd, signal)
-    df_plot = df.tail(N_STEPS).copy()
-    df_plot['MACD'] = macd[-N_STEPS:]
-    df_plot['signal'] = signal[-N_STEPS:]
-    df_plot['signals'] = signals[-N_STEPS:]
+    df_plot = df.tail(_size).copy()
+    df_plot['MACD'] = macd[-_size:]
+    df_plot['signal'] = signal[-_size:]
+    df_plot['signals'] = signals[-_size:]
     df_plot.index = pd.DatetimeIndex(df_plot['Opened'])
 
     fig = plt.figure(figsize=(16, 9))

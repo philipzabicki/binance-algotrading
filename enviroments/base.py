@@ -120,7 +120,7 @@ class SpotBacktest(Env):
             self.start_step = randint(offset, self.total_steps - self.max_steps)
             self.end_step = self.start_step + self.max_steps - 1
         else:
-            self.start_step = 0
+            self.start_step = offset
             self.end_step = self.total_steps - 1
         self.current_step = self.start_step
         self.obs = iter(self.df[self.start_step:self.end_step, self.exclude_cols_left:])

@@ -13,11 +13,11 @@ from utils.get_data import by_BinanceVision
 from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
 
 CPU_CORES = cpu_count()
-N_TEST = 10_000
-N_STEPS = 288
-TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '5m', 'um', 'klines', '2020-01-01'
+N_TEST = 8
+N_STEPS = 0
+TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE, END_DATE = 'BTCUSDT', '5m', 'um', 'klines', '2021-10-08', '2022-04-10'
 ENV = ChaikinOscillatorOptimizeSavingFuturesEnv
-ACTION = [0.1477896216992889, 0.5894053393009026, 0.008756753034056002, 0.43414056462836986, 78, 85, 15, 15, 24]
+ACTION = [0.8231006040235962, 0.22001841019670854, 0.0023501897100578315, 0.8371944928812233, 948, 847, 3, 26, 124]
 
 
 def sig_map(value):
@@ -41,7 +41,7 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               coin_step=0.001,
               # slipp_std=0,
               # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              verbose=False, visualize=False, write_to_file=True)
+              verbose=False, visualize=True, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)
@@ -61,6 +61,7 @@ if __name__ == "__main__":
                           market_type=MARKET_TYPE,
                           data_type=DATA_TYPE,
                           start_date=START_DATE,
+                          end_date=END_DATE,
                           split=False,
                           delay=345_600)
     _, df_mark = by_BinanceVision(ticker=TICKER,
@@ -68,9 +69,11 @@ if __name__ == "__main__":
                                   market_type=MARKET_TYPE,
                                   data_type='markPriceKlines',
                                   start_date=START_DATE,
+                                  end_date=END_DATE,
                                   split=True,
                                   delay=345_600)
-    additional_periods = N_STEPS + max(ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-3]],
+    _size = N_STEPS if N_STEPS>0 else len(df)
+    additional_periods = _size + max(ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-3]],
                                        ACTION[-4] * ADDITIONAL_DATA_BY_MA[ACTION[-2]])
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()
     # print(adl[:10])
@@ -79,12 +82,12 @@ if __name__ == "__main__":
         adl[-additional_periods:], ACTION[-2], ACTION[-4])
     chosc = fast_adl - slow_adl
     signals = ChaikinOscillator_signal(chosc)
-    df_plot = df.tail(N_STEPS).copy()
-    df_plot['ADL'] = adl[-N_STEPS:]
-    df_plot['fast_ADL'] = fast_adl[-N_STEPS:]
-    df_plot['slow_ADL'] = slow_adl[-N_STEPS:]
-    df_plot['ChaikinOscillator'] = chosc[-N_STEPS:]
-    df_plot['signals'] = signals[-N_STEPS:]
+    df_plot = df.tail(_size).copy()
+    df_plot['ADL'] = adl[-_size:]
+    df_plot['fast_ADL'] = fast_adl[-_size:]
+    df_plot['slow_ADL'] = slow_adl[-_size:]
+    df_plot['ChaikinOscillator'] = chosc[-_size:]
+    df_plot['signals'] = signals[-_size:]
     df_plot.index = pd.DatetimeIndex(df_plot['Opened'])
     # df = df.tail(250)
 
