@@ -24,13 +24,13 @@ TICKER = 'BTCUSDT'
 ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-START_DATE = '2020-11-24'
-END_DATE = '2021-07-21'
+START_DATE = '2021-03-05'
+END_DATE = '2021-05-04'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
 PROBLEM_N_EVALS = 1
 PROBLEM_METRIC = 'mean'
 ALGORITHM = NSGA2
-TERMINATION = ("time", "00:45:00")
+TERMINATION = ("time", "00:30:00")
 #TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {#'max_steps': 2_016,
               'init_balance': 50,

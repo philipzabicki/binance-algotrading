@@ -153,7 +153,7 @@ class TradingGraph:
             annotate_text = '$' + self.trades_arr[i, 1] if (self.trades_arr[i, 1] != '0.0') and (
                     self.trades_arr[i, 1] != '-0.0') else ''
             x_position = self.render_arr[i, 0]
-            if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i, 0] == 'close_short':
+            if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i, 0] == 'close_short' or self.trades_arr[i, 0] == 'take_profit_short':
                 high_low = self.render_arr[i, 3] - RANGE * 0.02
                 ycoords = self.render_arr[i, 3] - RANGE * 1.10
                 self.ax1.scatter(x_position, high_low, c='green', label='green', s=self.render_range * .55,
@@ -161,7 +161,7 @@ class TradingGraph:
                                  marker="^")
                 self.ax1.annotate(annotate_text, (x_position, high_low * 0.993), c='black', ha='center', va='center',
                                   size=self.render_range * .04)
-            elif self.trades_arr[i, 0] == 'open_short' or self.trades_arr[i, 0] == 'close_long':
+            elif self.trades_arr[i, 0] == 'open_short' or self.trades_arr[i, 0] == 'close_long' or self.trades_arr[i, 0] == 'take_profit_long':
                 high_low = self.render_arr[i, 2] + RANGE * 0.02
                 ycoords = self.render_arr[i, 2] + RANGE * 1.10
                 self.ax1.scatter(x_position, high_low, c='red', label='red', s=self.render_range * .5,

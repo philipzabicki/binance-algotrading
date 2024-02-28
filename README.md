@@ -50,7 +50,9 @@ Then inside binance-algotrading directory run:
 pip install -r requirements.txt
 ```
 
-It may take some time...
+It is important that you download my patch for finta package (included in requirements.txt)
+as It needed a small adjustment to work with python 3.11.4
+
 
 ## Getting data
 
@@ -75,6 +77,7 @@ def by_BinanceVision(ticker='BTCBUSD',
                      market_type='um',
                      data_type='klines',
                      start_date='',
+                     end_date='',
                      split=False,
                      delay=LAST_DATA_POINT_DELAY): ...
 ```
@@ -91,6 +94,7 @@ klines', 'trades'. Better explained
 with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
 start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just '
 YYYY-MM-DD'.
+end_date | STR | NO | Same as above.
 split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (
 Opened_col, OHLCV_cols). Otherwise, returns single df.
 delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by

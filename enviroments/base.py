@@ -41,9 +41,10 @@ class SpotBacktest(Env):
             print(f' Visualize is set to false or there was no dates df provided.')
         if write_to_file:
             self.write_to_file = True
-            self.filename = f'{REPORT_DIR}/envs/{self.__class__.__name__}_{str(dt.today()).replace(":", "-")[:-7]}.csv'
-            with open(self.filename, 'w') as f:
-                header = ['trade_id', 'trade_type', 'position_size', 'quantity', 'balance', 'profit', 'fee']
+            self.filename = f'{REPORT_DIR}/envs/{self.__class__.__name__}_{str(dt.today()).replace(":", "-")[:-3]}.csv'
+            with open(self.filename, 'w', newline='') as f:
+                header = ['trade_id', 'trade_type', 'position_size', 'quantity', 'balance', 'save_balance',
+                          'profit', 'fees', 'sl_losses']
                 writer(f).writerow(header)
             self.to_file = []
         else:
@@ -92,11 +93,12 @@ class SpotBacktest(Env):
         if self.visualize:
             self.visualization = TradingGraph(self.render_range, self.time_step)
         if self.write_to_file:
-            self.to_file = []
+            self.filename = f'{REPORT_DIR}/envs/{self.__class__.__name__}_{str(dt.today()).replace(":", "-")[:-3]}.csv'
             with open(self.filename, 'w', newline='') as f:
-                header = ['trade_id', 'trade_type', 'position_size', 'quantity', 'balance', 'profit', 'fees',
-                          'sl_losses']
+                header = ['trade_id', 'trade_type', 'position_size', 'quantity', 'balance', 'save_balance',
+                          'profit', 'fees', 'sl_losses']
                 writer(f).writerow(header)
+            self.to_file = []
         self.last_order_type = ''
         self.info = {}
         self.PLs_and_ratios = []
@@ -370,7 +372,7 @@ class SpotBacktest(Env):
 
     def _write_to_file(self):
         _row = [self.episode_orders, self.last_order_type, round(self.position_size, 2),
-                round(self.qty, 8), round(self.balance, 2), round(self.absolute_profit, 2),
+                round(self.qty, 8), round(self.balance, 2), round(self.save_balance, 2), round(self.absolute_profit, 2),
                 round(self.cumulative_fees, 2), round(self.SL_losses, 2)]
         self.to_file.append(_row)
 
@@ -532,9 +534,9 @@ class FuturesBacktest(SpotBacktest):
             adj_price = price * self.take_profit_factor
             # TODO: add new order type for visualizations
             if self.qty > 0:
-                self.last_order_type = 'close_long'
+                self.last_order_type = 'take_profit_long'
             elif self.qty < 0:
-                self.last_order_type = 'close_short'
+                self.last_order_type = 'take_profit_short'
         else:
             if self.qty > 0:
                 adj_price = price * self.sell_factor
