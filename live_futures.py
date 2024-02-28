@@ -9,8 +9,8 @@ INTERVAL = '5m'
 trade_balance = 50.0
 
 # MACD settings:
-position_ratio, save_ratio, stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.8641472502741673, 0.18246931785335785, 0.0032817173291461053, 0.10627951004535877, 0.17531508971483337, 0.009893658883165582, 0.5694015164247722, 0.8584291861834585
-fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 288, 420, 185, 37, 26, 3, 125
+position_ratio, save_ratio, stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.6486763457370982, 4.219256414252471e-08, 0.010373842761898996, 0.18079570002241904, 0.9945924047916869, 0.6860809420987642, 0.974096321156709, 0.7495325426430074
+fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 331, 435, 477, 23, 9, 18, 47
 SETTINGS = {"trade_balance": trade_balance,
             "position_ratio": position_ratio,
             "save_ratio": save_ratio,
