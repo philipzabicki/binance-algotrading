@@ -18,7 +18,7 @@ class MACDRSIMixedVariableProblem(ElementwiseProblem):
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 26)),
+                          "signal_ma_type": Integer(bounds=(0, 25)),
                           "rsi_period": Integer(bounds=(2, 100))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
@@ -51,7 +51,7 @@ class MACDRSIFuturesMixedVariableProblem(ElementwiseProblem):
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 26)),
+                          "signal_ma_type": Integer(bounds=(0, 25)),
                           "rsi_period": Integer(bounds=(2, 100)),
                           "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)

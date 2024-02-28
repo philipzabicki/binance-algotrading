@@ -21,8 +21,8 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
-                          "slowK_ma_type": Integer(bounds=(0, 26)),
-                          "slowD_ma_type": Integer(bounds=(0, 26))}
+                          "slowK_ma_type": Integer(bounds=(0, 25)),
+                          "slowD_ma_type": Integer(bounds=(0, 25))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -56,8 +56,8 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
-                          "slowK_ma_type": Integer(bounds=(0, 26)),
-                          "slowD_ma_type": Integer(bounds=(0, 26)),
+                          "slowK_ma_type": Integer(bounds=(0, 25)),
+                          "slowD_ma_type": Integer(bounds=(0, 25)),
                           "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
@@ -94,8 +94,8 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
-                          "slowK_ma_type": Integer(bounds=(0, 26)),
-                          "slowD_ma_type": Integer(bounds=(0, 26))}
+                          "slowK_ma_type": Integer(bounds=(0, 25)),
+                          "slowD_ma_type": Integer(bounds=(0, 25))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -130,8 +130,8 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
-                          "slowK_ma_type": Integer(bounds=(0, 26)),
-                          "slowD_ma_type": Integer(bounds=(0, 26)),
+                          "slowK_ma_type": Integer(bounds=(0, 25)),
+                          "slowD_ma_type": Integer(bounds=(0, 25)),
                           "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 

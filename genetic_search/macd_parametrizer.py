@@ -21,7 +21,7 @@ class MACDSpotMixedVariableProblem(ElementwiseProblem):
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 26))}
+                          "signal_ma_type": Integer(bounds=(0, 25))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -53,7 +53,7 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 26)),
+                          "signal_ma_type": Integer(bounds=(0, 25)),
                           "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
@@ -89,7 +89,7 @@ class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 26))}
+                          "signal_ma_type": Integer(bounds=(0, 25))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -123,7 +123,7 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
                           "signal_period": Integer(bounds=(2, 500)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 26)),
+                          "signal_ma_type": Integer(bounds=(0, 25)),
                           "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 

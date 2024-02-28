@@ -776,7 +776,7 @@ def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 
     return np.concatenate((np.zeros(timeperiod - 1), alma))
 
 
-@jit(nopython=True, nogil=True, cache=True)
+#@jit(nopython=True, nogil=True, cache=True)
 def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     close = np.absolute(close)
     gma = np.zeros_like(close)
@@ -1158,7 +1158,7 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
             16: Arnaud Legoux Moving Average (ALMA)
             17: Hamming Moving Average (HammingMA)
             18: Linear Weighted Moving Average (LWMA)
-            19: Geometric Moving Average (GMA)
+            #19: Geometric Moving Average (GMA)
             20: Fractal Adaptive Moving Average (FBA)
             21-26: Nadaray-Watson Moving Average with various kernels (0-5)
         - ma_period (int): Number of periods to consider for the Moving Average.
@@ -1185,15 +1185,15 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 16: lambda c, p: ALMA(c, timeperiod=p),
                 17: lambda c, p: HammingMA(c, p),
                 18: lambda c, p: LWMA(c, p),
-                19: lambda c, p: GMA(c, p),
-                20: lambda c, p: FBA(c, p),
+                #19: lambda c, p: GMA(c, p),
+                19: lambda c, p: FBA(c, p),
                 # 21: lambda c, p: FWMA(c, p),
-                21: lambda c, p: NadarayWatsonMA(c, p, kernel=0),
-                22: lambda c, p: NadarayWatsonMA(c, p, kernel=1),
-                23: lambda c, p: NadarayWatsonMA(c, p, kernel=2),
-                24: lambda c, p: NadarayWatsonMA(c, p, kernel=3),
-                25: lambda c, p: NadarayWatsonMA(c, p, kernel=4),
-                26: lambda c, p: NadarayWatsonMA(c, p, kernel=5)}
+                20: lambda c, p: NadarayWatsonMA(c, p, kernel=0),
+                21: lambda c, p: NadarayWatsonMA(c, p, kernel=1),
+                22: lambda c, p: NadarayWatsonMA(c, p, kernel=2),
+                23: lambda c, p: NadarayWatsonMA(c, p, kernel=3),
+                24: lambda c, p: NadarayWatsonMA(c, p, kernel=4),
+                25: lambda c, p: NadarayWatsonMA(c, p, kernel=5)}
     # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
     return np.nan_to_num(ma_types[ma_type](close.astype(np.float64), ma_period))

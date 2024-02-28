@@ -16,8 +16,8 @@ class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):
                              "take_profit": Real(bounds=(0.0001, 1.0000)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
-                             "fast_ma_type": Integer(bounds=(0, 26)),
-                             "slow_ma_type": Integer(bounds=(0, 26))}
+                             "fast_ma_type": Integer(bounds=(0, 25)),
+                             "slow_ma_type": Integer(bounds=(0, 25))}
         super().__init__(vars=chaikin_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -42,8 +42,8 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
                              "take_profit": Real(bounds=(0.0001, 1.0000)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
-                             "fast_ma_type": Integer(bounds=(0, 26)),
-                             "slow_ma_type": Integer(bounds=(0, 26)),
+                             "fast_ma_type": Integer(bounds=(0, 25)),
+                             "slow_ma_type": Integer(bounds=(0, 25)),
                              "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=chaikin_variables, n_obj=1, **kwargs)
 
@@ -72,8 +72,8 @@ class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
                              "take_profit": Real(bounds=(0.0001, 1.0000)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
-                             "fast_ma_type": Integer(bounds=(0, 26)),
-                             "slow_ma_type": Integer(bounds=(0, 26))}
+                             "fast_ma_type": Integer(bounds=(0, 25)),
+                             "slow_ma_type": Integer(bounds=(0, 25))}
         super().__init__(vars=chaikin_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -99,8 +99,8 @@ class ChaikinOscillatorSavingFuturesMixedVariableProblem(ElementwiseProblem):
                              "take_profit": Real(bounds=(0.0001, 1.0000)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
-                             "fast_ma_type": Integer(bounds=(0, 26)),
-                             "slow_ma_type": Integer(bounds=(0, 26)),
+                             "fast_ma_type": Integer(bounds=(0, 25)),
+                             "slow_ma_type": Integer(bounds=(0, 25)),
                              "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=chaikin_variables, n_obj=1, **kwargs)
 

@@ -115,7 +115,7 @@ class StochOptimizeSpotEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.0001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0]
-        action_upper = [0.0500, 1.0000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 26, 26]
+        action_upper = [0.0500, 1.0000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 25, 25]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -144,7 +144,7 @@ class StochOptimizeFuturesEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0, 1]
-        action_upper = [1.00, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 26, 26, 125]
+        action_upper = [1.00, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 25, 25, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -184,7 +184,7 @@ class StochOptimizeSavingSpotEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.000, 0.0001, 0.0001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0]
-        action_upper = [1.000, 0.0500, 1.0000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 26, 26]
+        action_upper = [1.000, 0.0500, 1.0000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 25, 25]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
@@ -216,8 +216,8 @@ class StochOptimizeSavingFuturesEnv(Env):
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
         ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.000, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0, 1]
-        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 26,
-                        26, 125]
+        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 25,
+                        25, 125]
         #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
