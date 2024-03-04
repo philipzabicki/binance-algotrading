@@ -29,7 +29,7 @@ class MACDSignalsBot(object):
         self.signals = MACD_cross_signal(self.macd[-3:], self.signal_line[-3:])
         self.signal = self.signals[-1]
         print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} trade_signals:{self.signals}')
+        print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} trade_signals:{self.signals[1:]}')
 
 
 class BandsSignalsBot(object):
@@ -51,7 +51,7 @@ class BandsSignalsBot(object):
         self.signals = anyMA_sig(asarray(self.OHLCV_data)[-3:, 3], self.ma[-3:], self.atr[-3:], self.atr_multi)
         self.signal = self.signals[-1]
         print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    MA:{self.ma[-3:]} ATR:{self.atr[-3:]} trade_signals:{self.signals}')
+        print(f'    MA:{self.ma[-3:]} ATR:{self.atr[-3:]} trade_signals:{self.signals[1:]}')
 
 
 class ChaikinOscillatorSignalsBot(object):
@@ -73,7 +73,7 @@ class ChaikinOscillatorSignalsBot(object):
         self.signals = ChaikinOscillator_signal(self.chaikin_oscillator[-3:])
         self.signal = self.signals[-1]
         print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    ChaikinOscillator:{self.chaikin_oscillator[-3:]} trade_signals:{self.signals}')
+        print(f'    ChaikinOscillator:{self.chaikin_oscillator[-3:]} trade_signals:{self.signals[1:]}')
 
 
 class MACDRSISignalsBot(object):
@@ -125,7 +125,7 @@ class StochasticOscillatorSignalsBot(object):
                                                    slowD[-3:],
                                                    oversold_threshold=self.oversold_threshold,
                                                    overbought_threshold=self.overbought_threshold)
-        # self.signal = self.signals[-1]
-        self.signal = 0
+        self.signal = self.signals[-1]
+        # self.signal = 0
         print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    slowK:{slowK[-3:]} slowD:{slowD[-3:]} trade_signals:{self.signals}')
+        print(f'    slowK:{slowK[-3:]} slowD:{slowD[-3:]} trade_signals:{self.signals[1:]}')

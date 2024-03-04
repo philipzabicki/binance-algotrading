@@ -386,15 +386,15 @@ class FuturesTaker:
         self.analyze_t = time()
         self._check_signal()
         if self.in_long_position and (self.signal <= -self.long_close_at):
-            self._cancel_all_orders()
             if self._market_sell(self.q):
                 self.in_long_position = False
+                self._cancel_all_orders()
                 self._report_slipp(self.sell_order, self.close, 'sell')
                 self._update_balances()
         elif self.in_short_position and (self.signal >= self.short_close_at):
-            self._cancel_all_orders()
             if self._market_buy(self.q):
                 self.in_short_position = False
+                self._cancel_all_orders()
                 self._report_slipp(self.buy_order, self.close, 'buy')
                 self._update_balances()
         elif (not self.in_long_position) and (not self.in_short_position):
@@ -427,13 +427,22 @@ class FuturesTaker:
 
     def _report_slipp(self, order, req_price, order_type):
         _order = self.client.query_order(symbol=self.symbol, orderId=order['orderId'])
-        file = self.buy_slipp_file
+        retry = 0
+        while _order['status'] != 'FILLED':
+            _order = self.client.query_order(symbol=self.symbol, orderId=order['orderId'])
+            retry += 1
+            if retry > 10:
+                print(f'DEBUG Order was not filled after {retry} tries at _report_slipp() {_order}')
+                break
         if order_type == 'buy':
             file = self.buy_slipp_file
         elif order_type == 'sell':
             file = self.sell_slipp_file
         elif (order_type == 'stoploss') or (order_type == 'unfilled_stop'):
             file = self.stoploss_slipp_file
+        else:
+            print(f'DEBUG order type= {order_type} not handled at _report_slipp')
+            return
         _slipp = float(_order['avgPrice']) / req_price
         with open(file, 'a', newline='') as file:
             writer(file).writerow([_slipp])

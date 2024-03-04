@@ -18,20 +18,20 @@ from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 128
-N_GEN = 100
+POP_SIZE = 1024
+N_GEN = 175
 TICKER = 'BTCUSDT'
 ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-START_DATE = '2021-03-05'
-END_DATE = '2021-06-03'
+START_DATE = '2021-08-30'
+END_DATE = '2021-10-18'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
 PROBLEM_N_EVALS = 1
 PROBLEM_METRIC = 'mean'
 ALGORITHM = NSGA2
-TERMINATION = ("time", "00:30:00")
-#TERMINATION = ('n_gen', N_GEN)
+#TERMINATION = ("time", "02:00:00")
+TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {#'max_steps': 2_016,
               'init_balance': 50,
               'no_action_finish': inf,
@@ -112,7 +112,7 @@ def main():
     else:
         print('Pareto front:')
         for front, var in zip(res.F, res.X):
-            print(f"front=", front, "variables=", var)
+            print(f"front=", front, "variables=", list(var.values()))
 
     plt1 = get_callback_plot(res.algorithm.callback, filename)
     plt2 = get_variables_plot(res.pop.get("X"), problem, filename)
