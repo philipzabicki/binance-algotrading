@@ -28,6 +28,8 @@ if __name__ == "__main__":
 
     full_df['ADL'] = AD(full_df['High'], full_df['Low'], full_df['Close'], full_df['Volume'])
     full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])
+    full_df['ADL'].ffill(inplace=True)
+    full_df['OBV'].ffill(inplace=True)
     #full_df['AVGPRICE'] = AVGPRICE(full_df['Open'], full_df['High'], full_df['Low'], full_df['Close'])
     #full_df['AVGPRICE_standard'] = (full_df['AVGPRICE'] - np.mean(full_df['AVGPRICE'])) / np.std(full_df['AVGPRICE'])
 
@@ -60,7 +62,7 @@ if __name__ == "__main__":
 
         results = coint(last_month['ADL'], rnd_df['ADL'])
         print(f'Test on random period #{i}: {results}')
-        if results[1] < 0.07:
+        if results[1] < 0.1:
             print(rnd_df['ADL'])
             print(last_month['ADL'])
             print(f'start_date: {rnd_df.iloc[0, 0]} end_date: {rnd_df.iloc[-1, 0]}')

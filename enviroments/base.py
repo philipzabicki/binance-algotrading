@@ -1,7 +1,7 @@
 # from random import normalvariate
 from csv import writer
 from datetime import datetime as dt
-from math import copysign, floor
+from math import copysign, floor, sqrt
 from random import randint
 from time import time, sleep
 
@@ -276,7 +276,7 @@ class SpotBacktest(Env):
         gain = self.balance - self.init_balance
         total_return = (self.balance / self.init_balance) - 1
         risk_free_return = (self.df[self.end_step, 3] / self.df[self.start_step, 3]) - 1
-        above_free = (total_return - risk_free_return) * 100
+        above_free = (total_return - risk_free_return)
         # if hasattr(self, 'leverage'):
         # above_free /= self.leverage
         hold_ratio = self.profit_hold_counter / self.loss_hold_counter if self.loss_hold_counter > 1 and self.profit_hold_counter > 1 else 1.0
@@ -295,10 +295,15 @@ class SpotBacktest(Env):
             in_gain_indicator = self.with_gain_c / (
                     steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
             if above_free > 0:
-                self.reward = ((above_free ** 3) / (10 ** 6) * self.episode_orders * PnL_trades_ratio * (
+                if hasattr(self, 'leverage'):
+                    above_free_factor = above_free/self.leverage
+                    # above_free_factor = above_free/sqrt(self.leverage)
+                else:
+                    above_free_factor = above_free
+                self.reward = (above_free_factor * self.episode_orders * PnL_trades_ratio * (
                         hold_ratio ** (1 / 3)) * (PnL_means_ratio ** (1 / 3)) * in_gain_indicator) / steps
             else:
-                self.reward = ((above_free ** 3) / (10 ** 6) * self.episode_orders * 1 / PnL_trades_ratio * 1 / (
+                self.reward = (above_free * self.episode_orders * 1 / PnL_trades_ratio * 1 / (
                         hold_ratio ** (1 / 3)) * 1 / (PnL_means_ratio ** (1 / 3)) * 1 / in_gain_indicator) / steps
             # self.reward = total_return*100
         else:
@@ -338,7 +343,7 @@ class SpotBacktest(Env):
             print(
                 f' slope_indicator:{slope_indicator:.4f}, in_gain_indicator:{in_gain_indicator:.3f}, sharpe_ratio:{sharpe_ratio:.2f}, sortino_ratio:{sortino_ratio:.2f},',
                 end='')
-            print(f' risk_free:{risk_free_return * 100:.2f}%, above_free:{above_free:.2f}%,')
+            print(f' risk_free:{risk_free_return * 100:.2f}%, above_free:{above_free*100:.2f}%,')
             print(f' reward:{self.reward:.8f} exec_time:{exec_time:.2f}s')
         if self.write_to_file:
             with open(self.filename, 'a', newline='') as f:
