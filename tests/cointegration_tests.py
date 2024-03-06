@@ -15,7 +15,7 @@ ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 N_RND_SERIES = 100_000
-N_LAST_INTERVALS = 23_040 # 80 days
+N_LAST_INTERVALS = 20_160 # 80 days
 
 if __name__ == "__main__":
     full_df = by_BinanceVision(ticker=TICKER,
@@ -34,8 +34,10 @@ if __name__ == "__main__":
     # full_df['MFM'] = ((full_df['Close'] - full_df['Low']) - (full_df['High'] - full_df['Close'])) / (
     #             full_df['High'] - full_df['Low'])
     # full_df['MFV'] = full_df['MFM'] * full_df['Volume']
-    full_df['ADL'].fillna(method='ffill', inplace=True)
-    full_df['OBV'].fillna(method='ffill', inplace=True)
+    plt.plot(full_df['ADL'].to_numpy())
+    plt.show()
+    #full_df['ADL'].fillna(method='ffill', inplace=True)
+    #full_df['OBV'].fillna(method='ffill', inplace=True)
 
     last_month = full_df.tail(N_LAST_INTERVALS)
     #last_month.loc[:, 'ADL'] = AD(last_month['High'], last_month['Low'], last_month['Close'], last_month['Volume'])
@@ -56,15 +58,15 @@ if __name__ == "__main__":
         #     plt.plot(rnd_df['MFV'].to_numpy())
         #     plt.show()
 
-        results = coint(last_month['OBV'], rnd_df['OBV'])
+        results = coint(last_month['ADL'], rnd_df['ADL'])
         print(f'Test on random period #{i}: {results}')
         if results[1] < 0.07:
-            print(rnd_df['OBV'])
-            print(last_month['OBV'])
+            print(rnd_df['ADL'])
+            print(last_month['ADL'])
             print(f'start_date: {rnd_df.iloc[0, 0]} end_date: {rnd_df.iloc[-1, 0]}')
             scaler = MinMaxScaler()
-            last_month.loc[:, 'OBV'] = scaler.fit_transform(last_month[['OBV']])
-            rnd_df.loc[:, 'OBV'] = scaler.fit_transform(rnd_df[['OBV']])
-            plt.plot(last_month['OBV'].to_numpy())
-            plt.plot(rnd_df['OBV'].to_numpy())
+            last_month.loc[:, 'ADL'] = scaler.fit_transform(last_month[['ADL']])
+            rnd_df.loc[:, 'ADL'] = scaler.fit_transform(rnd_df[['ADL']])
+            plt.plot(last_month['ADL'].to_numpy())
+            plt.plot(rnd_df['ADL'].to_numpy())
             plt.show()
