@@ -1,4 +1,4 @@
-# binance-algotrading
+# binance-algotrading [README in progress...]
 
 This repository is a collection of personal tools designed for strategy analysis and algorithmic trading on the Binance
 exchange.
