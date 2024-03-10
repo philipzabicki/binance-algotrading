@@ -20,7 +20,8 @@ class _BandsExecuteSpotEnv(SignalExecuteSpotEnv):
         self.atr_period = atr_period
         self.atr_multi = atr_multi
         _max_period = max(self.ma_period * ADDITIONAL_DATA_BY_OHLCV_MA[ma_type], self.atr_period)
-        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
+        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit,
+                             save_ratio=save_ratio,
                              enter_at=enter_at, close_at=close_at, **kwargs)
         # Calculate only the data length necessary, with additional length caused by indicator periods
         if self.start_step > _max_period:

@@ -1,8 +1,9 @@
+from warnings import warn
+
 import numpy as np
 from gym import spaces
-#from gymnasium import spaces
+# from gymnasium import spaces
 from numpy import array, inf
-from warnings import warn
 
 from .base import SpotBacktest, FuturesBacktest
 
@@ -15,7 +16,8 @@ class SpotRL(SpotBacktest):
         other_obs_count = 10
         # As default, don't use ohlcv values from dataframe as features/obs space
         if self.exclude_cols_left < 5:
-            warn(f'ohlcv values are not excluded from features/observation space (exclude_cols_left={self.exclude_cols_left})')
+            warn(
+                f'ohlcv values are not excluded from features/observation space (exclude_cols_left={self.exclude_cols_left})')
         obs_space_dims = len(self.df[0, self.exclude_cols_left:]) + other_obs_count
         obs_lower_bounds = array([-inf for _ in range(obs_space_dims)])
         obs_upper_bounds = array([inf for _ in range(obs_space_dims)])
@@ -31,7 +33,7 @@ class SpotRL(SpotBacktest):
                       self.profit_hold_counter, self.loss_hold_counter]
         if np.isnan(trade_data).any():
             raise ValueError(f"NaNs in trade_data {trade_data}")
-        #return np.hstack((first_obs, trade_data)), self.info
+        # return np.hstack((first_obs, trade_data)), self.info
         return np.hstack((first_obs, trade_data))
 
     # Get the data points for the given current_step
@@ -73,7 +75,7 @@ class SpotRL(SpotBacktest):
 
     def step(self, action):
         obs, _, _, _, _ = super().step(action)
-        #return obs, self._calculate_reward(), self.done, False, self.info
+        # return obs, self._calculate_reward(), self.done, False, self.info
         return obs, self._calculate_reward(), self.done, self.info
 
     def render(self, visualize=False, *args, **kwargs):
@@ -87,7 +89,8 @@ class FuturesRL(FuturesBacktest):
         # other_obs_count are observations like current PnL, account balance, asset quantity etc. #
         other_obs_count = 11
         if self.exclude_cols_left < 5:
-            warn(f'ohlcv values are not excluded from features/observation space (exclude_cols_left={self.exclude_cols_left})')
+            warn(
+                f'ohlcv values are not excluded from features/observation space (exclude_cols_left={self.exclude_cols_left})')
         obs_space_dims = len(self.df[0, self.exclude_cols_left:]) + other_obs_count
         obs_lower_bounds = array([-inf for _ in range(obs_space_dims)])
         obs_upper_bounds = array([inf for _ in range(obs_space_dims)])
@@ -103,7 +106,7 @@ class FuturesRL(FuturesBacktest):
                       self.profit_hold_counter, self.loss_hold_counter]
         if np.isnan(trade_data).any():
             raise ValueError(f"NaNs in trade_data {trade_data}")
-        #return np.hstack((first_obs, trade_data)), self.info
+        # return np.hstack((first_obs, trade_data)), self.info
         return np.hstack((first_obs, trade_data))
 
     # Get the data points for the given current_step
@@ -137,7 +140,7 @@ class FuturesRL(FuturesBacktest):
             self.position_closed = 0
         # In Position #
         elif self.in_position:
-            #self.reward = self.pnl
+            # self.reward = self.pnl
             self.reward = 0
         else:
             self.reward = 0

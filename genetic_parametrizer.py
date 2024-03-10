@@ -11,9 +11,6 @@ from pymoo.optimize import minimize
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     MinAvgMaxNonzeroSingleObjCallback
 from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
-from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
-from genetic_search.chaikinosc_parametrizer import ChaikinOscillatorSavingFuturesMixedVariableProblem
-from genetic_search.bands_parametrizer import BandsSavingFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
@@ -33,7 +30,7 @@ PROBLEM = MACDSavingFuturesMixedVariableProblem
 PROBLEM_N_EVALS = 3
 PROBLEM_METRIC = 'median'
 ALGORITHM = NSGA2
-#TERMINATION = ("time", "09:00:00")
+# TERMINATION = ("time", "09:00:00")
 TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 2_016,
               'start_date': TRADE_START_DATE,

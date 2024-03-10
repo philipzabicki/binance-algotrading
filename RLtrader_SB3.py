@@ -1,17 +1,13 @@
-from matplotlib import pyplot as plt
-
 from datetime import datetime as dt
-from definitions import TENSORBOARD_DIR, MODELS_DIR
-from utils.get_data import by_BinanceVision
-from utils.ta_tools import simple_rl_features, simple_rl_features_periods
-
-from enviroments.rl_env import SpotRL, FuturesRL
 
 from stable_baselines3 import DQN
-# from time import sleep
-import torch as th
 
-from stable_baselines3.common.env_checker import check_env
+from definitions import TENSORBOARD_DIR, MODELS_DIR
+from enviroments.rl_env import FuturesRL
+from utils.get_data import by_BinanceVision
+from utils.ta_tools import simple_rl_features_periods
+
+# from time import sleep
 
 # from sklearn.preprocessing import StandardScaler
 # from stable_baselines3.common.env_util import make_vec_env
@@ -83,17 +79,17 @@ if __name__ == "__main__":
     model = DQN.load(model_full_path)
 
     test_env = FuturesRL(df=df.iloc[:, 1:],
-                          df_mark=df_mark,
-                          dates_df=df['Opened'],
-                          max_steps=10_800,
-                          exclude_cols_left=5,
-                          init_balance=1_000,
-                          leverage=33,
-                          fee=0.0005,
-                          coin_step=0.001,
-                          # slippage=get_market_slips_stats(),
-                          render_range=120,
-                          visualize=True, verbose=True)
+                         df_mark=df_mark,
+                         dates_df=df['Opened'],
+                         max_steps=10_800,
+                         exclude_cols_left=5,
+                         init_balance=1_000,
+                         leverage=33,
+                         fee=0.0005,
+                         coin_step=0.001,
+                         # slippage=get_market_slips_stats(),
+                         render_range=120,
+                         visualize=True, verbose=True)
     obs = test_env.reset()
     terminated = False
     while not terminated:

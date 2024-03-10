@@ -25,13 +25,15 @@ class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         _max_period = max(self.fast_period * ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type],
                           self.slow_period * ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period * \
                       ADDITIONAL_DATA_BY_MA[signal_ma_type]
-        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
+        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit,
+                             save_ratio=save_ratio,
                              enter_at=enter_at, close_at=close_at, **kwargs)
         if self.start_step > _max_period:
             prev_values = self.start_step - _max_period
         else:
             prev_values = 0
-            warn(f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
         macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, 1:6],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
                                         slow_ma_type=slow_ma_type, slow_period=slow_period,
@@ -71,7 +73,7 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
                              short_enter_at=short_enter_at, short_close_at=short_close_at, **kwargs)
         if self.start_step > _max_period:
             prev_values = self.start_step - _max_period
-            #warn(f'Previous data required ({_max_period} vs start step {self.start_step})')
+            # warn(f'Previous data required ({_max_period} vs start step {self.start_step})')
         else:
             prev_values = 0
             warn(
@@ -82,7 +84,7 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
                                         signal_ma_type=signal_ma_type, signal_period=signal_period)
         self.signals = MACD_cross_signal(macd[self.start_step - prev_values:],
                                          macd_signal[self.start_step - prev_values:])
-        #print(f'start_step={self.start_step} len(signals)={len(self.signals)} len(df)={len(self.df)}')
+        # print(f'start_step={self.start_step} len(signals)={len(self.signals)} len(df)={len(self.df)}')
         return _ret
 
     def _finish_episode(self):

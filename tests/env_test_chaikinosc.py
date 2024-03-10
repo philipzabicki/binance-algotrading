@@ -72,9 +72,9 @@ if __name__ == "__main__":
                                   end_date=END_DATE,
                                   split=True,
                                   delay=345_600)
-    _size = N_STEPS if N_STEPS>0 else len(df)
+    _size = N_STEPS if N_STEPS > 0 else len(df)
     additional_periods = _size + max(ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-3]],
-                                       ACTION[-4] * ADDITIONAL_DATA_BY_MA[ACTION[-2]])
+                                     ACTION[-4] * ADDITIONAL_DATA_BY_MA[ACTION[-2]])
     adl = AD(df['High'], df['Low'], df['Close'], df['Volume']).to_numpy()
     # print(adl[:10])
     # sleep(100)

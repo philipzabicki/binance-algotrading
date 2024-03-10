@@ -12,14 +12,15 @@ from utils.get_data import by_BinanceVision
 from utils.ta_tools import custom_MACD, MACD_cross_signal
 
 CPU_CORES = cpu_count()
-#CPU_CORES = 1
+# CPU_CORES = 1
 N_TEST = 1000
 N_STEPS = 2_016
 TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
 DF_START_DATE, DF_END_DATE = '2021-05-19', '2021-11-20'
 TRADE_START_DATE, TRADE_END_DATE = '2021-10-19', '2021-11-19'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.956102954554925, 0.028139444186095375, 0.014595085611697763, 0.011060956420526838, 0.1310379906271963, 0.06914410566543472, 0.05767957974761363, 0.7124620179520392, 567, 755, 516, 10, 14, 22, 27]
+ACTION = [0.956102954554925, 0.028139444186095375, 0.014595085611697763, 0.011060956420526838, 0.1310379906271963,
+          0.06914410566543472, 0.05767957974761363, 0.7124620179520392, 567, 755, 516, 10, 14, 22, 27]
 
 
 def parallel_test(pool_nb, df, df_mark=None):
@@ -64,17 +65,18 @@ if __name__ == "__main__":
                           split=False,
                           delay=345_600)
     df_mark = by_BinanceVision(ticker=TICKER,
-                                  interval=ITV,
-                                  market_type=MARKET_TYPE,
-                                  data_type='markPriceKlines',
-                                  start_date=DF_START_DATE,
-                                  end_date=DF_END_DATE,
-                                  split=False,
-                                  delay=345_600)
+                               interval=ITV,
+                               market_type=MARKET_TYPE,
+                               data_type='markPriceKlines',
+                               start_date=DF_START_DATE,
+                               end_date=DF_END_DATE,
+                               split=False,
+                               delay=345_600)
     if N_STEPS > 0:
         _size = N_STEPS
-        additional_periods = _size + 1*(max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
-                                           ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] * ADDITIONAL_DATA_BY_MA[ACTION[-2]])
+        additional_periods = _size + 1 * (max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
+                                              ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] *
+                                          ADDITIONAL_DATA_BY_MA[ACTION[-2]])
         print(f'additional_periods={additional_periods}')
         macd, signal = custom_MACD(df.iloc[-additional_periods:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5],
                                    ACTION[-4], ACTION[-3],
@@ -87,13 +89,14 @@ if __name__ == "__main__":
         df_plot.index = pd.DatetimeIndex(df_plot['Opened'])
     else:
         additional_periods = max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
-                                              ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] *ADDITIONAL_DATA_BY_MA[ACTION[-2]]
+                                 ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] * \
+                             ADDITIONAL_DATA_BY_MA[ACTION[-2]]
         print(f'additional_periods={additional_periods}')
         macd, signal = custom_MACD(df.iloc[:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5],
                                    ACTION[-4], ACTION[-3],
                                    ACTION[-2])
         signals = MACD_cross_signal(macd, signal)
-        df_plot = df.tail(len(df)-additional_periods).copy()
+        df_plot = df.tail(len(df) - additional_periods).copy()
         df_plot['MACD'] = macd[additional_periods:]
         df_plot['signal'] = signal[additional_periods:]
         df_plot['signals'] = signals[additional_periods:]

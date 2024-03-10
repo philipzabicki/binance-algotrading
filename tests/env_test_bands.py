@@ -1,9 +1,9 @@
 from multiprocessing import Pool, cpu_count
 
+import mplfinance as mpf
+import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import inf, mean, std
-import pandas as pd
-import mplfinance as mpf
 from talib import ATR
 
 from definitions import ADDITIONAL_DATA_BY_OHLCV_MA
@@ -16,7 +16,8 @@ N_TEST = 10_000
 N_STEPS = 288
 TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '5m', 'um', 'klines', '2020-01-01'
 ENV = BandsOptimizeSavingFuturesEnv
-ACTION = [0.5257579118931448, 0.91083587571587, 0.014912515150185603, 0.9468517684714486, 0.8565969389188695, 0.20386928526372067, 0.4189846100381565, 0.722426931594155, 6.449973153997845, 211, 34, 742, 41]
+ACTION = [0.5257579118931448, 0.91083587571587, 0.014912515150185603, 0.9468517684714486, 0.8565969389188695,
+          0.20386928526372067, 0.4189846100381565, 0.722426931594155, 6.449973153997845, 211, 34, 742, 41]
 
 
 def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
@@ -42,12 +43,12 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
 
 if __name__ == "__main__":
     df = by_BinanceVision(ticker=TICKER,
-                                    interval=ITV,
-                                    market_type=MARKET_TYPE,
-                                    data_type=DATA_TYPE,
-                                    start_date=START_DATE,
-                                    split=False,
-                                    delay=345_600)
+                          interval=ITV,
+                          market_type=MARKET_TYPE,
+                          data_type=DATA_TYPE,
+                          start_date=START_DATE,
+                          split=False,
+                          delay=345_600)
     _, df_mark = by_BinanceVision(ticker=TICKER,
                                   interval=ITV,
                                   market_type=MARKET_TYPE,
@@ -56,15 +57,16 @@ if __name__ == "__main__":
                                   split=True,
                                   delay=345_600)
     additional_periods = N_STEPS + max(ACTION[-2] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]],
-                        ACTION[-4])
+                                       ACTION[-4])
     ohlcv_np = df.iloc[:, 1:6].to_numpy()
-    signals = get_MA_band_signal(ohlcv_np[-additional_periods:,], ACTION[-3], ACTION[-2], ACTION[-4], ACTION[-5])
-    atr = ATR(ohlcv_np[-additional_periods:, 1], ohlcv_np[-additional_periods:, 2], ohlcv_np[-additional_periods:, 3], ACTION[-4])
-    up_band = get_MA(ohlcv_np[-additional_periods:, ], ACTION[-3], ACTION[-2]) + atr*ACTION[-5]
-    low_band = get_MA(ohlcv_np[-additional_periods:, ], ACTION[-3], ACTION[-2]) - atr*ACTION[-5]
+    signals = get_MA_band_signal(ohlcv_np[-additional_periods:, ], ACTION[-3], ACTION[-2], ACTION[-4], ACTION[-5])
+    atr = ATR(ohlcv_np[-additional_periods:, 1], ohlcv_np[-additional_periods:, 2], ohlcv_np[-additional_periods:, 3],
+              ACTION[-4])
+    up_band = get_MA(ohlcv_np[-additional_periods:, ], ACTION[-3], ACTION[-2]) + atr * ACTION[-5]
+    low_band = get_MA(ohlcv_np[-additional_periods:, ], ACTION[-3], ACTION[-2]) - atr * ACTION[-5]
     df_plot = df.tail(N_STEPS).copy()
-    #df_plot['MACD'] = macd[-N_STEPS:]
-    #df_plot['signal'] = signal[-N_STEPS:]
+    # df_plot['MACD'] = macd[-N_STEPS:]
+    # df_plot['signal'] = signal[-N_STEPS:]
     df_plot['signals'] = signals[-N_STEPS:]
     df_plot['upper'] = up_band[-N_STEPS:]
     df_plot['lower'] = low_band[-N_STEPS:]

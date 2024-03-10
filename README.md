@@ -53,7 +53,6 @@ pip install -r requirements.txt
 It is important that you download my patch for finta package (included in requirements.txt)
 as It needed a small adjustment to work with python 3.11.4
 
-
 ## Getting data
 
 All data used in this project is either downloaded via [binance_data](https://github.com/uneasyguy/binance_data.git)

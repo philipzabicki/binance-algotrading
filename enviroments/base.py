@@ -1,9 +1,9 @@
 # from random import normalvariate
 from csv import writer
 from datetime import datetime as dt
-from math import copysign, floor, sqrt
+from math import copysign, floor
 from random import randint
-from time import time, sleep
+from time import time
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
@@ -27,7 +27,7 @@ class SpotBacktest(Env):
             self.end_index = searchsorted(self.df[:, 0], end_date, side='right') - 1
         else:
             self.start_index = 0
-            self.end_index = len(self.df-1)
+            self.end_index = len(self.df - 1)
         trade_range_size = len(self.df[self.start_index:self.end_index, :])
         if len(self.df[self.start_index:self.end_index, :]) < max_steps:
             raise ValueError("max_steps larger than rows in dataframe")
@@ -251,7 +251,7 @@ class SpotBacktest(Env):
             high, low, close = self.df[self.current_step, 2:5]
             # print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
             self.in_position_counter += 1
-            self.pnl = (close/self.enter_price)-1
+            self.pnl = (close / self.enter_price) - 1
             if self.pnl >= 1:
                 self.profit_hold_counter += 1
             else:
@@ -306,7 +306,7 @@ class SpotBacktest(Env):
                     steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
             if above_free > 0:
                 if hasattr(self, 'leverage'):
-                    above_free_factor = above_free/self.leverage
+                    above_free_factor = above_free / self.leverage
                     # above_free_factor = above_free/sqrt(self.leverage)
                 else:
                     above_free_factor = above_free
@@ -353,7 +353,7 @@ class SpotBacktest(Env):
             print(
                 f' slope_indicator:{slope_indicator:.4f}, in_gain_indicator:{in_gain_indicator:.3f}, sharpe_ratio:{sharpe_ratio:.2f}, sortino_ratio:{sortino_ratio:.2f},',
                 end='')
-            print(f' risk_free:{risk_free_return * 100:.2f}%, above_free:{above_free*100:.2f}%,')
+            print(f' risk_free:{risk_free_return * 100:.2f}%, above_free:{above_free * 100:.2f}%,')
             print(f' reward:{self.reward:.8f} exec_time:{exec_time:.2f}s')
         if self.write_to_file:
             with open(self.filename, 'a', newline='') as f:
@@ -534,8 +534,8 @@ class FuturesBacktest(SpotBacktest):
         # 1,25% liquidation clearance fee https://www.binance.com/en/futures/trading-rules/perpetual/
         self.liquidation_price = (self.margin * (1 - 0.0125) - self.qty * self.enter_price) / (
                 abs(self.qty) * self.POSITION_TIER[self.tier][1] - self.qty)
-        #print(f'OPENED {side} price:{price} adj_price:{adj_price} qty:{self.qty} margin:{self.margin} fee:{fee}')
-        #sleep(10)
+        # print(f'OPENED {side} price:{price} adj_price:{adj_price} qty:{self.qty} margin:{self.margin} fee:{fee}')
+        # sleep(10)
         if self.write_to_file:
             self._write_to_file()
 
@@ -608,8 +608,8 @@ class FuturesBacktest(SpotBacktest):
         self.position_closed = 1
         self.stop_loss_price = 0
         self.pnl = 0
-        #print(f'CLOSED {self.last_order_type} price:{price} adj_price:{adj_price} qty:{self.qty} percentage_profit:{percentage_profit} absolute_profit:{self.absolute_profit} margin:{self.margin} fee:{_fee}')
-        #sleep(10)
+        # print(f'CLOSED {self.last_order_type} price:{price} adj_price:{adj_price} qty:{self.qty} percentage_profit:{percentage_profit} absolute_profit:{self.absolute_profit} margin:{self.margin} fee:{_fee}')
+        # sleep(10)
         if self.write_to_file:
             self._write_to_file()
 

@@ -26,7 +26,8 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
         _max_period = self.fastK_period + self.slowK_period * ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period * \
                       ADDITIONAL_DATA_BY_MA[slowD_ma_type]
-        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
+        _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit,
+                             save_ratio=save_ratio,
                              enter_at=enter_at, close_at=close_at, **kwargs)
         if self.start_step > _max_period:
             prev_values = self.start_step - _max_period

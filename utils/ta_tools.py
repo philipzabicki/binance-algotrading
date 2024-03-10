@@ -776,7 +776,7 @@ def ALMA(close: np.ndarray, timeperiod: int, offset: float = 0.85, sigma: int = 
     return np.concatenate((np.zeros(timeperiod - 1), alma))
 
 
-#@jit(nopython=True, nogil=True, cache=True)
+# @jit(nopython=True, nogil=True, cache=True)
 def GMA(close: np.ndarray, period: int) -> np.ndarray[np.float64]:
     close = np.absolute(close)
     gma = np.zeros_like(close)
@@ -1185,7 +1185,7 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
                 16: lambda c, p: ALMA(c, timeperiod=p),
                 17: lambda c, p: HammingMA(c, p),
                 18: lambda c, p: LWMA(c, p),
-                #19: lambda c, p: GMA(c, p),
+                # 19: lambda c, p: GMA(c, p),
                 19: lambda c, p: FBA(c, p),
                 # 21: lambda c, p: FWMA(c, p),
                 20: lambda c, p: NadarayWatsonMA(c, p, kernel=0),
@@ -1238,9 +1238,9 @@ def get_MA_band_signal(np_df: np.ndarray, ma_type: int, ma_period: int, atr_peri
     # return np_df
     try:
         return anyMA_sig(np_df[:, 3],
-                     get_MA(np_df, ma_type, ma_period),
-                     atr,
-                     atr_multi)
+                         get_MA(np_df, ma_type, ma_period),
+                         atr,
+                         atr_multi)
     except TypeError:
         print(f'len(np_df) {len(np_df)}')
         print(f'np_df[:, 3] {np_df[:, 3]}')
@@ -1360,7 +1360,10 @@ def simple_rl_features(ohlcv_df: pd.DataFrame, suffix: str = ''):
     ohlcv_df[f'CCI14{suffix}'] = talib.CCI(H, L, C, 14)
     ohlcv_df[f'CMO14{suffix}'] = talib.CMO(C, 14)
     ohlcv_df[f'DX14{suffix}'] = talib.DX(H, L, C, 14)
-    ohlcv_df[f'MACD12-26{suffix}'], ohlcv_df[f'MACDsignal9{suffix}'], ohlcv_df[f'MACD12-26hist{suffix}'] = talib.MACD(C, 12, 26, 9)
+    ohlcv_df[f'MACD12-26{suffix}'], ohlcv_df[f'MACDsignal9{suffix}'], ohlcv_df[f'MACD12-26hist{suffix}'] = talib.MACD(C,
+                                                                                                                      12,
+                                                                                                                      26,
+                                                                                                                      9)
     ohlcv_df[f'MFI14{suffix}'] = talib.MFI(H, L, C, V, 14)
     ohlcv_df[f'MINUS_DI14{suffix}'] = talib.MINUS_DI(H, L, C, 14)
     ohlcv_df[f'MINUS_DM14{suffix}'] = talib.MINUS_DM(H, L, 14)
@@ -1372,12 +1375,14 @@ def simple_rl_features(ohlcv_df: pd.DataFrame, suffix: str = ''):
     ohlcv_df[f'ROCP10{suffix}'] = talib.ROCP(C, 10)
     ohlcv_df[f'ROCR100-10{suffix}'] = talib.ROCR100(C, 10)
     ohlcv_df[f'RSI14{suffix}'] = talib.RSI(C, 14)
-    ohlcv_df[f'SLOWK3{suffix}'], ohlcv_df[f'SLOWD3{suffix}'] = talib.STOCH(H, L, C, fastk_period=5, slowk_period=3, slowk_matype=0,
-                                                               slowd_period=3, slowd_matype=0)
-    ohlcv_df[f'FASTK5{suffix}'], ohlcv_df[f'FASTD5{suffix}'] = talib.STOCHF(H, L, C, fastk_period=5, fastd_period=3, fastd_matype=0)
+    ohlcv_df[f'SLOWK3{suffix}'], ohlcv_df[f'SLOWD3{suffix}'] = talib.STOCH(H, L, C, fastk_period=5, slowk_period=3,
+                                                                           slowk_matype=0,
+                                                                           slowd_period=3, slowd_matype=0)
+    ohlcv_df[f'FASTK5{suffix}'], ohlcv_df[f'FASTD5{suffix}'] = talib.STOCHF(H, L, C, fastk_period=5, fastd_period=3,
+                                                                            fastd_matype=0)
     ohlcv_df[f'ULTOSC7-14-28{suffix}'] = talib.ULTOSC(H, L, C, 7, 14, 28)
     ohlcv_df[f'WILLR14{suffix}'] = talib.WILLR(H, L, C, 14)
-    #ohlcv_df[f'AD{suffix}'] = talib.AD(H, L, C, V)
+    # ohlcv_df[f'AD{suffix}'] = talib.AD(H, L, C, V)
     ohlcv_df[f'ADOSC{suffix}'] = talib.ADOSC(H, L, C, V, fastperiod=3, slowperiod=10)
     # ohlcv_df[f'OBV{suffix}'] = talib.OBV(C, V)
     ohlcv_df[f'ATR14{suffix}'] = talib.ATR(H, L, C, 14)
