@@ -26,13 +26,15 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
         _max_period = self.fastK_period + self.slowK_period * ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period * \
                       ADDITIONAL_DATA_BY_MA[slowD_ma_type]
-        if _max_period > self.total_steps:
-            warn(
-                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
                              enter_at=enter_at, close_at=close_at, **kwargs)
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, :5],
+        if self.start_step > _max_period:
+            prev_values = self.start_step - _max_period
+        else:
+            prev_values = 0
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
+        slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, 1:6],
                                                    fastK_period=fastK_period,
                                                    slowK_period=slowK_period,
                                                    slowD_period=slowD_period,
@@ -72,15 +74,17 @@ class _StochExecuteFuturesEnv(SignalExecuteFuturesEnv):
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
         _max_period = self.fastK_period + self.slowK_period * ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period * \
                       ADDITIONAL_DATA_BY_MA[slowD_ma_type]
-        if _max_period > self.total_steps:
-            warn(
-                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         _ret = super().reset(*args, offset=_max_period, position_ratio=position_ratio, save_ratio=save_ratio,
                              leverage=leverage, stop_loss=stop_loss, take_profit=take_profit,
                              long_enter_at=long_enter_at, long_close_at=long_close_at,
                              short_enter_at=short_enter_at, short_close_at=short_close_at, **kwargs)
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, :5],
+        if self.start_step > _max_period:
+            prev_values = self.start_step - _max_period
+        else:
+            prev_values = 0
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
+        slowK, slowD = custom_StochasticOscillator(self.df[prev_values:self.end_step, 1:6],
                                                    fastK_period=fastK_period,
                                                    slowK_period=slowK_period,
                                                    slowD_period=slowD_period,

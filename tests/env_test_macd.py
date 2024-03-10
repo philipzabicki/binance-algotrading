@@ -13,17 +13,20 @@ from utils.ta_tools import custom_MACD, MACD_cross_signal
 
 CPU_CORES = cpu_count()
 #CPU_CORES = 1
-N_TEST = 8
-N_STEPS = 0
-TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE, END_DATE = 'BTCUSDT', '5m', 'um', 'klines', '2023-06-23', '2023-08-11'
+N_TEST = 1000
+N_STEPS = 2_016
+TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
+DF_START_DATE, DF_END_DATE = '2021-05-19', '2021-11-20'
+TRADE_START_DATE, TRADE_END_DATE = '2021-10-19', '2021-11-19'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.9998767605763945, 1.0572221708735938e-05, 0.014509918982411451, 0.025274754815192393, 0.986130840753418, 0.5056110297332701, 0.4489627368838981, 0.31710172335041226, 191, 325, 428, 16, 36, 21, 55]
+ACTION = [0.956102954554925, 0.028139444186095375, 0.014595085611697763, 0.011060956420526838, 0.1310379906271963, 0.06914410566543472, 0.05767957974761363, 0.7124620179520392, 567, 755, 516, 10, 14, 22, 27]
 
 
-def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
+def parallel_test(pool_nb, df, df_mark=None):
     env = ENV(df=df,
               df_mark=df_mark,
-              dates_df=dates_df,
+              start_date=TRADE_START_DATE,
+              end_date=TRADE_END_DATE,
               max_steps=N_STEPS,
               init_balance=50,
               no_action_finish=inf,
@@ -31,7 +34,7 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
               coin_step=0.001,
               # slipp_std=0,
               # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              verbose=True, visualize=False, write_to_file=True)
+              verbose=False, visualize=False, write_to_file=True)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)
@@ -56,17 +59,17 @@ if __name__ == "__main__":
                           interval=ITV,
                           market_type=MARKET_TYPE,
                           data_type=DATA_TYPE,
-                          start_date=START_DATE,
-                          end_date=END_DATE,
+                          start_date=DF_START_DATE,
+                          end_date=DF_END_DATE,
                           split=False,
                           delay=345_600)
-    _, df_mark = by_BinanceVision(ticker=TICKER,
+    df_mark = by_BinanceVision(ticker=TICKER,
                                   interval=ITV,
                                   market_type=MARKET_TYPE,
                                   data_type='markPriceKlines',
-                                  start_date=START_DATE,
-                                  end_date=END_DATE,
-                                  split=True,
+                                  start_date=DF_START_DATE,
+                                  end_date=DF_END_DATE,
+                                  split=False,
                                   delay=345_600)
     if N_STEPS > 0:
         _size = N_STEPS
@@ -112,7 +115,7 @@ if __name__ == "__main__":
     plt.show()
 
     with Pool(processes=CPU_CORES) as pool:
-        results = pool.starmap(parallel_test, [(i, df.iloc[:, 1:6], df_mark, df['Opened']) for i in range(CPU_CORES)])
+        results = pool.starmap(parallel_test, [(i, df, df_mark) for i in range(CPU_CORES)])
     joined_res = []
     joined_gains = []
     for el in results:

@@ -118,11 +118,11 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
                           "long_close_at": Real(bounds=(0.001, 1.000)),
                           "short_enter_at": Real(bounds=(0.001, 1.000)),
                           "short_close_at": Real(bounds=(0.001, 1.000)),
-                          "fast_period": Integer(bounds=(2, 500)),
-                          "slow_period": Integer(bounds=(2, 500)),
-                          "signal_period": Integer(bounds=(2, 500)),
-                          "fast_ma_type": Integer(bounds=(0, 37)),
-                          "slow_ma_type": Integer(bounds=(0, 37)),
+                          "fast_period": Integer(bounds=(2, 1000)),
+                          "slow_period": Integer(bounds=(2, 1000)),
+                          "signal_period": Integer(bounds=(2, 1000)),
+                          "fast_ma_type": Integer(bounds=(0, 36)),
+                          "slow_ma_type": Integer(bounds=(0, 36)),
                           "signal_ma_type": Integer(bounds=(0, 25)),
                           "leverage": Integer(bounds=(1, 125))}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)

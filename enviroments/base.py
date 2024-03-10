@@ -7,34 +7,44 @@ from time import time, sleep
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
-from numpy import array, mean, std, inf
+from numpy import array, mean, std, inf, searchsorted
+from pandas import to_datetime
 
 from definitions import REPORT_DIR
 from utils.visualize import TradingGraph
 
 
 class SpotBacktest(Env):
-    def __init__(self, df, dates_df=None, max_steps=0, exclude_cols_left=0, no_action_finish=2_880,
+    def __init__(self, df, start_date='', end_date='', max_steps=0, exclude_cols_left=1, no_action_finish=2_880,
                  init_balance=1_000, position_ratio=1.0, save_ratio=None, stop_loss=None, take_profit=None,
                  fee=0.0002, coin_step=0.001, slippage=None, slipp_std=0,
                  render_range=120, verbose=True, visualize=False, write_to_file=False, *args, **kwargs):
         self.creation_t = time()
         self.df = df.to_numpy()
-        if len(self.df) < max_steps:
+        if start_date != '' and end_date != '':
+            start_date, end_date = to_datetime(start_date), to_datetime(end_date)
+            self.start_index = searchsorted(self.df[:, 0], start_date, side='left')
+            self.end_index = searchsorted(self.df[:, 0], end_date, side='right') - 1
+        else:
+            self.start_index = 0
+            self.end_index = len(self.df-1)
+        trade_range_size = len(self.df[self.start_index:self.end_index, :])
+        if len(self.df[self.start_index:self.end_index, :]) < max_steps:
             raise ValueError("max_steps larger than rows in dataframe")
         print(f'Environment ({self.__class__.__name__}) created.')
         print(f' fee:{fee}, coin_step:{coin_step}')
         print(
-            f' df_size: {len(self.df)}, max_steps: {max_steps}({max_steps / len(self.df) * 100:.2f}%), no_action_finish:{no_action_finish}')
+            f' full_df_size: {len(self.df)}, trade_range_size:{trade_range_size}, max_steps: {max_steps}({max_steps / len(self.df) * 100:.2f}%)')
+        print(f' no_action_finish:{no_action_finish}')
         print(f' df_sample(last row): {self.df[-1, exclude_cols_left:]}')
         print(f' slippage statistics (avg, stddev): {slippage}')
         print(f' init_balance:{init_balance}, position_ratio:{position_ratio}')
         print(f' save_ratio:{save_ratio}, stop_loss:{stop_loss} take_profit:{take_profit}')
-        if visualize and (dates_df is not None):
-            self.dates_df = date2num(dates_df.to_numpy())
+        if visualize:
+            self.dates = date2num(df[:, 0].to_numpy())
             self.visualize = True
             self.render_range = render_range
-            self.time_step = self.dates_df[1] - self.dates_df[0]
+            self.time_step = self.dates[1] - self.dates[0]
             print(f' Visualization enabled, time step: {self.time_step} (as factor of day)')
         else:
             self.visualize = False
@@ -86,7 +96,7 @@ class SpotBacktest(Env):
         # self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
 
     # Reset the state of the environment to an initial state
-    def reset(self, offset=0, **kwargs):
+    def reset(self, **kwargs):
         self.creation_t = time()
         self.done = False
         self.reward = 0
@@ -119,11 +129,11 @@ class SpotBacktest(Env):
         self.max_balance = self.min_balance = self.balance
         self.save_balance = 0.0
         if self.max_steps > 0:
-            self.start_step = randint(offset, self.total_steps - self.max_steps)
+            self.start_step = randint(self.start_index, self.end_index - self.max_steps)
             self.end_step = self.start_step + self.max_steps - 1
         else:
-            self.start_step = offset
-            self.end_step = self.total_steps - 1
+            self.start_step = self.start_index
+            self.end_step = self.end_index
         self.current_step = self.start_step
         self.obs = iter(self.df[self.start_step:self.end_step, self.exclude_cols_left:])
         # return self.df[self.current_step, self.exclude_cols_left:]
@@ -238,7 +248,7 @@ class SpotBacktest(Env):
         self.last_order_type = ''
         self.absolute_profit = 0.0
         if self.in_position:
-            high, low, close = self.df[self.current_step, 1:4]
+            high, low, close = self.df[self.current_step, 2:5]
             # print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
             self.in_position_counter += 1
             self.pnl = (close/self.enter_price)-1
@@ -254,7 +264,7 @@ class SpotBacktest(Env):
             elif action == 2 and self.qty > 0:
                 self._sell(close)
         elif action == 1:
-            close = self.df[self.current_step, 3]
+            close = self.df[self.current_step, 4]
             self._buy(close)
         elif (not self.episode_orders) and ((self.current_step - self.start_step) > self.no_action_finish):
             self._finish_episode()
@@ -275,7 +285,7 @@ class SpotBacktest(Env):
         self.balance += self.save_balance
         gain = self.balance - self.init_balance
         total_return = (self.balance / self.init_balance) - 1
-        risk_free_return = (self.df[self.end_step, 3] / self.df[self.start_step, 3]) - 1
+        risk_free_return = (self.df[self.end_step, 4] / self.df[self.start_step, 4]) - 1
         above_free = (total_return - risk_free_return)
         # if hasattr(self, 'leverage'):
         # above_free /= self.leverage
@@ -360,14 +370,14 @@ class SpotBacktest(Env):
     def render(self, indicator_or_reward=None, visualize=False, *args, **kwargs):
         if visualize or self.visualize:
             if self.in_position:
-                _pnl = self.df[self.current_step, 3] / self.enter_price - 1
+                _pnl = self.df[self.current_step, 4] / self.enter_price - 1
                 _balance = self.balance + (self.position_size + (self.position_size * _pnl))
             else:
                 _balance = self.balance
             if indicator_or_reward is None:
                 indicator_or_reward = self.df[self.current_step, -1]
-            render_row = [self.dates_df[self.current_step],
-                          *self.df[self.current_step, 0:4],
+            render_row = [self.dates[self.current_step],
+                          *self.df[self.current_step, 1:5],
                           indicator_or_reward,
                           _balance]
             trade_info = [self.last_order_type, str(round(self.absolute_profit, 2))]
@@ -459,11 +469,13 @@ class FuturesBacktest(SpotBacktest):
     #     return False
 
     def _check_margin(self):
+        high = self.df_mark[self.current_step, 2]
+        low = self.df_mark[self.current_step, 3]
         # If in long position and mark Low below liquidation price
-        if (self.qty > 0) and (self.liquidation_price >= self.df_mark[self.current_step, 2]):
+        if (self.qty > 0) and (self.liquidation_price >= low):
             return True
         # If in short position and mark High above liquidation price
-        elif (self.qty < 0) and (self.liquidation_price <= self.df_mark[self.current_step, 1]):
+        elif (self.qty < 0) and (self.liquidation_price <= high):
             return True
         return False
 
@@ -606,29 +618,29 @@ class FuturesBacktest(SpotBacktest):
         self.last_order_type = ''
         self.absolute_profit = 0.0
         if self.in_position:
-            high, low, close = self.df[self.current_step, 1:4]
-            mark_close = self.df_mark[self.current_step, 3]
+            high, low, close = self.df[self.current_step, 2:5]
+            mark_close = self.df_mark[self.current_step, 4]
             self.in_position_counter += 1
             # change value for once in 8h, for 1m TF 8h=480
             if self.in_position_counter % 480 == 0:
                 self.margin -= (abs(self.qty) * close * self.funding_rate)
             self._get_pnl(mark_close, update=True)
-            if (self.stop_loss is not None) and (((low <= self.stop_loss_price) and (self.qty > 0)) or (
+            if self._check_margin():
+                self.liquidations += 1
+                self._close_position(mark_close, liquidated=True)
+            elif (self.stop_loss is not None) and (((low <= self.stop_loss_price) and (self.qty > 0)) or (
                     (high >= self.stop_loss_price) and (self.qty < 0))):
                 self._close_position(self.stop_loss_price, sl=True)
             elif (self.take_profit is not None) and (((high >= self.take_profit_price) and (self.qty > 0)) or (
                     (low <= self.take_profit_price) and (self.qty < 0))):
                 self._close_position(self.take_profit_price, tp=True)
-            elif self._check_margin():
-                self.liquidations += 1
-                self._close_position(mark_close, liquidated=True)
             elif (action == 1 and self.qty < 0) or (action == 2 and self.qty > 0):
                 self._close_position(close)
         elif action == 1:
-            close = self.df[self.current_step, 3]
+            close = self.df[self.current_step, 4]
             self._open_position('long', close)
         elif action == 2:
-            close = self.df[self.current_step, 3]
+            close = self.df[self.current_step, 4]
             self._open_position('short', close)
         else:
             if self.init_balance < self.balance + self.save_balance:
@@ -654,8 +666,8 @@ class FuturesBacktest(SpotBacktest):
                 _balance = self.balance
             if indicator_or_reward is None:
                 indicator_or_reward = self.df[self.current_step, -1]
-            render_row = [self.dates_df[self.current_step],
-                          *self.df[self.current_step, 0:4],
+            render_row = [self.dates[self.current_step],
+                          *self.df[self.current_step, 1:5],
                           indicator_or_reward,
                           _balance]
             trade_info = [self.last_order_type, round(self.absolute_profit, 2)]

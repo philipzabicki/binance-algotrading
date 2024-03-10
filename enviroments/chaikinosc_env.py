@@ -15,7 +15,7 @@ class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # AD is not period dependent so we only need to calculate it once as there is no variable to optimize.
-        self.adl = AD(self.df[:, 1], self.df[:, 2], self.df[:, 3], self.df[:, 4])
+        self.adl = AD(self.df[:, 2], self.df[:, 3], self.df[:, 4], self.df[:, 5])
 
     def reset(self, *args, stop_loss=None, take_profit=None, save_ratio=None,
               fast_period=3, slow_period=10,
@@ -26,14 +26,16 @@ class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
         self.slow_ma_type = slow_ma_type
         _max_period = max(self.fast_period * ADDITIONAL_DATA_BY_MA[fast_ma_type],
                           self.slow_period * ADDITIONAL_DATA_BY_MA[slow_ma_type])
-        if _max_period > self.total_steps:
-            warn(
-                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit,
                              save_ratio=save_ratio, **kwargs)
         # Calculate only the data length necessary, with additional length caused by indicator periods
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        # print(self.df[self.start_step:self.end_step, :5])
+        if self.start_step > _max_period:
+            prev_values = self.start_step - _max_period
+        else:
+            prev_values = 0
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
+        # print(self.df[self.start_step:self.end_step, 1:6])
         chaikin_oscillator = custom_ChaikinOscillator(self.adl[prev_values:self.end_step, ],
                                                       fast_ma_type=fast_ma_type, fast_period=fast_period,
                                                       slow_ma_type=slow_ma_type, slow_period=slow_period)
@@ -54,7 +56,7 @@ class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
 class _ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.adl = AD(self.df[:, 1], self.df[:, 2], self.df[:, 3], self.df[:, 4])
+        self.adl = AD(self.df[:, 2], self.df[:, 3], self.df[:, 4], self.df[:, 5])
         # print(f'futures self.adl {self.adl}')
         # print(f'len(self.adl) {len(self.adl)}')
 
@@ -68,15 +70,16 @@ class _ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.slow_ma_type = slow_ma_type
         _max_period = max(self.fast_period * ADDITIONAL_DATA_BY_MA[fast_ma_type],
                           self.slow_period * ADDITIONAL_DATA_BY_MA[slow_ma_type])
-        if _max_period > self.total_steps:
-            warn(
-                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         _ret = super().reset(*args, offset=_max_period, position_ratio=position_ratio,
                              leverage=leverage, save_ratio=save_ratio,
                              stop_loss=stop_loss, take_profit=take_profit, **kwargs)
         # Calculate only the data length necessary, with additional length caused by indicator periods
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        # print(self.df[self.start_step:self.end_step, :5])
+        if self.start_step > _max_period:
+            prev_values = self.start_step - _max_period
+        else:
+            prev_values = 0
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
         chaikin_oscillator = custom_ChaikinOscillator(self.adl[prev_values:self.end_step, ],
                                                       fast_ma_type=fast_ma_type, fast_period=fast_period,
                                                       slow_ma_type=slow_ma_type, slow_period=slow_period)

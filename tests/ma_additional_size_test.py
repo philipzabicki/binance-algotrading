@@ -8,12 +8,12 @@ from utils.ta_tools import get_1D_MA, get_MA
 
 def check_ohlcv_mas(check_size, ma_period, precision):
     additional_data_ratios = []
-    for t in range(38):
+    for t in range(26):
         # print(f'MAtype: {t}')
         additional_prev_data = 0
-        result_full = round(get_MA(df[:,:], t, ma_period), precision)
+        result_full = round(get_1D_MA(df[:,3], t, ma_period), precision)
         while True:
-            ma = get_MA(df[-ma_period - check_size - additional_prev_data:, :], t, ma_period)
+            ma = get_1D_MA(df[-ma_period - check_size - additional_prev_data:, 3], t, ma_period)
             # print(f'type: {t} period: {ma_period} size:{ma_period + check_size + additional_prev_data}')
             result_short = round(ma, precision)
             try:
@@ -35,7 +35,7 @@ def check_ohlcv_mas(check_size, ma_period, precision):
 if __name__ == "__main__":
     '''This test allows to check how many data points (minimal) given MA type needs
     to calculate identical MA values as one calculating with full dataset'''
-    dates, df = by_BinanceVision('BTCUSDT', '1m', 'um', 'klines', '2020-01-01', split=True)
+    dates, df = by_BinanceVision('BTCUSDT', '1h', 'um', 'klines',  split=True)
     df = df.to_numpy()
     print(df)
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # profiler.enable()
 
     max_ma_period = 1000
-    precision = 2
+    precision = 3
     print(f'max_ma_period: {max_ma_period} precision: {precision}')
 
     additional_ratios = []
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     ma_ratio = {}
     for i in range(additional_ratios.shape[1]):
         try:
-            ma_ratio[i] = int(round(mean(additional_ratios[:, i]) + std(additional_ratios[:, i]), 0))
+            ma_ratio[i] = int(round(mean(additional_ratios[:, i]) + 2*std(additional_ratios[:, i]), 0))
         except Exception as e:
             print(e)
             ma_ratio[i] = 1

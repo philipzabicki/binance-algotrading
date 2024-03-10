@@ -18,21 +18,26 @@ from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 1024
+POP_SIZE = 128
 N_GEN = 175
 TICKER = 'BTCUSDT'
 ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-START_DATE = '2023-06-23'
-END_DATE = '2023-08-11'
+TRADE_START_DATE = '2020-11-16'
+TRADE_END_DATE = '2020-12-16'
+# Better to take more previous data for some TA features
+DF_START_DATE = '2020-06-16'
+DF_END_DATE = '2020-12-17'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
-PROBLEM_N_EVALS = 1
-PROBLEM_METRIC = 'mean'
+PROBLEM_N_EVALS = 3
+PROBLEM_METRIC = 'median'
 ALGORITHM = NSGA2
-#TERMINATION = ("time", "02:00:00")
+#TERMINATION = ("time", "09:00:00")
 TERMINATION = ('n_gen', N_GEN)
-ENV_KWARGS = {#'max_steps': 2_016,
+ENV_KWARGS = {'max_steps': 2_016,
+              'start_date': TRADE_START_DATE,
+              'end_date': TRADE_END_DATE,
               'init_balance': 50,
               'no_action_finish': inf,
               'fee': 0.0005,
@@ -50,23 +55,23 @@ def main():
     #                          split=True,
     #                          delay=0)
     # print(f'df used: {df}')
-    _, df = by_BinanceVision(ticker=TICKER,
-                             interval=ITV,
-                             market_type=MARKET_TYPE,
-                             data_type=DATA_TYPE,
-                             start_date=START_DATE,
-                             end_date=END_DATE,
-                             split=True,
-                             delay=345_600)
+    df = by_BinanceVision(ticker=TICKER,
+                          interval=ITV,
+                          market_type=MARKET_TYPE,
+                          data_type=DATA_TYPE,
+                          start_date=DF_START_DATE,
+                          end_date=DF_END_DATE,
+                          split=False,
+                          delay=345_600)
     print(f'df used: {df}')
-    _, df_mark = by_BinanceVision(ticker=TICKER,
-                                  interval=ITV,
-                                  market_type=MARKET_TYPE,
-                                  data_type='markPriceKlines',
-                                  start_date=START_DATE,
-                                  end_date=END_DATE,
-                                  split=True,
-                                  delay=345_600)
+    df_mark = by_BinanceVision(ticker=TICKER,
+                               interval=ITV,
+                               market_type=MARKET_TYPE,
+                               data_type='markPriceKlines',
+                               start_date=DF_START_DATE,
+                               end_date=DF_END_DATE,
+                               split=False,
+                               delay=345_600)
     print(f'df_mark used: {df_mark}')
 
     pool = Pool(CPU_CORES_COUNT)

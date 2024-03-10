@@ -20,14 +20,16 @@ class _BandsExecuteSpotEnv(SignalExecuteSpotEnv):
         self.atr_period = atr_period
         self.atr_multi = atr_multi
         _max_period = max(self.ma_period * ADDITIONAL_DATA_BY_OHLCV_MA[ma_type], self.atr_period)
-        if _max_period > self.total_steps:
-            warn(
-                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
                              enter_at=enter_at, close_at=close_at, **kwargs)
         # Calculate only the data length necessary, with additional length caused by indicator periods
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, :5],
+        if self.start_step > _max_period:
+            prev_values = self.start_step - _max_period
+        else:
+            prev_values = 0
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
+        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, 1:6],
                                           self.ma_type, self.ma_period,
                                           self.atr_period, self.atr_multi)[self.start_step - prev_values:]
         return _ret
@@ -51,18 +53,19 @@ class _BandsExecuteFuturesEnv(SignalExecuteFuturesEnv):
         self.atr_period = atr_period
         self.atr_multi = atr_multi
         _max_period = max(self.ma_period * ADDITIONAL_DATA_BY_OHLCV_MA[ma_type], self.atr_period)
-        if _max_period > self.total_steps:
-            warn(
-                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         _ret = super().reset(*args, offset=_max_period, position_ratio=position_ratio, save_ratio=save_ratio,
                              stop_loss=stop_loss, take_profit=take_profit,
                              long_enter_at=long_enter_at, long_close_at=long_close_at,
                              short_enter_at=short_enter_at, short_close_at=short_close_at,
                              leverage=leverage, **kwargs)
         # Calculate only the data length necessary, with additional length caused by indicator periods
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        # print(f'start_step={self.start_step} end_step={self.end_step} _max_period={_max_period} prev_values={prev_values}')
-        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, :5],
+        if self.start_step > _max_period:
+            prev_values = self.start_step - _max_period
+        else:
+            prev_values = 0
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
+        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, 1:6],
                                           self.ma_type, self.ma_period,
                                           self.atr_period, self.atr_multi)[self.start_step - prev_values:]
         return _ret

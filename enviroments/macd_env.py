@@ -25,13 +25,14 @@ class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
         _max_period = max(self.fast_period * ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type],
                           self.slow_period * ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period * \
                       ADDITIONAL_DATA_BY_MA[signal_ma_type]
-        if _max_period > self.total_steps:
-            warn(
-                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
         _ret = super().reset(*args, offset=_max_period, stop_loss=stop_loss, take_profit=take_profit, save_ratio=save_ratio,
                              enter_at=enter_at, close_at=close_at, **kwargs)
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
+        if self.start_step > _max_period:
+            prev_values = self.start_step - _max_period
+        else:
+            prev_values = 0
+            warn(f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
+        macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, 1:6],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
                                         slow_ma_type=slow_ma_type, slow_period=slow_period,
                                         signal_ma_type=signal_ma_type, signal_period=signal_period)
@@ -64,19 +65,18 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
         _max_period = max(self.fast_period * ADDITIONAL_DATA_BY_OHLCV_MA[fast_ma_type],
                           self.slow_period * ADDITIONAL_DATA_BY_OHLCV_MA[slow_ma_type]) + self.signal_period * \
                       ADDITIONAL_DATA_BY_MA[signal_ma_type]
-        if _max_period > self.total_steps:
-            warn(
-                f'Previous data required for consistent MAs calculation is larger than whole df. ({_max_period} vs {self.total_steps})')
-        else:
-            pass
-            #warn(f'First {_max_period} rows of df will be omitted as TA requires additional previous data for proper calculation.')
         _ret = super().reset(*args, offset=_max_period, position_ratio=position_ratio, save_ratio=save_ratio,
                              leverage=leverage, stop_loss=stop_loss, take_profit=take_profit,
                              long_enter_at=long_enter_at, long_close_at=long_close_at,
                              short_enter_at=short_enter_at, short_close_at=short_close_at, **kwargs)
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        # print(self.df[self.start_step:self.end_step, :5])
-        macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, :5],
+        if self.start_step > _max_period:
+            prev_values = self.start_step - _max_period
+            #warn(f'Previous data required ({_max_period} vs start step {self.start_step})')
+        else:
+            prev_values = 0
+            warn(
+                f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
+        macd, macd_signal = custom_MACD(self.df[prev_values:self.end_step, 1:6],
                                         fast_ma_type=fast_ma_type, fast_period=fast_period,
                                         slow_ma_type=slow_ma_type, slow_period=slow_period,
                                         signal_ma_type=signal_ma_type, signal_period=signal_period)
