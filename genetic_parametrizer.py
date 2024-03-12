@@ -24,11 +24,11 @@ DATA_TYPE = 'klines'
 TRADE_START_DATE = '2020-12-30'
 TRADE_END_DATE = '2021-05-30'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2020-09-30'
+DF_START_DATE = '2020-08-30'
 DF_END_DATE = '2021-05-31'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
-PROBLEM_N_EVALS = 5
-PROBLEM_METRIC = 'median'
+PROBLEM_N_EVALS = 7
+PROBLEM_METRIC = 'first_quartile'
 ALGORITHM = NSGA2
 # TERMINATION = ("time", "09:00:00")
 TERMINATION = ('n_gen', N_GEN)

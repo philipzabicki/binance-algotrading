@@ -9,8 +9,8 @@ INTERVAL = '5m'
 trade_balance = 50.0
 
 # MACD settings:
-position_ratio, save_ratio, stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.9730471821017754, 0.028547359074808574, 0.01055288154032684, 0.09315142718072375, 0.56055269889098, 0.9980381146209845, 0.9970748999031727, 0.364527128742804
-fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 217, 453, 332, 35, 18, 3, 21
+position_ratio, save_ratio, stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.9576856523677776, 0.013802850912934761, 0.011913288485688338, 0.04566546359115661, 0.15266646095025987, 0.4865298679000292, 0.4373636962844453, 0.15850873391601694
+fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 385, 88, 75, 13, 29, 14, 8
 SETTINGS = {"trade_balance": trade_balance,
             "position_ratio": position_ratio,
             "save_ratio": save_ratio,
@@ -58,6 +58,6 @@ if __name__ == "__main__":
                            settings=SETTINGS,
                            API_KEY=binance_API_KEY,
                            SECRET_KEY=binance_SECRET_KEY,
-                           multi=1)
+                           multi=2)
     while True:
         bocik.run()
