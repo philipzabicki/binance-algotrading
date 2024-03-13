@@ -21,11 +21,11 @@ TICKER = 'BTCUSDT'
 ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-TRADE_START_DATE = '2020-12-30'
-TRADE_END_DATE = '2021-05-30'
+TRADE_START_DATE = '2021-01-03'
+TRADE_END_DATE = '2021-05-22'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2020-08-30'
-DF_END_DATE = '2021-05-31'
+DF_START_DATE = '2020-07-03'
+DF_END_DATE = '2021-05-23'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
 PROBLEM_N_EVALS = 7
 PROBLEM_METRIC = 'first_quartile'

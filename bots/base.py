@@ -350,26 +350,28 @@ class FuturesTaker:
                 end=' ')
             print(f'cum_pnl:${self.cum_pnl:.2f}')
         # Stop Loss filling handle
-
-        if self.SL_order is not None:
-            if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
-                    (float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
+        elif self.SL_order is not None:
+            if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or ((float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
                 order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
                 if order['status'] != 'FILLED':
-                    print(f'STOP_LOSS was not filled.')
+                    print(f'STOP_LOSS was not filled. orderID:{self.SL_order["orderId"]}')
                     self._partially_filled_problem(self.stoploss_price)
+                else:
+                    print(f'STOP_LOSS was filled.')
                 self._cancel_all_orders()
                 self._update_balances()
                 self.SL_order, self.TP_order = None, None
                 self.in_long_position, self.in_short_position = False, False
                 self.stoploss_price, self.takeprofit_price = 0.0, 0.0
-        if self.TP_order is not None:
+        elif self.TP_order is not None:
             if ((float(data_k['h']) >= self.takeprofit_price) and self.in_long_position) or (
                     (float(data_k['l']) <= self.takeprofit_price) and self.in_short_position):
                 order = self.client.query_order(symbol=self.symbol, orderId=self.TP_order['orderId'])
                 if order['status'] != 'FILLED':
-                    print(f'TAKE_PROFIT was not filled.')
+                    print(f'TAKE_PROFIT was not filled. orderID:{self.TP_order["orderId"]}')
                     self._partially_filled_problem(self.takeprofit_price)
+                else:
+                    print(f'TAKE_PROFIT was filled.')
                 self._cancel_all_orders()
                 self._update_balances()
                 self.TP_order, self.SL_order = None, None
