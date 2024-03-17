@@ -18,7 +18,7 @@ class SpotBacktest(Env):
     def __init__(self, df, start_date='', end_date='', max_steps=0, exclude_cols_left=1, no_action_finish=2_880,
                  init_balance=1_000, position_ratio=1.0, save_ratio=None, stop_loss=None, take_profit=None,
                  fee=0.0002, coin_step=0.001, slippage=None, slipp_std=0,
-                 render_range=120, verbose=True, visualize=False, write_to_file=False, *args, **kwargs):
+                 visualize=False, render_range=120, verbose=True, write_to_file=False, *args, **kwargs):
         self.creation_t = time()
         self.df = df.to_numpy()
         if start_date != '' and end_date != '':

@@ -88,17 +88,11 @@ Name | Type | Mandatory | Description
 ticker | STR | YES | Any cryptocurrency pair traded on Binance ex. 'ETHUSDT'
 interval | STR | YES | Any trading interval existing on Binance Vision ex. '30m'
 market_type | STR | YES | Options: 'um' - USDT-M Futures 'cm' - COIN-M Futures, 'spot' - Spot market
-data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', '
-liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'. Spot options: 'aggTrades', '
-klines', 'trades'. Better explained
-with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
-start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just '
-YYYY-MM-DD'.
+data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', 'liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'. Spot options: 'aggTrades', 'klines', 'trades'. Better explained with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
+start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just 'YYYY-MM-DD'.
 end_date | STR | NO | Same as above.
-split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (
-Opened_col, OHLCV_cols). Otherwise, returns single df.
-delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by
-default.
+split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (Opened_col, OHLCV_cols). Otherwise, returns single df.
+delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by default.
 
 ### by_DataClient()
 
@@ -153,13 +147,22 @@ df | pandas.DataFrame | YES | A dataframe with OHLCV values for any ticker/coin 
 start_date | STR | NO | Env will only run episodes starting from this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
 end_date | STR | NO | Env will only run episodes starting from this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
 max_steps | INT | NO | Max steps played in single episode, if larger than 0, location inside df is randomly picked.
-exclude_cols_left | INT | NO | Index of columns to be excluded from observation space (df)
-e.g. value 1 will remove 'Opened' (dates) column from observation space
-end_date | STR | NO | Same as above.
-split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (
-Opened_col, OHLCV_cols). Otherwise, returns single df.
-delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by
-default.
+exclude_cols_left | INT | NO | Index of columns to be excluded from observation space (df) e.g. value 1 will skip first column (counting from left) from df, 'Opened' (dates col) will not show in observation space
+no_action_finish | INT | YES | When no trading action is taken for this many steps, episode will be forced to end 
+init_balance | INT/FLOAT | YES | Initial balance for trading episode to use
+position_ratio | FLOAT | YES | Values from 0.0 to 1.0, E.g. 0.5 means only 50% of available balance will be used for trading
+save_ratio | FLOAT | NO | This part of absolute profit from single trade will be saved to save balance which is not used for trading
+stop_loss | FLOAT | NO | This stop loss will be used for all episodes played, it is applied to enter position close price value not position PnL
+take_profit | FLOAT | NO | Similarly to above
+fee | FLOAT | YES | Fee paid for every buy and sell action
+coin_step | FLOAT | YES | Minimal trade amount for ticker base coin, use values from [trading rules](https://www.binance.com/en/futures/trading-rules/)
+slippage | DICTIONARY | NO | Python dict with price slippage data. First value from tuple for any key is mean slippage and second is standard deviation e.g. {'buy': (1.0, 0.0), 'sell': (1.0, 0.0)}
+slipp_std | INT | NO | This many standard deviations from mean (slippage dict) will be taken to calculate real buy/sell prices
+visualize | BOOL | YES | If true, every step of episode will be rendered to screen as chart visualization
+render_range | INT | NO | Only applies when visualize=True, this many steps will be rendered in visualization
+verbose | BOOL | YES | If true, at end of every episode env will print summary statistics to console
+write_to_file | BOOL | YES | If true, env will save state to csv every step with buy/sell action
+
 
 Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss
 for whole backtest period.
