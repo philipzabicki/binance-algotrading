@@ -14,12 +14,12 @@ from utils.ta_tools import custom_MACD, MACD_cross_signal
 CPU_CORES = cpu_count()
 # CPU_CORES = 1
 N_TEST = 10_000
-N_STEPS = 8_640
+N_STEPS = 4_032
 TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
-DF_START_DATE, DF_END_DATE = '2020-07-03', '2021-05-23'
-TRADE_START_DATE, TRADE_END_DATE = '2021-01-03', '2021-05-22'
+DF_START_DATE, DF_END_DATE = '2020-07-01', '2021-01-31'
+TRADE_START_DATE, TRADE_END_DATE = '2020-12-01', '2021-01-30'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.9123541701172734, 0.013706150222211572, 0.014964129096768456, 0.09037874732258272, 0.0014302911149460251, 0.5729817108760427, 0.6704112066617886, 0.1606725837856331, 249, 652, 664, 15, 2, 6, 9]
+ACTION = [0.9492855295575295, 0.7017246496966097, 0.010436571582668391, 0.8028706948572292, 0.21120749039008813, 0.5763255030082342, 0.8505387802008031, 0.2729962069901876, 344, 900, 240, 18, 17, 16, 12]
 
 
 def parallel_test(pool_nb, df, df_mark=None):
@@ -34,7 +34,7 @@ def parallel_test(pool_nb, df, df_mark=None):
               coin_step=0.001,
               # slipp_std=0,
               # slippage=get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market'),
-              verbose=False, visualize=False, write_to_file=True)
+              verbose=False, visualize=False, write_to_file=False)
     results, gains = [], []
     for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)

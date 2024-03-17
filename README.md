@@ -57,9 +57,10 @@ as It needed a small adjustment to work with python 3.11.4
 
 All data used in this project is either downloaded via [binance_data](https://github.com/uneasyguy/binance_data.git)
 package or [Binance Vision](https://data.binance.vision/) website.
-Website approach uses most efficient way to get data as it starts downloading from current date and goes back in time as
+Website approach uses the most efficient way
+to get data as it starts downloading from current date and goes back in time as
 long as there is data on website.
-It also downloads data in monthly batches if available, if not daily are used.
+It also downloads data in monthly batches if available otherwise not daily is used.
 
 Code used for handling data downloads can be found
 there: [utils/get_data.py](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/get_data.py)
@@ -121,13 +122,12 @@ of 'pair_list' it handles only single ticker.
 
 'futures' if false, downloads spot data.
 
-## Backtesting environments
+## Genetic backtesting environments
 
 Project has 2
 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible
 environments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16)
-and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (
-inheriting from SpotBacktest).
+and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (inheriting from SpotBacktest).
 
 All other environments inherit from them.
 
@@ -135,9 +135,31 @@ All other environments inherit from them.
 
 #### SpotBacktest
 
-It imitates Binance Exchnage Spot market to some degree. Requires two dataframes to work, one with Dates and one with
-OHLCV values. One trading session is called episode and can use whole dataframe or randomly picked max_steps sized data
-from df.
+It imitates Binance Exchnage Spot market to some degree. Requires dataframe with ticker OHLCV values to work.
+One trading run is called episode.
+
+```python
+class SpotBacktest(Env):
+    def __init__(self, df, start_date='', end_date='', max_steps=0, exclude_cols_left=1, no_action_finish=2_880,
+                 init_balance=1_000, position_ratio=1.0, save_ratio=None, stop_loss=None, take_profit=None,
+                 fee=0.0002, coin_step=0.001, slippage=None, slipp_std=0,
+                 render_range=120, verbose=True, visualize=False, write_to_file=False, *args, **kwargs): ...
+```
+
+**Parameters:**
+Name | Type | Mandatory | Description
+------------ | ------------ | ------------ | ------------
+df | pandas.DataFrame | YES | A dataframe with OHLCV values for any ticker/coin pair
+start_date | STR | NO | Env will only run episodes starting from this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
+end_date | STR | NO | Env will only run episodes starting from this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
+max_steps | INT | NO | Max steps played in single episode, if larger than 0, location inside df is randomly picked.
+exclude_cols_left | INT | NO | Index of columns to be excluded from observation space (df)
+e.g. value 1 will remove 'Opened' (dates) column from observation space
+end_date | STR | NO | Same as above.
+split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (
+Opened_col, OHLCV_cols). Otherwise, returns single df.
+delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by
+default.
 
 Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss
 for whole backtest period.
