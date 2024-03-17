@@ -130,7 +130,7 @@ All other environments inherit from them.
 #### SpotBacktest
 
 It imitates Binance Exchnage Spot market to some degree. Requires dataframe with ticker OHLCV values to work.
-One trading run is called episode.
+One trading run is called episode. After every episode reset method is needed  
 
 ```python
 class SpotBacktest(Env):
@@ -145,20 +145,20 @@ Name | Type | Mandatory | Description
 ------------ | ------------ | ------------ | ------------
 df | pandas.DataFrame | YES | A dataframe with OHLCV values for any ticker/coin pair
 start_date | STR | NO | Env will only run episodes starting from this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
-end_date | STR | NO | Env will only run episodes starting from this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
+end_date | STR | NO | Env will only run episodes ending at this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
 max_steps | INT | NO | Max steps played in single episode, if larger than 0, location inside df is randomly picked.
-exclude_cols_left | INT | NO | Index of columns to be excluded from observation space (df) e.g. value 1 will skip first column (counting from left) from df, 'Opened' (dates col) will not show in observation space
+exclude_cols_left | INT | NO | Index of columns to be excluded from observation space (df) e.g. value 1 will skip first column (counting from left) from df that means 'Opened' (dates col) will not show in observation space
 no_action_finish | INT | YES | When no trading action is taken for this many steps, episode will be forced to end 
-init_balance | INT/FLOAT | YES | Initial balance for trading episode to use
+init_balance | INT/FLOAT | YES | Initial balance for trading episode to start with (in quote coin)
 position_ratio | FLOAT | YES | Values from 0.0 to 1.0, E.g. 0.5 means only 50% of available balance will be used for trading
-save_ratio | FLOAT | NO | This part of absolute profit from single trade will be saved to save balance which is not used for trading
+save_ratio | FLOAT | NO | This part of absolute profit from any profitable trade will be saved to save_balance (which is not used for trading)
 stop_loss | FLOAT | NO | This stop loss will be used for all episodes played, it is applied to enter position close price value not position PnL
 take_profit | FLOAT | NO | Similarly to above
 fee | FLOAT | YES | Fee paid for every buy and sell action
-coin_step | FLOAT | YES | Minimal trade amount for ticker base coin, use values from [trading rules](https://www.binance.com/en/futures/trading-rules/)
+coin_step | FLOAT | YES | Minimal trade amount for ticker base coin, use values from [spot trading rules](https://www.binance.com/en/trade-rule)
 slippage | DICTIONARY | NO | Python dict with price slippage data. First value from tuple for any key is mean slippage and second is standard deviation e.g. {'buy': (1.0, 0.0), 'sell': (1.0, 0.0)}
 slipp_std | INT | NO | This many standard deviations from mean (slippage dict) will be taken to calculate real buy/sell prices
-visualize | BOOL | YES | If true, every step of episode will be rendered to screen as chart visualization
+visualize | BOOL | YES | If true, every step of episode will be rendered to screen with chart visualization
 render_range | INT | NO | Only applies when visualize=True, this many steps will be rendered in visualization
 verbose | BOOL | YES | If true, at end of every episode env will print summary statistics to console
 write_to_file | BOOL | YES | If true, env will save state to csv every step with buy/sell action
