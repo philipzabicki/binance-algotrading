@@ -129,8 +129,8 @@ All other environments inherit from them.
 
 #### SpotBacktest
 
-It imitates Binance Exchnage Spot market to some degree. Requires dataframe with ticker OHLCV values to work.
-One trading run is called episode. After every episode reset method is needed  
+It imitates Binance Exchnage Spot market to some degree. Requires dataframe with OHLCV values for wanted ticker to work.
+Runs by calling step method with trading action. One full trading run is called episode. After every episode, you need to reset the environment with reset method.  
 
 ```python
 class SpotBacktest(Env):
@@ -164,45 +164,45 @@ verbose | BOOL | YES | If true, at end of every episode env will print summary s
 write_to_file | BOOL | YES | If true, env will save state to csv every step with buy/sell action
 
 
-Allows to buy and sell an asset at any step using an 'action': {0 - hold, 1 - buy, 2 - sell}. One can also set stop loss
-for whole backtest period.
-
-It always trades with current candle close price, you can provide price slippage data for better imitation of real world
+Trading actions possible are: {0 - hold, 1 - buy, 2 - sell}. It always trades with current candle close price, you can provide price slippage data for better imitation of a real world
 scenario.
+You can also set stop loss and take profit for a whole backtest episode.
+Setting a save_ratio parameter forces env to save some part of trading profit and do not use it for future trading.
 
-Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, episode ends or balance
+Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, df ends or balance
 is so low it does not allow for any market action for given coin.
-
+    
 #### FuturesBacktest
 
 It imitates Binance Exchange Futures market. Inherits from SpotBacktest. Requires additional dataframe with mark price
 ohlc values as binance uses mark prices for unrealized pnl calculation and liquidation price,
-see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087)
+see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087). It also adds new constructor parameter - leverage. For now works well only for BTCUSDT perpetual as
+it requires adding variable (by ticker) leverage range and position tier updates. [BTCUSDT.P tiers](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin)
 
-Adds new methods to
+Expands SpotBacktest env class with new methods to
 allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485)
 etc.
 
 #### SignalExecuteSpotEnv and SignalExecuteFuturesEnv
 
-Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of single signal trading strategy all at
-once on whole episode (whole df or randomly picked max_steps size from whole dataframe).
+Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of trading strategy at
+once on full episode accordingly to given trading signals array.
 
 Allows for asymmetrical enter position(enter_threshold) and close position(close_threshold) signals.
 
-In generic base class implementation signals are empty numpy array. Other inheriting environments extend this.
+In generic class implementation signals are random numpy array. Other inheriting environments change this by creating trading signals using technical analysis. 
 
-SignalExecute-like object when called, executes whole trading episode on given signals array using position enter/close
-threshold values to determine position side for all trades. Negative values are reserved for short/sell singals.
+SignalExecute-like object when called, executes trading episode with given signals array using position enter/close
+threshold values to determine position side for all trades. Negative values are reserved for short/sell signals.
 Positive for long/buy.
 
-For e.g. parameters:
+For e.g.:
 
 * signals = [0.52, 0, 0, -0.78]
 * enter_threshold = 0.5
 * close_threshold = 0.75
 
-will result in trading episode of BUY -> HOLD -> HOLD -> SELL actions.
+will result in a trading sequence of BUY -> HOLD -> HOLD -> SELL actions.
 
 ##### SignalExecuteSpotEnv
 
@@ -212,16 +212,20 @@ from numpy.random import choice
 class SignalExecuteSpotEnv(SpotBacktest):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
+        self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
+        self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
+        self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
         self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
         self.close_threshold = kwargs['close_at'] if 'close_at' in kwargs else 1.0
-        self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
-        #self.signals = empty(self.total_steps)
+        # self.signals = empty(self.total_steps)
         self.signals = choice([-1, 0, 1], size=self.total_steps)
 
     def reset(self, *args, **kwargs):
         self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
         self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
+        self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
         self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
         self.close_threshold = kwargs['close_at'] if 'close_at' in kwargs else 1.0
         return super().reset()
@@ -247,6 +251,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
 ```
 
 ##### SignalExecuteFuturesEnv
+It is similar to above implementation but expands enter and close threshold with long and short positions.
 
 ```python
 from numpy.random import choice
@@ -254,12 +259,15 @@ from numpy.random import choice
 class SignalExecuteFuturesEnv(FuturesBacktest):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
+        self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
+        self.leverage = kwargs['leverage'] if 'leverage' in kwargs else 1
+        self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
+        self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
         self.long_enter_threshold = kwargs['long_enter_at'] if 'long_enter_at' in kwargs else 1.0
         self.long_close_threshold = kwargs['long_close_at'] if 'long_close_at' in kwargs else 1.0
         self.short_enter_threshold = kwargs['short_enter_at'] if 'short_enter_at' in kwargs else 1.0
         self.short_close_threshold = kwargs['short_close_at'] if 'short_close_at' in kwargs else 1.0
-        self.leverage = kwargs['leverage'] if 'leverage' in kwargs else 1
-        self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
         self.signals = choice([-1, 0, 1], size=self.total_steps)
 
     def reset(self, *args, **kwargs):
@@ -267,11 +275,13 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
         self.leverage = kwargs['leverage'] if 'leverage' in kwargs else 1
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
+        self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
         self.long_enter_threshold = kwargs['long_enter_at'] if 'long_enter_at' in kwargs else 1.0
         self.long_close_threshold = kwargs['long_close_at'] if 'long_close_at' in kwargs else 1.0
         self.short_enter_threshold = kwargs['short_enter_at'] if 'short_enter_at' in kwargs else 1.0
         self.short_close_threshold = kwargs['short_close_at'] if 'short_close_at' in kwargs else 1.0
         return super().reset()
+
 
     def __call__(self, *args, **kwargs):
         while not self.done:
