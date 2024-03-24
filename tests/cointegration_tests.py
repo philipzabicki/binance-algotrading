@@ -13,7 +13,7 @@ ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 N_RND_SERIES = 100_000
-N_LAST_INTERVALS = 12_960  # 60 days
+N_LAST_INTERVALS = 14_400  # 50 days
 
 if __name__ == "__main__":
     full_df = by_BinanceVision(ticker=TICKER,
@@ -25,9 +25,9 @@ if __name__ == "__main__":
     print(full_df)
 
     full_df['ADL'] = AD(full_df['High'], full_df['Low'], full_df['Close'], full_df['Volume'])
-    full_df['HL2'] = MEDPRICE(full_df['High'], full_df['Low'])
+    # full_df['HL2'] = MEDPRICE(full_df['High'], full_df['Low'])
     # full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])
-    full_df['HL2'].ffill(inplace=True)
+    full_df['ADL'].ffill(inplace=True)
     # scaler = MinMaxScaler()
     # full_df.loc[:, 'HL2'] = scaler.fit_transform(full_df[['ADL']])
     # full_df['OBV'].ffill(inplace=True)
@@ -37,9 +37,9 @@ if __name__ == "__main__":
     # full_df['MFM'] = ((full_df['Close'] - full_df['Low']) - (full_df['High'] - full_df['Close'])) / (
     #             full_df['High'] - full_df['Low'])
     # full_df['MFV'] = full_df['MFM'] * full_df['Volume']
-    count_0_ADL = (full_df['HL2'] == 0.0).sum()
-    print(f"0.0 values in column 'HL2': {count_0_ADL}")
-    plt.plot(full_df['HL2'].tail(N_LAST_INTERVALS).to_numpy())
+    count_0_ADL = (full_df['ADL'] == 0.0).sum()
+    print(f"0.0 values in column 'ADL': {count_0_ADL}")
+    plt.plot(full_df['ADL'].tail(N_LAST_INTERVALS).to_numpy())
     plt.show()
     # full_df['ADL'].fillna(method='ffill', inplace=True)
     # full_df['OBV'].fillna(method='ffill', inplace=True)
@@ -63,16 +63,16 @@ if __name__ == "__main__":
         #     plt.plot(rnd_df['MFV'].to_numpy())
         #     plt.show()
 
-        results = coint(last_month['HL2'], rnd_df['HL2'])
+        results = coint(last_month['ADL'], rnd_df['ADL'])
         print(f'Test on random period #{i}: {results}')
         if results[1] < 0.05:
-            print(rnd_df['HL2'])
-            print(last_month['HL2'])
+            print(rnd_df['ADL'])
+            print(last_month['ADL'])
             print(f'start_date: {rnd_df.iloc[0, 0]} end_date: {rnd_df.iloc[-1, 0]}')
             scaler1 = MinMaxScaler()
             scaler2 = MinMaxScaler()
-            last_month.loc[:, 'HL2'] = scaler1.fit_transform(last_month[['ADL']])
-            rnd_df.loc[:, 'HL2'] = scaler2.fit_transform(rnd_df[['ADL']])
-            plt.plot(last_month['HL2'].to_numpy())
-            plt.plot(rnd_df['HL2'].to_numpy())
+            last_month.loc[:, 'ADL'] = scaler1.fit_transform(last_month[['ADL']])
+            rnd_df.loc[:, 'ADL'] = scaler2.fit_transform(rnd_df[['ADL']])
+            plt.plot(last_month['ADL'].to_numpy())
+            plt.plot(rnd_df['ADL'].to_numpy())
             plt.show()
