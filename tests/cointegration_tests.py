@@ -2,7 +2,7 @@
 from random import randint
 
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from statsmodels.tsa.stattools import coint
 from talib import *
 
@@ -13,7 +13,7 @@ ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 N_RND_SERIES = 100_000
-N_LAST_INTERVALS = 14_400  # 50 days
+N_LAST_INTERVALS = 12_960  # 30 days
 
 if __name__ == "__main__":
     full_df = by_BinanceVision(ticker=TICKER,
@@ -25,9 +25,22 @@ if __name__ == "__main__":
     print(full_df)
 
     full_df['ADL'] = AD(full_df['High'], full_df['Low'], full_df['Close'], full_df['Volume'])
-    # full_df['HL2'] = MEDPRICE(full_df['High'], full_df['Low'])
+    full_df['RSI'] = RSI(full_df['Close'], timeperiod=14)
+    full_df['ULTOSC'] = ULTOSC(full_df['High'], full_df['Low'], full_df['Close'], timeperiod1=7, timeperiod2=14, timeperiod3=28)
+    full_df['MFI'] = MFI(full_df['High'], full_df['Low'], full_df['Close'], full_df['Volume'], timeperiod=N_LAST_INTERVALS//10)
+    full_df['ATR'] = ATR(full_df['High'], full_df['Low'], full_df['Close'], timeperiod=N_LAST_INTERVALS//10)
+    full_df['HL2'] = MEDPRICE(full_df['High'], full_df['Low'])
     # full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])
-    full_df['ADL'].ffill(inplace=True)
+    full_df[['ADL', 'RSI', 'ULTOSC', 'MFI', 'HL2', 'ATR']].ffill(inplace=True)
+    # scaler_std = StandardScaler()
+    # scaler_mm = MinMaxScaler()
+    # full_df.loc[:, 'ADL'] = scaler_std.fit_transform(full_df[['ADL']])
+    # full_df.loc[:, 'HL2'] = scaler_std.fit_transform(full_df[['HL2']])
+    # full_df.loc[:, 'ATR'] = scaler_std.fit_transform(full_df[['ATR']])
+    # full_df.loc[:, 'RSI'] = scaler_mm.fit_transform(full_df[['RSI']])
+    # full_df.loc[:, 'ULTOSC'] = scaler_mm.fit_transform(full_df[['ULTOSC']])
+    # full_df.loc[:, 'MFI'] = scaler_mm.fit_transform(full_df[['MFI']])
+    full_df['target'] = full_df[['ADL', 'HL2', 'ATR']].sum(axis=1)
     # scaler = MinMaxScaler()
     # full_df.loc[:, 'HL2'] = scaler.fit_transform(full_df[['ADL']])
     # full_df['OBV'].ffill(inplace=True)
@@ -37,9 +50,9 @@ if __name__ == "__main__":
     # full_df['MFM'] = ((full_df['Close'] - full_df['Low']) - (full_df['High'] - full_df['Close'])) / (
     #             full_df['High'] - full_df['Low'])
     # full_df['MFV'] = full_df['MFM'] * full_df['Volume']
-    count_0_ADL = (full_df['ADL'] == 0.0).sum()
-    print(f"0.0 values in column 'ADL': {count_0_ADL}")
-    plt.plot(full_df['ADL'].tail(N_LAST_INTERVALS).to_numpy())
+    count_0_ADL = (full_df['target'] == 0.0).sum()
+    print(f"0.0 values in column 'target': {count_0_ADL}")
+    plt.plot(full_df['target'].tail(N_LAST_INTERVALS).to_numpy())
     plt.show()
     # full_df['ADL'].fillna(method='ffill', inplace=True)
     # full_df['OBV'].fillna(method='ffill', inplace=True)
@@ -63,16 +76,16 @@ if __name__ == "__main__":
         #     plt.plot(rnd_df['MFV'].to_numpy())
         #     plt.show()
 
-        results = coint(last_month['ADL'], rnd_df['ADL'])
+        results = coint(last_month['target'], rnd_df['target'])
         print(f'Test on random period #{i}: {results}')
         if results[1] < 0.05:
-            print(rnd_df['ADL'])
-            print(last_month['ADL'])
+            print(rnd_df['target'])
+            print(last_month['target'])
             print(f'start_date: {rnd_df.iloc[0, 0]} end_date: {rnd_df.iloc[-1, 0]}')
             scaler1 = MinMaxScaler()
             scaler2 = MinMaxScaler()
-            last_month.loc[:, 'ADL'] = scaler1.fit_transform(last_month[['ADL']])
-            rnd_df.loc[:, 'ADL'] = scaler2.fit_transform(rnd_df[['ADL']])
-            plt.plot(last_month['ADL'].to_numpy())
-            plt.plot(rnd_df['ADL'].to_numpy())
+            # last_month.loc[:, 'target'] = scaler1.fit_transform(last_month[['target']])
+            # rnd_df.loc[:, 'target'] = scaler2.fit_transform(rnd_df[['target']])
+            plt.plot(scaler1.fit_transform(last_month[['target']]))
+            plt.plot(scaler2.fit_transform(rnd_df[['target']]))
             plt.show()
