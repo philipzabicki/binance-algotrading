@@ -6,7 +6,7 @@ BASE_TICKER = 'BTC'
 QUOTE_TICKER = 'USDT'
 MARKET = 'um'
 INTERVAL = '5m'
-trade_balance = 49.5
+trade_balance = 27.5
 
 # MACD settings:
 position_ratio, save_ratio, stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.9084360721923264, 0.0006522779237663826, 0.013771717681075216, 0.008168106994787865, 0.7325517706171805, 0.08116727153870686, 0.3755629310628192, 0.39153884632535846

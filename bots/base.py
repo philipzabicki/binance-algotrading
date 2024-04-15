@@ -403,7 +403,6 @@ class FuturesTaker:
             if self.signal >= self.long_enter_at:
                 trade_q = (self.position_balance * self.leverage) / self.close
                 q = str(trade_q)[:len(str(self.step_size))]
-                print(q)
                 if self._market_buy(q):
                     self.stoploss_price = round_step_size(self.close * (1 - self.stop_loss), self.tick_size)
                     self.takeprofit_price = round_step_size(self.close * (1 + self.take_profit), self.tick_size)
