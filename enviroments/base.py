@@ -27,7 +27,7 @@ class SpotBacktest(Env):
             self.end_index = searchsorted(self.df[:, 0], end_date, side='right') - 1
         else:
             self.start_index = 0
-            self.end_index = len(self.df - 1)
+            self.end_index = self.df.shape[0] - 1
         trade_range_size = len(self.df[self.start_index:self.end_index, :])
         if len(self.df[self.start_index:self.end_index, :]) < max_steps:
             raise ValueError("max_steps larger than rows in dataframe")

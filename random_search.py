@@ -1,7 +1,7 @@
 import cProfile
 from csv import writer
 # import pandas as pd
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from statistics import mean
 from time import time
 
@@ -9,7 +9,7 @@ from numpy import isnan, inf
 from pandas import read_csv
 
 from definitions import REPORT_DIR
-from enviroments import MACDOptimizeSavingSpotEnv
+from enviroments import MACDOptimizeSavingFuturesEnv
 from utils.get_data import by_BinanceVision
 
 # from utils.utility import get_slippage_stats
@@ -17,18 +17,23 @@ from utils.get_data import by_BinanceVision
 # CPU_CORES_COUNT = cpu_count()
 CPU_CORES_COUNT = 1
 EPISODES_PER_CORE = 256
-TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCFDUSD', '1m', 'spot', 'klines', '2023-09-11'
-ENVIRONMENT = MACDOptimizeSavingSpotEnv
+TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
+TRADE_START_DATE = '2021-09-13'
+TRADE_END_DATE = '2022-01-11'
+DF_START_DATE = '2021-03-13'
+DF_END_DATE = '2022-01-12'
+ENVIRONMENT = MACDOptimizeSavingFuturesEnv
 # SLIPP = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
-REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{MARKET_TYPE}{ITV}since{START_DATE}.csv'
+REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{MARKET_TYPE}{ITV}since{TRADE_START_DATE}.csv'
 
 
-def run_indefinitely(_, df):
+def run_indefinitely(_, df, df_mark=None):
     profiler = cProfile.Profile()
     profiler.enable()
 
-    env = ENVIRONMENT(df=df, no_action_finish=inf,
-                      init_balance=1_000, fee=0.0, coin_step=0.00001,
+    env = ENVIRONMENT(df=df, df_mark=df_mark, no_action_finish=inf,
+                      start_date=TRADE_START_DATE, end_date=TRADE_END_DATE,
+                      init_balance=1_000, fee=0.0005, coin_step=0.001,
                       # slippage=SLIPP,
                       visualize=False, verbose=False, render_range=60)
     timers, results = [], []
@@ -62,14 +67,27 @@ def main():
     while 1:
         start_t = time()
         # df = by_DataClient(ticker=TICKER, interval=ITV, futures=FUTURES, statements=True, delay=3_600)
-        dates, df = by_BinanceVision(ticker=TICKER, interval=ITV, market_type=MARKET_TYPE, data_type='klines',
-                                     split=True,
-                                     start_date=START_DATE, delay=129_600)
+        df = by_BinanceVision(ticker=TICKER,
+                              interval=ITV,
+                              market_type=MARKET_TYPE,
+                              data_type=DATA_TYPE,
+                              start_date=DF_START_DATE,
+                              end_date=DF_END_DATE,
+                              split=False,
+                              delay=345_600)
+        df_mark = by_BinanceVision(ticker=TICKER,
+                                   interval=ITV,
+                                   market_type=MARKET_TYPE,
+                                   data_type='markPriceKlines',
+                                   start_date=DF_START_DATE,
+                                   end_date=DF_END_DATE,
+                                   split=False,
+                                   delay=345_600)
         print(f'df {df}')
         with Pool(processes=CPU_CORES_COUNT) as pool:
             # Each process will call 'run_indefinitely_process'
             # The list(range(num_processes)) is just to provide a different argument to each process (even though it's not used in the function)
-            pool.starmap(run_indefinitely, [(i, df) for i in range(CPU_CORES_COUNT)])
+            pool.starmap(run_indefinitely, [(i, df, df_mark) for i in range(CPU_CORES_COUNT)])
             # pool.map(run_indefinitely, range(CPU_CORES_COUNT))
         report_df = read_csv(REPORT_FULL_PATH)
         report_df.sort_values(report_df.columns[0], inplace=True)
