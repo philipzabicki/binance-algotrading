@@ -1,7 +1,7 @@
 # from random import normalvariate
 from csv import writer
 from datetime import datetime as dt
-from math import copysign, floor
+from math import copysign, floor, sqrt
 from random import randint
 from time import time
 
@@ -306,7 +306,8 @@ class SpotBacktest(Env):
                     steps - self.profit_hold_counter - self.loss_hold_counter - self.episode_orders)
             if above_free > 0:
                 if hasattr(self, 'leverage'):
-                    above_free_factor = above_free / self.leverage
+                    above_free_factor = above_free
+                    # above_free_factor = above_free / self.leverage**(1/3)
                     # above_free_factor = above_free/sqrt(self.leverage)
                 else:
                     above_free_factor = above_free
@@ -467,29 +468,24 @@ class FuturesBacktest(SpotBacktest):
     #     return True
     #   else:
     #     return False
-
     def _check_margin(self):
-        high = self.df_mark[self.current_step, 2]
-        low = self.df_mark[self.current_step, 3]
         # If in long position and mark Low below liquidation price
-        if (self.qty > 0) and (self.liquidation_price >= low):
-            return True
+        if self.qty > 0:
+            return self.liquidation_price >= self.df_mark[self.current_step, 3]
         # If in short position and mark High above liquidation price
-        elif (self.qty < 0) and (self.liquidation_price <= high):
-            return True
+        elif self.qty < 0:
+            return self.liquidation_price <= self.df_mark[self.current_step, 2]
         return False
 
     def _get_pnl(self, price, update=False):
-        _pnl = (((price / self.enter_price) - 1) * self.leverage) * copysign(1, self.qty)
-        if update:
-            self.pnl = _pnl
-            if self.pnl < 0:
-                self.loss_hold_counter += 1
-            elif self.pnl > 0:
-                self.profit_hold_counter += 1
+        if update and self.in_position:
+            self.pnl = ((price / self.enter_price) - 1) * self.sign_leverage
+            self.loss_hold_counter += (self.pnl < 0)
+            self.profit_hold_counter += (self.pnl > 0)
+            return self.pnl
         elif not self.in_position:
-            self.pnl = 0
-        return _pnl
+            return 0
+        return ((price / self.enter_price) - 1) * self.sign_leverage
 
     def _open_position(self, side, price):
         if side == 'long':
@@ -530,6 +526,8 @@ class FuturesBacktest(SpotBacktest):
             self.qty = adj_qty * self.coin_step
         elif side == 'short':
             self.qty = -1 * adj_qty * self.coin_step
+        # for speeding up _get_pnl() method
+        self.sign_leverage = copysign(1, self.qty) * self.leverage
         # https://www.binance.com/en/support/faq/how-to-calculate-liquidation-price-of-usd%E2%93%A2-m-futures-contracts-b3c689c1f50a44cabb3a84e663b81d93
         # 1,25% liquidation clearance fee https://www.binance.com/en/futures/trading-rules/perpetual/
         self.liquidation_price = (self.margin * (1 - 0.0125) - self.qty * self.enter_price) / (
@@ -637,14 +635,11 @@ class FuturesBacktest(SpotBacktest):
             elif (action == 1 and self.qty < 0) or (action == 2 and self.qty > 0):
                 self._close_position(close)
         elif action == 1:
-            close = self.df[self.current_step, 4]
-            self._open_position('long', close)
+            self._open_position('long', self.df[self.current_step, 4])
         elif action == 2:
-            close = self.df[self.current_step, 4]
-            self._open_position('short', close)
+            self._open_position('short', self.df[self.current_step, 4])
         else:
-            if self.init_balance < self.balance + self.save_balance:
-                self.with_gain_c += 1
+            self.with_gain_c += (self.init_balance < self.balance + self.save_balance)
         # self.info = {'action': action,
         #         'reward': 0,
         #         'step': self.current_step,

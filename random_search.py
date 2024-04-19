@@ -16,12 +16,13 @@ from utils.get_data import by_BinanceVision
 
 # CPU_CORES_COUNT = cpu_count()
 CPU_CORES_COUNT = 1
-EPISODES_PER_CORE = 256
+EPISODES_PER_CORE = 1024
 TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
-TRADE_START_DATE = '2021-09-13'
-TRADE_END_DATE = '2022-01-11'
-DF_START_DATE = '2021-03-13'
-DF_END_DATE = '2022-01-12'
+TRADE_START_DATE = '2021-11-20'
+TRADE_END_DATE = '2022-03-20'
+# Better to take more previous data for some TA features
+DF_START_DATE = '2021-07-20'
+DF_END_DATE = '2022-03-21'
 ENVIRONMENT = MACDOptimizeSavingFuturesEnv
 # SLIPP = get_slippage_stats('spot', 'BTCFDUSD', '1m', 'market')
 REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{MARKET_TYPE}{ITV}since{TRADE_START_DATE}.csv'

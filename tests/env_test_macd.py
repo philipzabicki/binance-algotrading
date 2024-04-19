@@ -1,8 +1,9 @@
 from multiprocessing import cpu_count, Pool
-from statistics import mean, stdev
+from statistics import mean, stdev, median
 
 import mplfinance as mpf
 import pandas as pd
+from numpy import quantile
 from matplotlib import pyplot as plt
 from numpy import inf
 
@@ -16,10 +17,13 @@ CPU_CORES = cpu_count()
 N_TEST = 10_000
 N_STEPS = 8_640
 TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
-DF_START_DATE, DF_END_DATE = '2021-03-13', '2022-01-12'
-TRADE_START_DATE, TRADE_END_DATE = '2021-09-13', '2022-01-11'
+TRADE_START_DATE = '2021-11-20'
+TRADE_END_DATE = '2022-03-20'
+# Better to take more previous data for some TA features
+DF_START_DATE = '2021-07-20'
+DF_END_DATE = '2022-03-21'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.7815753882829612, 0.43121962615652076, 0.010778949197472059, 0.016998521828028183, 0.5647806885009911, 0.42391897595727873, 0.26507198505991225, 0.7003657560778157, 272, 692, 953, 0, 33, 25, 9]
+ACTION = [0.7068344840046556, 0.06866980724047726, 0.014667508215968673, 0.6624315457484368, 0.9492528324000956, 0.05215074097490277, 0.910665238610637, 0.6015669284499915, 12, 428, 618, 19, 33, 23, 43]
 
 
 def parallel_test(pool_nb, df, df_mark=None):
@@ -39,8 +43,9 @@ def parallel_test(pool_nb, df, df_mark=None):
     for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)
         results.append(reward)
-        if reward > 0:
-            gains.append(env.exec_env.balance - env.exec_env.init_balance)
+        _diff = env.exec_env.balance - env.exec_env.init_balance
+        if reward > 0 and _diff > 0:
+            gains.append(_diff)
     return results, gains
 
 
@@ -126,4 +131,5 @@ if __name__ == "__main__":
     profitable = sum(i > 0 for i in joined_res)
     print(f'From {len(joined_res)} tests, profitable: {profitable} ({profitable / len(joined_res) * 100}%)')
     print(f'gain(avg/stdev): ${mean(joined_gains):_.2f}/${stdev(joined_gains):_.2f}')
+    print(f'gain(quartiles) ${quantile(joined_gains, [0.25,0.5,0.75,1])}')
     print(f'gain(min/max): ${min(joined_gains):_.2f}/${max(joined_gains):_.2f}')

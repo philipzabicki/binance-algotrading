@@ -4,6 +4,7 @@ from datetime import datetime as dt
 from json import loads
 from os import makedirs, path
 from time import time
+import logging
 
 from binance.client import Client
 from binance.enums import *
@@ -250,11 +251,19 @@ class SpotTaker:
 class FuturesTaker:
     def __init__(self, base='BTC', quote='USDT', market='um', itv='1m', settings=None, API_KEY='', SECRET_KEY='',
                  prev_size=100, multi=1):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(logging.DEBUG)
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logger.propagate = False
+
         self.start_t = time()
         if settings is None:
             raise ValueError("Settings must be dict type.")
         else:
-            print(f'Settings provided: {settings}')
+            logging.info(f'Settings provided: {settings}')
         self.base, self.quote = base, quote
         self.symbol = base + quote
         for key, value in settings.items():
@@ -294,14 +303,14 @@ class FuturesTaker:
         try:
             self.client.change_leverage(symbol=self.symbol,
                                         leverage=str(self.leverage))
-            print(f'Leverage changed to: {self.leverage}')
+            self.logger.info(f'Leverage changed to: {self.leverage}')
         except Exception as e:
-            print(f'Changing leverage error: {e}')
+            self.logger.info(f'Changing leverage error: {e}')
         try:
             m_type = self.client.change_margin_type(symbol=self.symbol,
                                                     marginType="ISOLATED")
         except Exception as e:
-            print(f'Changing margin type error: {e}')
+            self.logger.info(f'Changing margin type error: {e}')
 
         for s in self.client.exchange_info()["symbols"]:
             if s['symbol'] == self.symbol:
@@ -316,22 +325,22 @@ class FuturesTaker:
         self.in_long_position, self.in_short_position = False, False
         self.stoploss_price, self.takeprofit_price = 0.0, 0.0
         self.buy_order, self.sell_order, self.SL_order, self.TP_order = None, None, None, None
-        print(f'prev_data[-5:]: {asarray(self.OHLCV_data)[-5:, :]}, len: {len(self.OHLCV_data)}')
-        print(f'last close: {self.close}')
-        print(
+        self.logger.debug(f'prev_data[-5:]: {asarray(self.OHLCV_data)[-5:, :]}, len: {len(self.OHLCV_data)}')
+        self.logger.info(f'last close: {self.close}')
+        self.logger.info(
             f'pos_bal:${self.position_balance:.2f} trade_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} available_bal:${self.available_balance:.2f}')
-        print(
+        self.logger.info(
             f'step_size: {self.step_size} min_qty: {self.min_qty} max_qty: {self.max_qty} trade_qty: {(self.position_balance * self.leverage) / self.close}')
-        print(f'last orders {self.orders}')
+        self.logger.info(f'last orders {self.orders}')
 
     def on_error(self, ws, error):
-        print(f"Error occurred: {error}")
+        self.logger.error(f"Error occurred: {error}")
 
     def on_close(self, ws, close_status_code, close_msg):
-        print("### WebSocket closed ###")
+        self.logger.info("### WebSocket closed ###")
 
     def on_open(self, ws):
-        print("### WebSocket opened ###")
+        self.logger.info("### WebSocket opened ###")
 
     def on_message(self, ws, message):
         # self.on_message_t = time()
@@ -345,19 +354,18 @@ class FuturesTaker:
             self._analyze()
             if (not self.in_long_position) and (not self.in_short_position):
                 self.cum_pnl = self.available_balance - self.init_balance
-            print(
-                f'INFO close:{self.close:.2f} q:{self.q} pos_bal:${self.position_balance:.2f} trade_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} available_bal:${self.available_balance:.2f}',
-                end=' ')
-            print(f'cum_pnl:${self.cum_pnl:.2f}')
+            self.logger.info(
+                f'close:{self.close:.2f} q:{self.q} pos_bal:${self.position_balance:.2f} trade_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} available_bal:${self.available_balance:.2f} cum_pnl:${self.cum_pnl:.2f}')
         # Stop Loss filling handle
         if self.SL_order is not None:
-            if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or ((float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
+            if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
+                    (float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
                 order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
                 if order['status'] != 'FILLED':
-                    print(f'STOP_LOSS was not filled. orderID:{self.SL_order["orderId"]}')
+                    self.logger.warning(f'STOP_LOSS was not filled. orderID:{self.SL_order["orderId"]}')
                     self._partially_filled_problem(self.stoploss_price)
                 else:
-                    print(f'STOP_LOSS was filled.')
+                    self.logger.info(f'STOP_LOSS was filled.')
                 self._cancel_all_orders()
                 self._update_balances()
                 self.SL_order, self.TP_order = None, None
@@ -368,10 +376,10 @@ class FuturesTaker:
                     (float(data_k['l']) <= self.takeprofit_price) and self.in_short_position):
                 order = self.client.query_order(symbol=self.symbol, orderId=self.TP_order['orderId'])
                 if order['status'] != 'FILLED':
-                    print(f'TAKE_PROFIT was not filled. orderID:{self.TP_order["orderId"]}')
+                    self.logger.warning(f'TAKE_PROFIT was not filled. orderID:{self.TP_order["orderId"]}')
                     self._partially_filled_problem(self.takeprofit_price)
                 else:
-                    print(f'TAKE_PROFIT was filled.')
+                    self.logger.info(f'TAKE_PROFIT was filled.')
                 self._cancel_all_orders()
                 self._update_balances()
                 self.TP_order, self.SL_order = None, None
@@ -425,7 +433,7 @@ class FuturesTaker:
 
     def _check_signal(self):
         self.signal = 0.0
-        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
 
     def _report_slipp(self, order, req_price, order_type):
         _order = self.client.query_order(symbol=self.symbol, orderId=order['orderId'])
@@ -434,7 +442,7 @@ class FuturesTaker:
             _order = self.client.query_order(symbol=self.symbol, orderId=order['orderId'])
             retry += 1
             if retry > 10:
-                print(f'DEBUG Order was not filled after {retry} tries at _report_slipp() {_order}')
+                self.logger.debug(f'Order was not filled after {retry} tries at _report_slipp() {_order}')
                 break
         if order_type == 'buy':
             file = self.buy_slipp_file
@@ -443,15 +451,15 @@ class FuturesTaker:
         elif (order_type == 'stoploss') or (order_type == 'unfilled_stop'):
             file = self.stoploss_slipp_file
         else:
-            print(f'DEBUG order type= {order_type} not handled at _report_slipp')
+            self.logger.debug(f'order type= {order_type} not handled at _report_slipp')
             return
         _slipp = float(_order['avgPrice']) / req_price
         with open(file, 'a', newline='') as file:
             writer(file).writerow([_slipp])
-        print(f' {dt.today()} REPORTING {order_type} SLIP {_slipp}')
+        self.logger.info(f' {dt.today()} REPORTING {order_type} SLIP {_slipp}')
 
     def _get_filled_price(self, order):
-        print(order)
+        self.logger.debug(order)
         return 0
         # value, quantity = 0, 0
         # for element in order['fills']:
@@ -470,7 +478,7 @@ class FuturesTaker:
             if self._market_buy(self.q):
                 self._report_slipp(self.buy_order, req_price, 'unfilled_stop')
         else:
-            print(f'FAILED AT _partially_filled_problem()')
+            self.logger.error(f'FAILED AT _partially_filled_problem()')
 
     def _cancel_all_orders(self):
         try:
@@ -478,13 +486,13 @@ class FuturesTaker:
             self.TP_order, self.SL_order = None, None
             self.takeprofit_price, self.stoploss_price = 0.0, 0.0
         except Exception as e:
-            print(f'exception(_cancel_all_orders): {e}')
+            self.logger.error(f'exception(_cancel_all_orders): {e}')
 
     def _cancel_order_by_id(self, order_id):
         try:
             self.client.cancel_order(symbol=self.symbol, orderId=order_id)
         except Exception as e:
-            print(f'exception(_cancel_order): {e}')
+            self.logger.error(f'exception(_cancel_order): {e}')
 
     def _stop_loss(self, q, price, side):
         try:
@@ -494,10 +502,10 @@ class FuturesTaker:
                                                   # quantity=q,
                                                   stopPrice=price,
                                                   closePosition='true')
-            print(f'STOP_MARKET q:{q} stopPrice:{price} {dt.today()} ')
+            self.logger.info(f'STOP_MARKET q:{q} stopPrice:{price} {dt.today()} ')
             return True
         except Exception as e:
-            print(f'exception at _stop_loss(): {e}')
+            self.logger.error(f'exception at _stop_loss(): {e}')
             return False
 
     def _take_profit(self, q, price, side):
@@ -508,10 +516,10 @@ class FuturesTaker:
                                                   # quantity=q,
                                                   stopPrice=price,
                                                   closePosition='true')
-            print(f'TAKE_PROFIT_MARKET q:{q} stopPrice:{price} {dt.today()} ')
+            self.logger.info(f'TAKE_PROFIT_MARKET q:{q} stopPrice:{price} {dt.today()} ')
             return True
         except Exception as e:
-            print(f'exception at _take_profit(): {e}')
+            self.logger.error(f'exception at _take_profit(): {e}')
             return False
 
     def _market_buy(self, q):
@@ -521,12 +529,12 @@ class FuturesTaker:
                                                    side='BUY',
                                                    type='MARKET',
                                                    quantity=q)
-            print(f'(sending buy order: {(time() - order_t) * 1_000}ms)')
-            print(f'(_analyze to _market_buy: {(time() - self.analyze_t) * 1_000}ms)')
-            print(f'BUY_MARKET q:{q} position_balance:{self.position_balance} {dt.today()}')
+            self.logger.debug(f'(sending buy order: {(time() - order_t) * 1_000}ms)')
+            self.logger.debug(f'(_analyze to _market_buy: {(time() - self.analyze_t) * 1_000}ms)')
+            self.logger.info(f'BUY_MARKET q:{q} position_balance:{self.position_balance} {dt.today()}')
             return True
         except Exception as e:
-            print(f'exception at _market_buy(): {e}')
+            self.logger.error(f'exception at _market_buy(): {e}')
             return False
 
     def _market_sell(self, q):
@@ -536,18 +544,19 @@ class FuturesTaker:
                                                     side='SELL',
                                                     type='MARKET',
                                                     quantity=q)
-            print(f'(sending sell order: {(time() - order_t) * 1_000}ms)')
-            print(f'(_analyze to _market_sell: {(time() - self.analyze_t) * 1_000}ms)')
-            print(f'SELL_MARKET q:{q} position_balance:{self.position_balance} {dt.today()}{dt.today()}')
+            self.logger.debug(f'(sending sell order: {(time() - order_t) * 1_000}ms)')
+            self.logger.debug(f'(_analyze to _market_sell: {(time() - self.analyze_t) * 1_000}ms)')
+            self.logger.info(f'SELL_MARKET q:{q} position_balance:{self.position_balance} {dt.today()}{dt.today()}')
             return True
         except Exception as e:
-            print(f'exception at _market_sell(): {e}')
+            self.logger.error(f'exception at _market_sell(): {e}')
             return False
 
     def _collect_previous_candles(self, itv, prev_size, multi):
         current_server_time = self.client.time()['serverTime']
         _start_time = current_server_time - (prev_size * multi) * ITV_AS_MS[itv]
-        print(f'Collecting {prev_size * multi} previous candles from {_start_time} to {current_server_time}')
+        self.logger.info(
+            f'Collecting {prev_size * multi} previous candles from {_start_time} to {current_server_time}')
         limit = 1_000
 
         # Fetch candles in segments of limit*ITV_AS_MS[itv]
@@ -610,7 +619,7 @@ class FuturesTaker:
         elif 300_000_000 < self.trade_balance < 500_000_000:
             self.tier = 10
         if self.leverage > POSITION_TIER[self.tier][0]:
-            print(f' Leverage exceeds tier {self.tier} max', end=' ')
+            self.logger.warning(f' Leverage exceeds tier {self.tier} max', end=' ')
             # print(f'changing from {self.leverage} to {self.POSITION_TIER[self.tier][0]} (Balance:${self.balance}:.2f)')
             self.leverage = POSITION_TIER[self.tier][0]
 
