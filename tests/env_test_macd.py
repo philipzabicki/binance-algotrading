@@ -1,11 +1,11 @@
 from multiprocessing import cpu_count, Pool
-from statistics import mean, stdev, median
+from statistics import mean, stdev
 
 import mplfinance as mpf
 import pandas as pd
-from numpy import quantile
 from matplotlib import pyplot as plt
 from numpy import inf
+from numpy import quantile
 
 from definitions import ADDITIONAL_DATA_BY_MA, ADDITIONAL_DATA_BY_OHLCV_MA
 from enviroments import MACDOptimizeSavingFuturesEnv
@@ -23,7 +23,8 @@ TRADE_END_DATE = '2023-09-01'
 DF_START_DATE = '2023-01-04'
 DF_END_DATE = '2023-09-02'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.9460166700548783, 0.0006627370950768449, 0.0071802375679447215, 0.0252682811737011, 0.9921070202773402, 0.27752799114024806, 0.793900445152847, 0.19245151212495437, 224, 291, 722, 35, 30, 5, 56]
+ACTION = [0.9460166700548783, 0.0006627370950768449, 0.0071802375679447215, 0.0252682811737011, 0.9921070202773402,
+          0.27752799114024806, 0.793900445152847, 0.19245151212495437, 224, 291, 722, 35, 30, 5, 56]
 
 
 def parallel_test(pool_nb, df, df_mark=None):
@@ -131,5 +132,5 @@ if __name__ == "__main__":
     profitable = sum(i > 0 for i in joined_res)
     print(f'From {len(joined_res)} tests, profitable: {profitable} ({profitable / len(joined_res) * 100}%)')
     print(f'gain(avg/stdev): ${mean(joined_gains):_.2f}/${stdev(joined_gains):_.2f}')
-    print(f'gain(quartiles) ${quantile(joined_gains, [0.25,0.5,0.75,1])}')
+    print(f'gain(quartiles) ${quantile(joined_gains, [0.25, 0.5, 0.75, 1])}')
     print(f'gain(min/max): ${min(joined_gains):_.2f}/${max(joined_gains):_.2f}')

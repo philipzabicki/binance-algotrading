@@ -2,7 +2,7 @@
 from random import randint
 
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.stattools import coint
 from talib import *
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # full_df['RSI'] = RSI(full_df['Close'], timeperiod=14)
     # full_df['ULTOSC'] = ULTOSC(full_df['High'], full_df['Low'], full_df['Close'], timeperiod1=7, timeperiod2=14, timeperiod3=28)
     # full_df['MFI'] = MFI(full_df['High'], full_df['Low'], full_df['Close'], full_df['Volume'], timeperiod=N_LAST_INTERVALS//100)
-    full_df['ATR'] = ATR(full_df['High'], full_df['Low'], full_df['Close'], timeperiod=N_LAST_INTERVALS//100)
+    full_df['ATR'] = ATR(full_df['High'], full_df['Low'], full_df['Close'], timeperiod=N_LAST_INTERVALS // 100)
     full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])
     full_df['HL2'] = MEDPRICE(full_df['High'], full_df['Low'])
     # full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])

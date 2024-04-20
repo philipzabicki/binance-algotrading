@@ -18,7 +18,7 @@ class MACDSignalsBot(object):
         previous_size = max(settings['fast_period'] * ADDITIONAL_DATA_BY_OHLCV_MA[settings['fast_ma_type']],
                             settings['slow_period'] * ADDITIONAL_DATA_BY_OHLCV_MA[settings['slow_ma_type']]) + \
                         settings['signal_period'] * ADDITIONAL_DATA_BY_MA[settings['signal_ma_type']]
-        super(self.__class__, self).__init__(*args, prev_size=previous_size+1, **kwargs)
+        super(self.__class__, self).__init__(*args, prev_size=previous_size + 1, **kwargs)
 
     def _check_signal(self):
         self.macd, self.signal_line = custom_MACD(asarray(self.OHLCV_data),
@@ -29,7 +29,8 @@ class MACDSignalsBot(object):
         self.signals = MACD_cross_signal(self.macd[-3:], self.signal_line[-3:])
         self.signal = self.signals[-1]
         self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        self.logger.info(f'MACD: {self.macd[-3:]} SIGNAL_LINE: {self.signal_line[-3:]} trade_signals: {self.signals[1:]}')
+        self.logger.info(
+            f'MACD: {self.macd[-3:]} SIGNAL_LINE: {self.signal_line[-3:]} trade_signals: {self.signals[1:]}')
 
 
 class BandsSignalsBot(object):

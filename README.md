@@ -73,6 +73,7 @@ Main functions in this file are:
 ```python
 LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
 
+
 def by_BinanceVision(ticker='BTCBUSD',
                      interval='1m',
                      market_type='um',
@@ -89,16 +90,23 @@ Name | Type | Mandatory | Description
 ticker | STR | YES | Any cryptocurrency pair traded on Binance ex. 'ETHUSDT'
 interval | STR | YES | Any trading interval existing on Binance Vision ex. '30m'
 market_type | STR | YES | Options: 'um' - USDT-M Futures 'cm' - COIN-M Futures, 'spot' - Spot market
-data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', 'liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'. Spot options: 'aggTrades', 'klines', 'trades'. Better explained with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
-start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just 'YYYY-MM-DD'.
+data_type | STR | YES | Futures options: 'aggTrades', 'bookDepth', 'bookTicker', 'indexPriceKlines', 'klines', '
+liquidationSnapshot', 'markPriceKlines', 'metrics', 'premiumIndexKlines', 'trades'. Spot options: 'aggTrades', '
+klines', 'trades'. Better explained
+with [Binance API](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-api.md#market-data-requests)
+start_date | STR | NO | Any date format parsable by pandas datetime object. Best to use 'YYYY-MM-DD HH:MM:SS' or just '
+YYYY-MM-DD'.
 end_date | STR | NO | Same as above.
-split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (Opened_col, OHLCV_cols). Otherwise, returns single df.
-delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by default.
+split | BOOL | NO | If True splits Dates/Opened column from other columns (OHLCV usually) and function returns tuple (
+Opened_col, OHLCV_cols). Otherwise, returns single df.
+delay | INT | NO | Lets one decide data delay (in seconds) from most up-to-date datapoint. Uses constant value by
+default.
 
 ### by_DataClient()
 
 ```python
 LAST_DATA_POINT_DELAY = 86_400  # 1 day in seconds
+
 
 def by_DataClient(ticker='BTCUSDT',
                   interval='1m',
@@ -122,7 +130,8 @@ of 'pair_list' it handles only single ticker.
 Project has 2
 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible
 environments, [SpotBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L16)
-and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (inheriting from SpotBacktest).
+and [FuturesBacktest](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L352) (
+inheriting from SpotBacktest).
 
 All other environments inherit from them.
 
@@ -131,7 +140,8 @@ All other environments inherit from them.
 #### SpotBacktest
 
 It imitates Binance Exchnage Spot market to some degree. Requires dataframe with OHLCV values for wanted ticker to work.
-Runs by calling step method with trading action. One full trading run is called episode. After every episode, you need to reset the environment with reset method.  
+Runs by calling step method with trading action. One full trading run is called episode. After every episode, you need
+to reset the environment with reset method.
 
 ```python
 class SpotBacktest(Env):
@@ -145,55 +155,69 @@ class SpotBacktest(Env):
 Name | Type | Mandatory | Description
 ------------ | ------------ | ------------ | ------------
 df | pandas.DataFrame | YES | A dataframe with OHLCV values for any ticker/coin pair
-start_date | STR | NO | Env will only run episodes starting from this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
-end_date | STR | NO | Env will only run episodes ending at this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
+start_date | STR | NO | Env will only run episodes starting from this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD
+HH:MM:SS'
+end_date | STR | NO | Env will only run episodes ending at this date in df, format: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:
+SS'
 max_steps | INT | NO | Max steps played in single episode, if larger than 0, location inside df is randomly picked.
-exclude_cols_left | INT | NO | Index of columns to be excluded from observation space (df) e.g. value 1 will skip first column (counting from left) from df that means 'Opened' (dates col) will not show in observation space
-no_action_finish | INT | YES | When no trading action is taken for this many steps, episode will be forced to end 
+exclude_cols_left | INT | NO | Index of columns to be excluded from observation space (df) e.g. value 1 will skip first
+column (counting from left) from df that means 'Opened' (dates col) will not show in observation space
+no_action_finish | INT | YES | When no trading action is taken for this many steps, episode will be forced to end
 init_balance | INT/FLOAT | YES | Initial balance for trading episode to start with (in quote coin)
-position_ratio | FLOAT | YES | Values from 0.0 to 1.0, E.g. 0.5 means only 50% of available balance will be used for trading
-save_ratio | FLOAT | NO | This part of absolute profit from any profitable trade will be saved to save_balance (which is not used for trading)
-stop_loss | FLOAT | NO | This stop loss will be used for all episodes played, it is applied to enter position close price value not position PnL
+position_ratio | FLOAT | YES | Values from 0.0 to 1.0, E.g. 0.5 means only 50% of available balance will be used for
+trading
+save_ratio | FLOAT | NO | This part of absolute profit from any profitable trade will be saved to save_balance (which is
+not used for trading)
+stop_loss | FLOAT | NO | This stop loss will be used for all episodes played, it is applied to enter position close
+price value not position PnL
 take_profit | FLOAT | NO | Similarly to above
 fee | FLOAT | YES | Fee paid for every buy and sell action
-coin_step | FLOAT | YES | Minimal trade amount for ticker base coin, use values from [spot trading rules](https://www.binance.com/en/trade-rule)
-slippage | DICTIONARY | NO | Python dict with price slippage data. First value from tuple for any key is mean slippage and second is standard deviation e.g. {'buy': (1.0, 0.0), 'sell': (1.0, 0.0)}
-slipp_std | INT | NO | This many standard deviations from mean (slippage dict) will be taken to calculate real buy/sell prices
+coin_step | FLOAT | YES | Minimal trade amount for ticker base coin, use values
+from [spot trading rules](https://www.binance.com/en/trade-rule)
+slippage | DICTIONARY | NO | Python dict with price slippage data. First value from tuple for any key is mean slippage
+and second is standard deviation e.g. {'buy': (1.0, 0.0), 'sell': (1.0, 0.0)}
+slipp_std | INT | NO | This many standard deviations from mean (slippage dict) will be taken to calculate real buy/sell
+prices
 visualize | BOOL | YES | If true, every step of episode will be rendered to screen with chart visualization
 render_range | INT | NO | Only applies when visualize=True, this many steps will be rendered in visualization
 verbose | BOOL | YES | If true, at end of every episode env will print summary statistics to console
 write_to_file | BOOL | YES | If true, env will save state to csv every step with buy/sell action
 
-
-Trading actions possible are: {0 - hold, 1 - buy, 2 - sell}. It always trades with current candle close price, you can provide price slippage data for better imitation of a real world
+Trading actions possible are: {0 - hold, 1 - buy, 2 - sell}. It always trades with current candle close price, you can
+provide price slippage data for better imitation of a real world
 scenario.
 You can also set stop loss and take profit for a whole backtest episode.
 Setting a save_ratio parameter forces env to save some part of trading profit and do not use it for future trading.
 
 Backtesting works by calling 'step()' method with 'action' argument until max_steps is reached, df ends or balance
 is so low it does not allow for any market action for given coin.
-    
+
 #### FuturesBacktest
 
 It imitates Binance Exchange Futures market. Inherits from SpotBacktest. Requires additional dataframe with mark price
 ohlc values as binance uses mark prices for unrealized pnl calculation and liquidation price,
-see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087). It also adds new constructor parameter - leverage. For now works well only for BTCUSDT perpetual as
-it requires adding variable (by ticker) leverage range and position tier updates. [BTCUSDT.P tiers](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin)
+see [this](https://www.binance.com/en/blog/futures/what-is-the-difference-between-a-futures-contracts-last-price-and-mark-price-5704082076024731087).
+It also adds new constructor parameter - leverage. For now works well only for BTCUSDT perpetual as
+it requires adding variable (by ticker) leverage range and position tier
+updates. [BTCUSDT.P tiers](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin)
 
 Expands SpotBacktest env class with new methods to
 allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485)
 etc.
 
 ### Signal environments
+
 #### SignalExecuteSpotEnv and SignalExecuteFuturesEnv
 
 Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of trading strategy at
 once on full episode accordingly to given trading signals array.
 
-Allows for asymmetrical enter position(enter_threshold) and close position(close_threshold) signals. When using Futures version
-the asymmetrical aspect is applied for long and short separately (4 thresholds). 
+Allows for asymmetrical enter position(enter_threshold) and close position(close_threshold) signals. When using Futures
+version
+the asymmetrical aspect is applied for long and short separately (4 thresholds).
 
-In generic class implementation signals are random numpy array. Other inheriting environments change this by creating trading signals using technical analysis. 
+In generic class implementation signals are random numpy array. Other inheriting environments change this by creating
+trading signals using technical analysis.
 
 SignalExecute-like object when called, executes trading episode with signals array using position enter/close
 thresholds values to determine position side for all trades. Negative values are reserved for short/sell signals.
@@ -211,6 +235,7 @@ will result in a trading sequence of BUY -> HOLD -> HOLD -> SELL actions.
 
 ```python
 from numpy.random import choice
+
 
 class SignalExecuteSpotEnv(SpotBacktest):
     def __init__(self, *args, **kwargs):
@@ -254,10 +279,12 @@ class SignalExecuteSpotEnv(SpotBacktest):
 ```
 
 ##### SignalExecuteFuturesEnv
+
 It is similar to above but expands enter and close threshold with long and short possibilities.
 
 ```python
 from numpy.random import choice
+
 
 class SignalExecuteFuturesEnv(FuturesBacktest):
     def __init__(self, *args, **kwargs):
@@ -285,7 +312,6 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         self.short_close_threshold = kwargs['short_close_at'] if 'short_close_at' in kwargs else 1.0
         return super().reset()
 
-
     def __call__(self, *args, **kwargs):
         while not self.done:
             # step must be start_step adjusted cause one can start and end backtest at any point in df
@@ -312,17 +338,20 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
 
 ### Technical analysis single signal trading environments
 
-Those environments inherit from SignalExecuteSpotEnv or SignalExecuteFuturesEnv 
+Those environments inherit from SignalExecuteSpotEnv or SignalExecuteFuturesEnv
 and work by creating trading signals array for given technical analysis indicator and its settings.
 Currently only MACD, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
 
 #### MACD example
 
-Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD indicator created with arguments provided to
+Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD indicator created with arguments
+provided to
 reset method.
 
 ##### Execute environment
-These environments overload the reset method of the base class by adding to it the calculation of an array of signals resulting from the MACD indicator.
+
+These environments overload the reset method of the base class by adding to it the calculation of an array of signals
+resulting from the MACD indicator.
 The MACD is calculated based on the parameters passed as an argument.
 
 ```python
@@ -383,7 +412,8 @@ logic.
 
 #### Any other new technical analysis signal trading environment
 
-I will not describe the other environments, as they work on the same principle as the environment for MACD described earlier.
+I will not describe the other environments, as they work on the same principle as the environment for MACD described
+earlier.
 You can create any other TA indicator trading environment, using ones already existing as template, just take care that
 your generated signals are properly calculated.
 
@@ -393,14 +423,16 @@ One way to finding optimal technical analysis parameters for trading is to use g
 strategy environments can be used for optimization.
 
 ### Optimization environments
+
 Like the signal environments described earlier, these go a step further and use these environments internally
 to execute trading episodes and by calling the reset method with the given parameters the internal signal environments
 are also reset and create a new signal array based on the given parameters.
 
 #### Keltner Channel(Bands) example
+
 I will describe the principle of these environments using the Bands ones as example.
 This environment has an additional saving parameter that indicates what percentage of the profits from each trade
-is to be retained and not used in subsequent trades. 
+is to be retained and not used in subsequent trades.
 
 ```python
 class BandsOptimizeSavingFuturesEnv(Env):

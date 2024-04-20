@@ -1,10 +1,10 @@
+import logging
 from collections import deque
 from csv import writer
 from datetime import datetime as dt
 from json import loads
 from os import makedirs, path
 from time import time
-import logging
 
 from binance.client import Client
 from binance.enums import *
@@ -257,7 +257,8 @@ class FuturesTaker:
         console_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
         console_handler.setFormatter(console_formatter)
         self.logger.addHandler(console_handler)
-        file_handler = logging.FileHandler(f'{LOG_DIR}{dt.now().strftime("%Y-%m-%d_%H-%M-%S")}_{self.__class__.__name__}.log')
+        file_handler = logging.FileHandler(
+            f'{LOG_DIR}{dt.now().strftime("%Y-%m-%d_%H-%M-%S")}_{self.__class__.__name__}.log')
         file_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
         file_handler.setFormatter(file_formatter)
         self.logger.addHandler(file_handler)

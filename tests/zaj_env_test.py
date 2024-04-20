@@ -2,11 +2,11 @@ from multiprocessing import Pool, cpu_count
 from statistics import mean, stdev
 
 import pandas as pd
+from enviroments.zajeciowy_env import ChaikinOscillatorStratSpotEnv
 from matplotlib import pyplot as plt
 from numpy import inf
 from talib import AD
 
-from enviroments.zajeciowy_env import ChaikinOscillatorStratSpotEnv
 from utils.ta_tools import get_1D_MA, ChaikinOscillator_signal
 
 CPU_CORES = cpu_count()

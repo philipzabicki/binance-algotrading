@@ -1,7 +1,7 @@
 # from random import normalvariate
 from csv import writer
 from datetime import datetime as dt
-from math import copysign, floor, sqrt
+from math import copysign, floor
 from random import randint
 from time import time
 

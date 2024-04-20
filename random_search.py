@@ -1,7 +1,7 @@
 import cProfile
 from csv import writer
 # import pandas as pd
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from statistics import mean
 from time import time
 

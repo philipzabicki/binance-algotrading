@@ -4,8 +4,8 @@ from gym import spaces, Env
 from numpy import array, float64, inf
 
 from definitions import ADDITIONAL_DATA_BY_OHLCV_MA, ADDITIONAL_DATA_BY_MA
-from utils.ta_tools import custom_MACD, MACD_cross_signal
 from enviroments.signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
+from utils.ta_tools import custom_MACD, MACD_cross_signal
 
 
 ########################################################################################################################
