@@ -52,7 +52,7 @@ pip install -r requirements.txt
 ```
 
 It is important that you download my patch for finta package (included in requirements.txt)
-as It needed a small adjustment to work with python 3.11.4
+as It needed a small adjustment to work with python 3.11.x
 
 ## Getting data
 
@@ -117,7 +117,7 @@ of 'pair_list' it handles only single ticker.
 
 'futures' if false, downloads spot data.
 
-## Genetic backtesting environments
+## Backtesting environments
 
 Project has 2
 base [Gymnasium](https://github.com/Farama-Foundation/Gymnasium.git)/[Gym](https://github.com/openai/gym.git) compatible
@@ -184,6 +184,7 @@ Expands SpotBacktest env class with new methods to
 allow [short selling](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L447), [margin checking](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L426), [postion tier checking](https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin), [position liquidations](https://github.com/philipzabicki/binance-algotrading/blob/main/enviroments/base.py#L485)
 etc.
 
+### Signal environments
 #### SignalExecuteSpotEnv and SignalExecuteFuturesEnv
 
 Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of trading strategy at
@@ -386,14 +387,56 @@ I will not describe the other environments, as they work on the same principle a
 You can create any other TA indicator trading environment, using ones already existing as template, just take care that
 your generated signals are properly calculated.
 
-## Genetic Algorithm for parameters optimization
+## Genetic algorithm for parameters optimization
 
-One way to finding optimal technical analysis parameters for trading is to use Genetic Algorithm. All previously showed
+One way to finding optimal technical analysis parameters for trading is to use genetic algorithms. All previously showed
 strategy environments can be used for optimization.
 
 ### Optimization environments
+Like the signal environments described earlier, these go a step further and use these environments internally
+to execute trading episodes and by calling the reset method with the given parameters the internal signal environments
+are also reset and create a new signal array based on the given parameters.
 
-#### Envx
+#### Keltner Channel(Bands) example
+I will describe the principle of these environments using the Bands ones as example.
+This environment has an additional saving parameter that indicates what percentage of the profits from each trade
+is to be retained and not used in subsequent trades. 
+
+```python
+class BandsOptimizeSavingFuturesEnv(Env):
+    def __init__(self, *args, **kwargs):
+        self.exec_env = _BandsExecuteFuturesEnv(*args, **kwargs)
+        obs_lower_bounds = array([-inf for _ in range(8)])
+        obs_upper_bounds = array([inf for _ in range(8)])
+        self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
+        ### ACTION BOUNDARIES ###
+        action_lower = [0.01, 0.000, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 0.001, 2, 0, 2, 1]
+        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 15.0, 10_000, 37, 10_000, 125]
+        #########################
+        self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
+
+    def reset(self, position_ratio=1.0, stop_loss=None, take_profit=None, save_ratio=None,
+              long_enter_at=1.0, long_close_at=1.0,
+              short_enter_at=1.0, short_close_at=1.0, leverage=1,
+              ma_type=0, ma_period=2,
+              atr_period=2, atr_multi=1.0):
+        return self.exec_env.reset(position_ratio=position_ratio, save_ratio=save_ratio,
+                                   stop_loss=stop_loss, take_profit=take_profit,
+                                   long_enter_at=long_enter_at, long_close_at=long_close_at,
+                                   short_enter_at=short_enter_at, short_close_at=short_close_at,
+                                   atr_multi=atr_multi, atr_period=atr_period,
+                                   ma_type=ma_type, ma_period=ma_period,
+                                   leverage=leverage)
+
+    def step(self, action):
+        self.reset(position_ratio=action[0], save_ratio=action[1],
+                   stop_loss=action[2], take_profit=action[3],
+                   long_enter_at=action[4], long_close_at=action[5],
+                   short_enter_at=action[6], short_close_at=action[7],
+                   atr_multi=action[8], atr_period=int(action[9]),
+                   ma_type=int(action[10]), ma_period=int(action[11]), leverage=int(action[12]))
+        return self.exec_env()
+```
 
 ### Parametrizer environments
 
