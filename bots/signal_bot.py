@@ -28,8 +28,8 @@ class MACDSignalsBot(object):
         # We only need last 2 values of macd and signal line to get trade signals
         self.signals = MACD_cross_signal(self.macd[-3:], self.signal_line[-3:])
         self.signal = self.signals[-1]
-        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} trade_signals:{self.signals[1:]}')
+        self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        self.logger.info(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} trade_signals:{self.signals[1:]}')
 
 
 class BandsSignalsBot(object):
@@ -50,8 +50,8 @@ class BandsSignalsBot(object):
         self.atr = ATR(*asarray(self.OHLCV_data)[:, 1:4].T, self.atr_period)
         self.signals = anyMA_sig(asarray(self.OHLCV_data)[-3:, 3], self.ma[-3:], self.atr[-3:], self.atr_multi)
         self.signal = self.signals[-1]
-        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    MA:{self.ma[-3:]} ATR:{self.atr[-3:]} trade_signals:{self.signals[1:]}')
+        self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        self.logger.info(f'    MA:{self.ma[-3:]} ATR:{self.atr[-3:]} trade_signals:{self.signals[1:]}')
 
 
 class ChaikinOscillatorSignalsBot(object):
@@ -72,8 +72,8 @@ class ChaikinOscillatorSignalsBot(object):
                                                            slow_ma_type=self.slow_ma_type, slow_period=self.slow_period)
         self.signals = ChaikinOscillator_signal(self.chaikin_oscillator[-3:])
         self.signal = self.signals[-1]
-        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    ChaikinOscillator:{self.chaikin_oscillator[-3:]} trade_signals:{self.signals[1:]}')
+        self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        self.logger.info(f'    ChaikinOscillator:{self.chaikin_oscillator[-3:]} trade_signals:{self.signals[1:]}')
 
 
 class MACDRSISignalsBot(object):
@@ -97,9 +97,9 @@ class MACDRSISignalsBot(object):
         self.signals1 = MACD_cross_signal(self.macd[-3:], self.signal_line[-3:])
         self.signals2 = RSI_like_signal(self.rsi[-3:], self.rsi_period)
         self.signal = (self.signals1[-1], self.signals2[-1])
-        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]}')
-        print(f'    signals1:{self.signals1} signals1:{self.signals1} signal:{self.signal}')
+        self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        self.logger.info(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]}')
+        self.logger.info(f'    signals1:{self.signals1} signals1:{self.signals1} signal:{self.signal}')
         raise NotImplementedError("More than single signal trading not implemented yet.")
 
 
@@ -127,5 +127,5 @@ class StochasticOscillatorSignalsBot(object):
                                                    overbought_threshold=self.overbought_threshold)
         self.signal = self.signals[-1]
         # self.signal = 0
-        print(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        print(f'    slowK:{slowK[-3:]} slowD:{slowD[-3:]} trade_signals:{self.signals[1:]}')
+        self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
+        self.logger.info(f'    slowK:{slowK[-3:]} slowD:{slowD[-3:]} trade_signals:{self.signals[1:]}')
