@@ -13,7 +13,7 @@ from binance.um_futures import UMFutures
 from numpy import array, where, asarray
 from websocket import WebSocketApp
 
-from definitions import SLIPPAGE_DIR
+from definitions import SLIPPAGE_DIR, LOG_DIR
 
 ITV_AS_MS = {'1m': 60_000,
              '3m': 180_000,
@@ -253,10 +253,14 @@ class FuturesTaker:
                  prev_size=100, multi=1):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.DEBUG)
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        console_handler = logging.StreamHandler()
+        console_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+        console_handler.setFormatter(console_formatter)
+        self.logger.addHandler(console_handler)
+        file_handler = logging.FileHandler(f'{LOG_DIR}{dt.now().strftime("%Y-%m-%d_%H-%M-%S")}_{self.__class__.__name__}.log')
+        file_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+        file_handler.setFormatter(file_formatter)
+        self.logger.addHandler(file_handler)
         self.logger.propagate = False
 
         self.start_t = time()
@@ -300,17 +304,22 @@ class FuturesTaker:
         self._check_tier()
 
         self.orders = self.client.get_orders(symbol=self.symbol)
+        # Leverage change
         try:
             self.client.change_leverage(symbol=self.symbol,
                                         leverage=str(self.leverage))
-            self.logger.info(f'Leverage changed to: {self.leverage}')
+            self.logger.info(f'Leverage changed to: {self.leverage}x')
         except Exception as e:
-            self.logger.info(f'Changing leverage error: {e}')
+            self.logger.error(f'Changing leverage error: {e}')
+        # Margin type change
         try:
             m_type = self.client.change_margin_type(symbol=self.symbol,
                                                     marginType="ISOLATED")
         except Exception as e:
-            self.logger.info(f'Changing margin type error: {e}')
+            if e.args[2] == 'No need to change margin type.':
+                self.logger.info('Margin type is already set to ISOLATED')
+            else:
+                self.logger.info(f'Changing margin type error: {e}')
 
         for s in self.client.exchange_info()["symbols"]:
             if s['symbol'] == self.symbol:
@@ -326,21 +335,21 @@ class FuturesTaker:
         self.stoploss_price, self.takeprofit_price = 0.0, 0.0
         self.buy_order, self.sell_order, self.SL_order, self.TP_order = None, None, None, None
         self.logger.debug(f'prev_data[-5:]: {asarray(self.OHLCV_data)[-5:, :]}, len: {len(self.OHLCV_data)}')
-        self.logger.info(f'last close: {self.close}')
+        self.logger.info(f'Last close price: ${self.close}')
         self.logger.info(
-            f'pos_bal:${self.position_balance:.2f} trade_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} available_bal:${self.available_balance:.2f}')
+            f'per_trade_bal:${self.position_balance:.2f} trade_available_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} full_bal:${self.available_balance:.2f}')
         self.logger.info(
-            f'step_size: {self.step_size} min_qty: {self.min_qty} max_qty: {self.max_qty} trade_qty: {(self.position_balance * self.leverage) / self.close}')
+            f'step_size: {self.step_size} min_qty: {self.min_qty} max_qty: {self.max_qty} per_trade_qty: {(self.position_balance * self.leverage) / self.close}')
         self.logger.info(f'last orders {self.orders}')
 
     def on_error(self, ws, error):
         self.logger.error(f"Error occurred: {error}")
 
     def on_close(self, ws, close_status_code, close_msg):
-        self.logger.info("### WebSocket closed ###")
+        self.logger.debug("### WebSocket closed ###")
 
     def on_open(self, ws):
-        self.logger.info("### WebSocket opened ###")
+        self.logger.debug("### WebSocket opened ###")
 
     def on_message(self, ws, message):
         # self.on_message_t = time()
@@ -355,7 +364,7 @@ class FuturesTaker:
             if (not self.in_long_position) and (not self.in_short_position):
                 self.cum_pnl = self.available_balance - self.init_balance
             self.logger.info(
-                f'close:{self.close:.2f} q:{self.q} pos_bal:${self.position_balance:.2f} trade_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} available_bal:${self.available_balance:.2f} cum_pnl:${self.cum_pnl:.2f}')
+                f'close:{self.close:.2f} q:{self.q} per_trade_bal:${self.position_balance:.2f} trade_available_bal:${self.trade_balance:.2f} save_bal:${self.save_balance:.2f} full_bal:${self.available_balance:.2f} cum_pnl:${self.cum_pnl:.2f}')
         # Stop Loss filling handle
         if self.SL_order is not None:
             if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
@@ -555,7 +564,7 @@ class FuturesTaker:
     def _collect_previous_candles(self, itv, prev_size, multi):
         current_server_time = self.client.time()['serverTime']
         _start_time = current_server_time - (prev_size * multi) * ITV_AS_MS[itv]
-        self.logger.info(
+        self.logger.debug(
             f'Collecting {prev_size * multi} previous candles from {_start_time} to {current_server_time}')
         limit = 1_000
 

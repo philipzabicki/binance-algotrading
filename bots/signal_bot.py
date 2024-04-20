@@ -29,7 +29,7 @@ class MACDSignalsBot(object):
         self.signals = MACD_cross_signal(self.macd[-3:], self.signal_line[-3:])
         self.signal = self.signals[-1]
         self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        self.logger.info(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]} trade_signals:{self.signals[1:]}')
+        self.logger.info(f'MACD: {self.macd[-3:]} SIGNAL_LINE: {self.signal_line[-3:]} trade_signals: {self.signals[1:]}')
 
 
 class BandsSignalsBot(object):
@@ -98,7 +98,7 @@ class MACDRSISignalsBot(object):
         self.signals2 = RSI_like_signal(self.rsi[-3:], self.rsi_period)
         self.signal = (self.signals1[-1], self.signals2[-1])
         self.logger.debug(f'(_analyze to _check_signal: {(time() - self.analyze_t) * 1_000}ms)')
-        self.logger.info(f'    MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]}')
+        self.logger.info(f'MACD:{self.macd[-3:]} SIGNAL_LINE:{self.signal_line[-3:]}')
         self.logger.info(f'    signals1:{self.signals1} signals1:{self.signals1} signal:{self.signal}')
         raise NotImplementedError("More than single signal trading not implemented yet.")
 
