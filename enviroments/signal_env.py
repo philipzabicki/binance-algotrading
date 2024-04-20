@@ -91,16 +91,16 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         while not self.done:
             # step must be start_step adjusted cause one can start and end backtest at any point in df
             _step = self.current_step - self.start_step
-            if self.qty == 0 and self.signals[_step] >= self.long_enter_threshold:
-                action = 1
-            elif self.qty == 0 and self.signals[_step] <= -self.short_enter_threshold:
-                action = 2
+            action = 0
+            if self.qty == 0:
+                if self.signals[_step] >= self.long_enter_threshold:
+                    action = 1
+                elif self.signals[_step] <= -self.short_enter_threshold:
+                    action = 2
             elif self.qty > 0 and self.signals[_step] <= -self.long_close_threshold:
                 action = 2
             elif self.qty < 0 and self.signals[_step] >= self.short_close_threshold:
                 action = 1
-            else:
-                action = 0
             self.step(action)
             if self.visualize:
                 # current_step manipulation just to synchronize plot rendering

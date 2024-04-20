@@ -1,11 +1,12 @@
 # binance-algotrading [README in progress...]
 
 This repository is a collection of personal tools designed for strategy analysis and algorithmic trading on the Binance
-exchange.
+exchange. The whole project is written entirely by me in my free time.
 
-The main objective of this repository is to download historical data from exchange, utilize them for creating and
-evaluating trading strategies, and ultimately deploy them on a server for live automatic trading on the Binance
-exchange. I employ two approaches to develop trading strategies.
+The main objective of this repository is to get historical data from exchange, utilize them for creating and
+evaluating trading strategies, and ultimately deploy those strategies for live automatic trading on the exchange.
+
+I employ two approaches to develop trading strategies.
 
 1. **Genetic Algorithm Approach:**
    Utilizes a genetic algorithm to optimize common technical analysis indicators and other trading variables (e.g.,
@@ -19,14 +20,14 @@ exchange. I employ two approaches to develop trading strategies.
 
 ### Pre-requirements
 
-Whole project runs with python 3.11.4, but it should work fine with any 3.11.x version.
+Whole project runs with python 3.11.9, but it should work fine with any 3.11.x version.
 
 Before installing TA-lib via pip you need to satisfy dependencies.
 Just follow this [TA-Lib](https://github.com/TA-Lib/ta-lib-python?tab=readme-ov-file#dependencies).
 
 Otherwise, you can download this
 file [ta_lib-0.4.25-cp311-cp311-win_amd64.whl](https://drive.google.com/file/d/117WDdPpTAJK_IX2yWpliBRy14m9uUWSD/view?usp=sharing)(
-TA-lib for python 3.11.4).
+TA-lib for python 3.11.x).
 Then inside directory where you downloaded run
 
 ```
@@ -188,12 +189,13 @@ etc.
 Expands the SpotBacktest/FuturesBacktest class/environment to allow execution of trading strategy at
 once on full episode accordingly to given trading signals array.
 
-Allows for asymmetrical enter position(enter_threshold) and close position(close_threshold) signals.
+Allows for asymmetrical enter position(enter_threshold) and close position(close_threshold) signals. When using Futures version
+the asymmetrical aspect is applied for long and short separately (4 thresholds). 
 
 In generic class implementation signals are random numpy array. Other inheriting environments change this by creating trading signals using technical analysis. 
 
-SignalExecute-like object when called, executes trading episode with given signals array using position enter/close
-threshold values to determine position side for all trades. Negative values are reserved for short/sell signals.
+SignalExecute-like object when called, executes trading episode with signals array using position enter/close
+thresholds values to determine position side for all trades. Negative values are reserved for short/sell signals.
 Positive for long/buy.
 
 For e.g.:
@@ -251,7 +253,7 @@ class SignalExecuteSpotEnv(SpotBacktest):
 ```
 
 ##### SignalExecuteFuturesEnv
-It is similar to above implementation but expands enter and close threshold with long and short positions.
+It is similar to above but expands enter and close threshold with long and short possibilities.
 
 ```python
 from numpy.random import choice
@@ -287,16 +289,16 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         while not self.done:
             # step must be start_step adjusted cause one can start and end backtest at any point in df
             _step = self.current_step - self.start_step
-            if self.qty == 0 and self.signals[_step] >= self.long_enter_threshold:
-                action = 1
-            elif self.qty == 0 and self.signals[_step] <= -self.short_enter_threshold:
-                action = 2
+            action = 0
+            if self.qty == 0:
+                if self.signals[_step] >= self.long_enter_threshold:
+                    action = 1
+                elif self.signals[_step] <= -self.short_enter_threshold:
+                    action = 2
             elif self.qty > 0 and self.signals[_step] <= -self.long_close_threshold:
                 action = 2
             elif self.qty < 0 and self.signals[_step] >= self.short_close_threshold:
                 action = 1
-            else:
-                action = 0
             self.step(action)
             if self.visualize:
                 # current_step manipulation just to synchronize plot rendering
@@ -309,139 +311,18 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
 
 ### Technical analysis single signal trading environments
 
-Inherited from SignalExecuteSpotEnv or SignalExecuteFuturesEnv.
-Currently only MACD, MACD+RSI, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
+Those environments inherit from SignalExecuteSpotEnv or SignalExecuteFuturesEnv 
+and work by creating trading signals array for given technical analysis indicator and its settings.
+Currently only MACD, Keltner Channel(Bands) and Chaikin Oscillator are implemented.
 
-All of MA based indicators can
-use [many custom](https://github.com/philipzabicki/binance-algotrading/blob/main/utils/ta_tools.py#L1002) moving
-averages with any valid periods.
-Ex. MACD using TEMA-42 for slow ma, HullMA-37 for fast ma and HammingMA-8 for signal line.
+#### MACD example
 
-The MAs used for optimizations are listed in function inside utils/ta_tools.py. Ones used now are the fast enough ones,
-some new may appear in future.
-
-```python
-import numpy as np
-import talib
-from finta import TA as finTA
-import pandas_ta as p_ta
-from tindicators import ti
-
-...
-
-def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
-    """
-        Calculate Moving Average (MA) based on the specified MA type and period.
-        Parameters:
-        - np_df (np.ndarray): Numpy array containing OHLCV (Open, High, Low, Close, Volume) data.
-        - ma_type (int): Type of Moving Average to calculate. Choose from the following options:
-            0: Simple Moving Average (SMA)
-            1: Exponential Moving Average (EMA)
-            2: Weighted Moving Average (WMA)
-            3: Kaufman's Adaptive Moving Average (KAMA)
-            4: Triangular Moving Average (TRIMA)
-            5: Double Exponential Moving Average (DEMA)
-            6: Triple Exponential Moving Average (TEMA)
-            7: Triple Exponential Moving Average (T3)
-            8: MESA Adaptive Moving Average (MAMA)
-            9: Linear Regression Moving Average (LINEARREG)
-            10: Simple Moving Median (SMM)
-            11: Smoothed Simple Moving Average (SSMA)
-            12: Volume Adjusted Moving Average (VAMA)
-            13: Zero Lag Exponential Moving Average (ZLEMA)
-            14: Exponential Volume Weighted Moving Average (EVWMA)
-            15: Smoothed Moving Average (SMMA)
-            16: Volume Weighted Moving Average (VWMA)
-            17: Symmetrically Weighted Moving Average (SWMA) - Ascending
-            18: Symmetrically Weighted Moving Average (SWMA) - Descending
-            19: Exponential Hull Moving Average (EHMA)
-            20: Leo Moving Average (LMA)
-            21: Sharp Modified Moving Average (SHMMA)
-            22: Ahrens Moving Average (AHMA)
-            23: Hull Moving Average (HullMA)
-            24: Volume Weighted Moving Average (VWMA)
-            25: Relative Moving Average (RMA)
-            26: Arnaud Legoux Moving Average (ALMA)
-            27: Hamming Moving Average (HammingMA)
-            28: Linear Weighted Moving Average (LWMA)
-            29: McGinley Dynamic (MGD)
-            30: Geometric Moving Average (GMA)
-            31: Fibonacci Based Average (FBA)
-            32: Nadaray-Watson Moving Average (kernel 0 - gaussian)
-            33: Nadaray-Watson Moving Average (kernel 1 - epanechnikov)
-            34: Nadaray-Watson Moving Average (kernel 2 - rectangular)
-            35: Nadaray-Watson Moving Average (kernel 3 - triangular)
-            36: Nadaray-Watson Moving Average (kernel 4 - biweight)
-            37: Nadaray-Watson Moving Average (kernel 5 - cosine)
-        - ma_period (int): Number of periods for the Moving Average calculation.
-        Returns:
-        - np.ndarray: Numpy array containing the calculated Moving Average values.
-        """
-    ma_types = {0: lambda ohlcv_array, period: talib.SMA(ohlcv_array[:, 3], timeperiod=period),
-                1: lambda ohlcv_array, period: talib.EMA(ohlcv_array[:, 3], timeperiod=period),
-                2: lambda ohlcv_array, period: talib.WMA(ohlcv_array[:, 3], timeperiod=period),
-                3: lambda ohlcv_array, period: talib.KAMA(ohlcv_array[:, 3], timeperiod=period),
-                4: lambda ohlcv_array, period: talib.TRIMA(ohlcv_array[:, 3], timeperiod=period),
-                5: lambda ohlcv_array, period: talib.DEMA(ohlcv_array[:, 3], timeperiod=period),
-                6: lambda ohlcv_array, period: talib.TEMA(ohlcv_array[:, 3], timeperiod=period),
-                7: lambda ohlcv_array, period: talib.T3(ohlcv_array[:, 3], timeperiod=period),
-                8: lambda ohlcv_array, period: talib.MAMA(ohlcv_array[:, 3])[0],
-                9: lambda ohlcv_array, period: talib.LINEARREG(ohlcv_array[:, 3], timeperiod=period),
-                10: lambda ohlcv_array, period: finTA.SMM(
-                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
-                    period).to_numpy(),
-                11: lambda ohlcv_array, period: finTA.SSMA(
-                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
-                    period).to_numpy(),
-                12: lambda ohlcv_array, period: finTA.VAMA(
-                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
-                    period).to_numpy(),
-                13: lambda ohlcv_array, period: finTA.ZLEMA(
-                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
-                    max(4, period)).to_numpy(),
-                14: lambda ohlcv_array, period: finTA.EVWMA(
-                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
-                    period).to_numpy(),
-                15: lambda ohlcv_array, period: finTA.SMMA(
-                    pd.DataFrame(ohlcv_array[:, :5], columns=['open', 'high', 'low', 'close', 'volume']),
-                    period).to_numpy(),
-                16: lambda ohlcv_array, period: p_ta.vwma(pd.Series(ohlcv_array[:, 3]),
-                                                          pd.Series(ohlcv_array[:, 4]),
-                                                          length=period).to_numpy(),
-                17: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
-                                                          length=period,
-                                                          asc=True).to_numpy(),
-                18: lambda ohlcv_array, period: p_ta.swma(pd.Series(ohlcv_array[:, 3]),
-                                                          length=period,
-                                                          asc=False).to_numpy(),
-                19: lambda ohlcv_array, period: ti.ehma(ohlcv_array[:, 3], period),
-                20: lambda ohlcv_array, period: ti.lma(ohlcv_array[:, 3], period),
-                21: lambda ohlcv_array, period: ti.shmma(ohlcv_array[:, 3], period),
-                22: lambda ohlcv_array, period: ti.ahma(ohlcv_array[:, 3], period),
-                23: lambda ohlcv_array, period: HullMA(ohlcv_array[:, 3], max(period, 4)),
-                24: lambda ohlcv_array, period: VWMA(ohlcv_array[:, 3], ohlcv_array[:, 4], timeperiod=period),
-                25: lambda ohlcv_array, period: RMA(ohlcv_array[:, 3], timeperiod=period),
-                26: lambda ohlcv_array, period: ALMA(ohlcv_array[:, 3], timeperiod=period),
-                27: lambda ohlcv_array, period: HammingMA(ohlcv_array[:, 3], period),
-                28: lambda ohlcv_array, period: LWMA(ohlcv_array[:, 3], period),
-                29: lambda ohlcv_array, period: MGD(ohlcv_array[:, 3], period),
-                30: lambda ohlcv_array, period: GMA(ohlcv_array[:, 3], period),
-                31: lambda ohlcv_array, period: FBA(ohlcv_array[:, 3], period),
-                32: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=0),
-                33: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=1),
-                34: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=2),
-                35: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=3),
-                36: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=4),
-                37: lambda ohlcv_array, period: NadarayWatsonMA(ohlcv_array[:, 3], period, kernel=5)}
-    return ma_types[ma_type](np_df.astype(np.float64), ma_period)
-```
-
-#### MACD
-
-Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD made with arguments provided to
+Expands SignalExecuteSpotEnv/SignalExecuteFuturesEnv by creating signal array from MACD indicator created with arguments provided to
 reset method.
 
 ##### Execute environment
+These environments overload the reset method of the base class by adding to it the calculation of an array of signals resulting from the MACD indicator.
+The MACD is calculated based on the parameters passed as an argument.
 
 ```python
 class MACDExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -499,90 +380,27 @@ logic.
 
 0.5 and -0.5 signal values are generated when lines are getting closer to each other(approaching crossing).
 
-##### Strategy environment
+#### Any other new technical analysis signal trading environment
 
-#### Keltner Channel(Bands)
-
-##### Execute environment
-
-```python
-class BandsExecuteSpotEnv(SignalExecuteSpotEnv):
-    def reset(self, *args, stop_loss=None, enter_at=1.0, close_at=1.0,
-              atr_multi=1.0, atr_period=1,
-              ma_type=0, ma_period=1, **kwargs):
-        _ret = super().reset(*args, stop_loss=stop_loss, enter_at=enter_at, close_at=close_at, **kwargs)
-        self.ma_type = ma_type
-        self.ma_period = ma_period
-        self.atr_period = atr_period
-        self.atr_multi = atr_multi
-        _max_period = max(self.ma_period, self.atr_period)
-        if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
-        # Calculate only the data length necessary, with additional length caused by indicator periods
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, :5],
-                                          self.ma_type, self.ma_period,
-                                          self.atr_period, self.atr_multi)[self.start_step - prev_values:]
-        return _ret
-```
-
-##### Strategy environment
-
-#### Chaikin Oscillator
-
-##### Execute environment
-
-```python
-class ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # AD is not period dependent so we only need to calculate it once as there is no variable to optimize.
-        self.adl = AD(self.df[:, 1], self.df[:, 2], self.df[:, 3], self.df[:, 4])
-
-    def reset(self, *args, stop_loss=None,
-              fast_period=3, slow_period=10,
-              fast_ma_type=0, slow_ma_type=0, **kwargs):
-        _ret = super().reset(*args, stop_loss=stop_loss, **kwargs)
-        self.fast_period = fast_period
-        self.slow_period = slow_period
-        self.fast_ma_type = fast_ma_type
-        self.slow_ma_type = slow_ma_type
-        _max_period = max(self.fast_period, self.slow_period)
-        if _max_period > self.total_steps:
-            raise ValueError('One of indicator periods is greater than df size.')
-        # Calculate only the data length necessary, with additional length caused by indicator periods
-        prev_values = self.start_step - _max_period if self.start_step > _max_period else 0
-        chaikin_oscillator = custom_ChaikinOscillator(self.adl[prev_values:self.end_step, ],
-                                                      fast_ma_type=fast_ma_type, fast_period=fast_period,
-                                                      slow_ma_type=slow_ma_type, slow_period=slow_period)
-        self.signals = ChaikinOscillator_signal(chaikin_oscillator[self.start_step - prev_values:])
-        return _ret
-```
-
-##### Strategy environment
-
-#### Any other new strategy environment
-
+I will not describe the other environments, as they work on the same principle as the environment for MACD described earlier.
 You can create any other TA indicator trading environment, using ones already existing as template, just take care that
 your generated signals are properly calculated.
 
-## Genetic Algorithm trading strategies
+## Genetic Algorithm for parameters optimization
 
 One way to finding optimal technical analysis parameters for trading is to use Genetic Algorithm. All previously showed
 strategy environments can be used for optimization.
 
-### Environments
+### Optimization environments
 
-#### Base
+#### Envx
 
-#### Env1
+### Parametrizer environments
 
-#### Env2
+#### Envx
 
-#### Env3
+## Live trading bots
 
 ## Reinforcement Learning trading agent
 
 ### RL Environment
-
-## Live trading bot

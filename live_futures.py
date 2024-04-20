@@ -58,6 +58,6 @@ if __name__ == "__main__":
                            settings=SETTINGS,
                            API_KEY=binance_API_KEY,
                            SECRET_KEY=binance_SECRET_KEY,
-                           multi=2)
+                           multi=1.1)
     while True:
         bocik.run()

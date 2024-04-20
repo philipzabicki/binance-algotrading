@@ -18,7 +18,7 @@ class MACDSignalsBot(object):
         previous_size = max(settings['fast_period'] * ADDITIONAL_DATA_BY_OHLCV_MA[settings['fast_ma_type']],
                             settings['slow_period'] * ADDITIONAL_DATA_BY_OHLCV_MA[settings['slow_ma_type']]) + \
                         settings['signal_period'] * ADDITIONAL_DATA_BY_MA[settings['signal_ma_type']]
-        super(self.__class__, self).__init__(*args, prev_size=previous_size, **kwargs)
+        super(self.__class__, self).__init__(*args, prev_size=previous_size+1, **kwargs)
 
     def _check_signal(self):
         self.macd, self.signal_line = custom_MACD(asarray(self.OHLCV_data),

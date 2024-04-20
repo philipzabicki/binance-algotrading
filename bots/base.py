@@ -563,7 +563,7 @@ class FuturesTaker:
 
     def _collect_previous_candles(self, itv, prev_size, multi):
         current_server_time = self.client.time()['serverTime']
-        _start_time = current_server_time - (prev_size * multi) * ITV_AS_MS[itv]
+        _start_time = int(current_server_time - (prev_size * multi) * ITV_AS_MS[itv])
         self.logger.debug(
             f'Collecting {prev_size * multi} previous candles from {_start_time} to {current_server_time}')
         limit = 1_000
