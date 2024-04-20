@@ -9,5 +9,6 @@ credentials.py
 **/__pycache__
 *.png
 *.old
+*.old*
 *.txt
 *.zip
