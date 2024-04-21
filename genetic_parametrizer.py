@@ -15,17 +15,17 @@ from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 1024
+POP_SIZE = 512
 N_GEN = 250
 TICKER = 'BTCUSDT'
 ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-TRADE_START_DATE = '2023-05-04'
-TRADE_END_DATE = '2023-09-01'
+TRADE_START_DATE = '2021-11-17'
+TRADE_END_DATE = '2022-03-17'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2023-01-04'
-DF_END_DATE = '2023-09-02'
+DF_START_DATE = '2021-07-17'
+DF_END_DATE = '2022-03-18'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
 PROBLEM_N_EVALS = 8
 PROBLEM_METRIC = 'first_quartile'
