@@ -9,6 +9,7 @@ from utils.ta_tools import custom_ChaikinOscillator, ChaikinOscillator_signal
 from .signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
 
 
+# TODO: Check gym standards for action and observation spaces
 ########################################################################################################################
 # EXECUTING ENVIRONMENTS
 class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -101,20 +102,16 @@ class _ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
 class ChaikinOscillatorOptimizeSpotEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _ChaikinOscillatorExecuteSpotEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.0001, 0, 0, 2, 2]
         action_upper = [0.0500, 1.0000, 25, 25, 10_000, 10_000]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, take_profit=None, fast_period=12, slow_period=25,
-              fast_ma_type=1, slow_ma_type=1):
-        return self.exec_env.reset(stop_loss=stop_loss, take_profit=take_profit,
-                                   fast_period=fast_period, slow_period=slow_period,
-                                   fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(stop_loss=action[0], take_profit=action[1],
@@ -126,23 +123,16 @@ class ChaikinOscillatorOptimizeSpotEnv(Env):
 class ChaikinOscillatorOptimizeFuturesEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _ChaikinOscillatorExecuteFuturesEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.0001, 0.0001, 2, 2, 0, 0, 1]
         action_upper = [1.00, 0.0500, 1.0000, 10_000, 10_000, 25, 25, 125]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, leverage=5,
-              stop_loss=None, take_profit=None,
-              fast_period=12, slow_period=25,
-              fast_ma_type=1, slow_ma_type=1):
-        return self.exec_env.reset(position_ratio=position_ratio, stop_loss=stop_loss,
-                                   take_profit=take_profit, leverage=leverage,
-                                   fast_period=fast_period, slow_period=slow_period,
-                                   fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(position_ratio=action[0], stop_loss=action[1], take_profit=action[2],
@@ -156,13 +146,12 @@ class ChaikinOscillatorOptimizeFuturesEnv(Env):
 class ChaikinOscillatorOptimizeSavingSpotEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _ChaikinOscillatorExecuteSpotEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.000, 0.0001, 0.0001, 0, 0, 2, 2]
         action_upper = [1.000, 0.0500, 1.0000, 25, 25, 10_000, 10_000]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
     def reset(self, stop_loss=None, take_profit=None, save_ratio=None,
@@ -182,23 +171,16 @@ class ChaikinOscillatorOptimizeSavingSpotEnv(Env):
 class ChaikinOscillatorOptimizeSavingFuturesEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _ChaikinOscillatorExecuteFuturesEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.000, 0.0001, 0.0001, 2, 2, 0, 0, 1]
         action_upper = [1.00, 1.000, 0.0500, 1.0000, 10_000, 10_000, 25, 25, 125]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, leverage=5,
-              stop_loss=None, take_profit=None, save_ratio=None,
-              fast_period=12, slow_period=25,
-              fast_ma_type=1, slow_ma_type=1):
-        return self.exec_env.reset(position_ratio=position_ratio, save_ratio=save_ratio,
-                                   stop_loss=stop_loss, take_profit=take_profit, leverage=leverage,
-                                   fast_period=fast_period, slow_period=slow_period,
-                                   fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(position_ratio=action[0], save_ratio=action[1],

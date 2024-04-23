@@ -8,6 +8,7 @@ from enviroments.signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
 from utils.ta_tools import custom_MACD, MACD_cross_signal
 
 
+# TODO: Check gym standards for action and observation spaces
 ########################################################################################################################
 # EXECUTING ENVIRONMENTS
 class _MACDExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -103,21 +104,16 @@ class _MACDExecuteFuturesEnv(SignalExecuteFuturesEnv):
 class MACDOptimizeSpotEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _MACDExecuteSpotEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.0001, 0.001, 0.001, 2, 2, 2, 0, 0, 0]
         action_upper = [0.0500, 1.0000, 1.000, 1.000, 1_000, 1_000, 1_000, 37, 37, 25]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, take_profit=None, enter_at=1.0, close_at=1.0,
-              fast_period=12, slow_period=25, signal_period=9,
-              fast_ma_type=1, slow_ma_type=1, signal_ma_type=1):
-        return self.exec_env.reset(stop_loss=stop_loss, take_profit=take_profit, enter_at=enter_at, close_at=close_at,
-                                   fast_period=fast_period, slow_period=slow_period, signal_period=signal_period,
-                                   fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type, signal_ma_type=signal_ma_type)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(stop_loss=action[0], take_profit=action[1], enter_at=action[2], close_at=action[3],
@@ -129,26 +125,16 @@ class MACDOptimizeSpotEnv(Env):
 class MACDOptimizeFuturesEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _MACDExecuteFuturesEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 2, 2, 2, 0, 0, 0, 1]
         action_upper = [1.00, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 1_000, 1_000, 1_000, 37, 37, 25, 125]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, leverage=5, stop_loss=None, take_profit=None,
-              long_enter_at=1.0, long_close_at=1.0,
-              short_enter_at=1.0, short_close_at=1.0,
-              fast_period=12, slow_period=25, signal_period=9,
-              fast_ma_type=1, slow_ma_type=1, signal_ma_type=1):
-        return self.exec_env.reset(position_ratio=position_ratio, stop_loss=stop_loss, take_profit=take_profit,
-                                   long_enter_at=long_enter_at, long_close_at=long_close_at,
-                                   short_enter_at=short_enter_at, short_close_at=short_close_at,
-                                   fast_period=fast_period, slow_period=slow_period, signal_period=signal_period,
-                                   fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type, signal_ma_type=signal_ma_type,
-                                   leverage=leverage)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(position_ratio=action[0], stop_loss=action[1], take_profit=action[2],
@@ -165,23 +151,16 @@ class MACDOptimizeFuturesEnv(Env):
 class MACDOptimizeSavingSpotEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _MACDExecuteSpotEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.000, 0.0001, 0.0001, 0.001, 0.001, 2, 2, 2, 0, 0, 0]
-        action_upper = [1.000, 0.0500, 1.0000, 1.000, 1.000, 1_000, 1_000, 1_000, 37, 37, 25]
-        #########################
+        action_upper = [1.000, 0.0500, 1.0000, 1.000, 1.000, 1_000, 1_000, 1_000, 36, 36, 25]
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, take_profit=None, save_ratio=None,
-              enter_at=1.0, close_at=1.0,
-              fast_period=12, slow_period=25, signal_period=9,
-              fast_ma_type=1, slow_ma_type=1, signal_ma_type=1):
-        return self.exec_env.reset(save_ratio=save_ratio, stop_loss=stop_loss, take_profit=take_profit,
-                                   enter_at=enter_at, close_at=close_at,
-                                   fast_period=fast_period, slow_period=slow_period, signal_period=signal_period,
-                                   fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type, signal_ma_type=signal_ma_type)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(save_ratio=action[0], stop_loss=action[1], take_profit=action[2], enter_at=action[3],
@@ -194,28 +173,16 @@ class MACDOptimizeSavingSpotEnv(Env):
 class MACDOptimizeSavingFuturesEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _MACDExecuteFuturesEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.000, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 2, 2, 2, 0, 0, 0, 1]
-        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 1_000, 1_000, 1_000, 37, 37, 25, 125]
-        #########################
+        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 1_000, 1_000, 1_000, 36, 36, 25, 125]
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, leverage=5,
-              stop_loss=None, take_profit=None, save_ratio=None,
-              long_enter_at=1.0, long_close_at=1.0,
-              short_enter_at=1.0, short_close_at=1.0,
-              fast_period=12, slow_period=25, signal_period=9,
-              fast_ma_type=1, slow_ma_type=1, signal_ma_type=1):
-        return self.exec_env.reset(position_ratio=position_ratio, save_ratio=save_ratio,
-                                   stop_loss=stop_loss, take_profit=take_profit,
-                                   long_enter_at=long_enter_at, long_close_at=long_close_at,
-                                   short_enter_at=short_enter_at, short_close_at=short_close_at,
-                                   fast_period=fast_period, slow_period=slow_period, signal_period=signal_period,
-                                   fast_ma_type=fast_ma_type, slow_ma_type=slow_ma_type, signal_ma_type=signal_ma_type,
-                                   leverage=leverage)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(position_ratio=action[0], save_ratio=action[1], stop_loss=action[2], take_profit=action[3],

@@ -1,6 +1,6 @@
 from numpy import array
 from pymoo.core.problem import ElementwiseProblem
-from pymoo.core.variable import Real, Integer
+from pymoo.core.variable import Real, Integer, Choice
 
 from enviroments.stoch_env import StochOptimizeSpotEnv, StochOptimizeFuturesEnv, StochOptimizeSavingSpotEnv, \
     StochOptimizeSavingFuturesEnv
@@ -12,17 +12,17 @@ class StochSpotMixedVariableProblem(ElementwiseProblem):
         self.env = StochOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.015)),
-                          "take_profit": Real(bounds=(0.0001, 1.0000)),
-                          "enter_at": Real(bounds=(0.001, 1.000)),
-                          "close_at": Real(bounds=(0.001, 1.000)),
-                          "oversold_threshold": Real(bounds=(0, 50)),
-                          "overbought_threshold": Real(bounds=(50, 100)),
+        macd_variables = {"oversold_threshold": Integer(bounds=(0, 500)),
+                          "overbought_threshold": Integer(bounds=(500, 1_000)),
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
                           "slowK_ma_type": Integer(bounds=(0, 25)),
-                          "slowD_ma_type": Integer(bounds=(0, 25))}
+                          "slowD_ma_type": Integer(bounds=(0, 25)),
+                          "stop_loss": Real(bounds=(0.0001, 0.015)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
+                          "enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -44,21 +44,21 @@ class StochFuturesMixedVariableProblem(ElementwiseProblem):
         self.env = StochOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
-                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "take_profit": Real(bounds=(0.0001, 1.0000)),
-                          "long_enter_at": Real(bounds=(0.001, 1.000)),
-                          "long_close_at": Real(bounds=(0.001, 1.000)),
-                          "short_enter_at": Real(bounds=(0.001, 1.000)),
-                          "short_close_at": Real(bounds=(0.001, 1.000)),
-                          "oversold_threshold": Real(bounds=(0, 50)),
-                          "overbought_threshold": Real(bounds=(50, 100)),
+        macd_variables = {"position_ratio": Integer(bounds=(1, 100)),
+                          "oversold_threshold": Integer(bounds=(0, 500)),
+                          "overbought_threshold": Integer(bounds=(500, 1_000)),
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
                           "slowK_ma_type": Integer(bounds=(0, 25)),
                           "slowD_ma_type": Integer(bounds=(0, 25)),
-                          "leverage": Integer(bounds=(1, 125))}
+                          "leverage": Integer(bounds=(1, 125)),
+                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
+                          "long_enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "long_close_at": Choice(options=[.25, .5, .75, 1.]),
+                          "short_enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "short_close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -84,18 +84,18 @@ class StochSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.env = StochOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        macd_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
-                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "take_profit": Real(bounds=(0.0001, 1.0000)),
-                          "enter_at": Real(bounds=(0.001, 1.000)),
-                          "close_at": Real(bounds=(0.001, 1.000)),
-                          "oversold_threshold": Real(bounds=(0, 50)),
-                          "overbought_threshold": Real(bounds=(50, 100)),
+        macd_variables = {"save_ratio": Integer(bounds=(1, 100)),
+                          "oversold_threshold": Integer(bounds=(0, 500)),
+                          "overbought_threshold": Integer(bounds=(500, 1_000)),
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
                           "slowK_ma_type": Integer(bounds=(0, 25)),
-                          "slowD_ma_type": Integer(bounds=(0, 25))}
+                          "slowD_ma_type": Integer(bounds=(0, 25)),
+                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
+                          "enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -117,22 +117,22 @@ class StochSavingFuturesMixedVariableProblem(ElementwiseProblem):
         self.env = StochOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
-                          "save_ratio": Real(bounds=(0.0, 1.0)),
-                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "take_profit": Real(bounds=(0.0001, 1.0000)),
-                          "long_enter_at": Real(bounds=(0.001, 1.000)),
-                          "long_close_at": Real(bounds=(0.001, 1.000)),
-                          "short_enter_at": Real(bounds=(0.001, 1.000)),
-                          "short_close_at": Real(bounds=(0.001, 1.000)),
-                          "oversold_threshold": Real(bounds=(0, 50)),
-                          "overbought_threshold": Real(bounds=(50, 100)),
+        macd_variables = {"position_ratio": Integer(bounds=(1, 100)),
+                          "save_ratio": Integer(bounds=(1, 100)),
+                          "oversold_threshold": Integer(bounds=(0, 500)),
+                          "overbought_threshold": Integer(bounds=(500, 1_000)),
                           "fastK_period": Integer(bounds=(2, 1_000)),
                           "slowK_period": Integer(bounds=(2, 1_000)),
                           "slowD_period": Integer(bounds=(2, 1_000)),
                           "slowK_ma_type": Integer(bounds=(0, 25)),
                           "slowD_ma_type": Integer(bounds=(0, 25)),
-                          "leverage": Integer(bounds=(1, 125))}
+                          "leverage": Integer(bounds=(1, 125)),
+                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
+                          "long_enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "long_close_at": Choice(options=[.25, .5, .75, 1.]),
+                          "short_enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "short_close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):

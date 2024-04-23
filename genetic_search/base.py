@@ -3,6 +3,7 @@ from csv import writer
 from os import makedirs, path, mkdir
 
 import matplotlib
+import numpy as np
 
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
@@ -11,6 +12,7 @@ from numpy import median, sum, percentile, inf, array, min, mean, max, ndarray, 
 from scipy.stats import hmean, gmean
 from sklearn.preprocessing import RobustScaler, MinMaxScaler
 from pymoo.core.callback import Callback
+from pymoo.core.variable import Integer, Real, Choice, Binary
 from pymoo.visualization.pcp import PCP
 
 from definitions import REPORT_DIR
@@ -43,10 +45,23 @@ def get_variables_plot(x_variables, problem, fname, save=True, dpi=75):
     sample_gen = x_variables[0]
     if not isinstance(sample_gen, dict):
         raise NotImplementedError("Currently supports only list of dict type populations")
+    print(f'x_variables {x_variables}')
     X_array = array([list(map(float, entry.values())) for entry in x_variables])
+    print(f'X_array {X_array}')
     pop_size = len(X_array)
+    # Handling chart displayed boundaries for different variable types
     labels = [*sample_gen.keys()]
-    bounds = array([problem.vars[name].bounds for name in labels]).T
+    bounds = []
+    for name in labels:
+        if isinstance(problem.vars[name], (Integer, Real)):
+            bounds.append(problem.vars[name].bounds)
+        elif isinstance(problem.vars[name], Choice):
+            bounds.append((min(problem.vars[name].options), max(problem.vars[name].options)))
+            print(f'choices.options {problem.vars[name].options}')
+    bounds = array(bounds).T
+    print(bounds)
+    # bounds = array([problem.vars[name].bounds for name in labels]).T
+    # bounds = array([problem.vars[name].bounds for name in labels if hasattr(problem.vars[name], 'bounds')]).T
     plot = PCP(figsize=(21, 9), labels=labels, bounds=bounds, tight_layout=True)
     plot.set_axis_style(color="grey", alpha=1)
     plot.add(X_array, color="grey", alpha=0.3)

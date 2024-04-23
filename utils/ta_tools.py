@@ -343,8 +343,10 @@ def MACD_cross_signal(macd_col: list | np.ndarray, signal_col: list | np.ndarray
                     .75 if (cur_macd > cur_sig) and (prev_macd < prev_sig) else
                     -1 if (cur_sig > 0) and (cur_macd > 0) and cur_macd < cur_sig and prev_macd > prev_sig else
                     -.75 if cur_macd < cur_sig and prev_macd > prev_sig else
-                    0.5 if cur_macd > prev_macd and cur_sig < prev_sig else
-                    -0.5 if cur_macd < prev_macd and cur_sig > prev_sig else
+                    0.5 if (cur_sig < 0) and (cur_macd < 0) and cur_macd > prev_macd and cur_sig < prev_sig else
+                    -0.5 if (cur_sig > 0) and (cur_macd > 0) and cur_macd < prev_macd and cur_sig > prev_sig else
+                    0.25 if cur_macd > prev_macd and cur_sig < prev_sig else
+                    -0.25 if cur_macd < prev_macd and cur_sig > prev_sig else
                     0
                     for cur_sig, cur_macd, prev_sig, prev_macd in
                     zip(signal_col[1:], macd_col[1:], signal_col[:-1], macd_col[:-1])]

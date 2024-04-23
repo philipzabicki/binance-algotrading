@@ -1,27 +1,28 @@
 from numpy import array
 from pymoo.core.problem import ElementwiseProblem
-from pymoo.core.variable import Real, Integer
+from pymoo.core.variable import Real, Integer, Choice
 
 from enviroments.macd_env import MACDOptimizeSpotEnv, MACDOptimizeFuturesEnv, MACDOptimizeSavingFuturesEnv, \
     MACDOptimizeSavingSpotEnv
 from genetic_search.base import reward_from_metric
 
 
+# TODO: add position_ratio parameter for spot ones
 class MACDSpotMixedVariableProblem(ElementwiseProblem):
     def __init__(self, df, env_kwargs, n_evals=1, metric='median', **kwargs):
         self.env = MACDOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        macd_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "take_profit": Real(bounds=(0.0001, 1.0000)),
-                          "enter_at": Real(bounds=(0.001, 1.000)),
-                          "close_at": Real(bounds=(0.001, 1.000)),
-                          "fast_period": Integer(bounds=(2, 1_000)),
+        macd_variables = {"fast_period": Integer(bounds=(2, 1_000)),
                           "slow_period": Integer(bounds=(2, 1_000)),
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 25))}
+                          "signal_ma_type": Integer(bounds=(0, 25)),
+                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
+                          "enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -41,20 +42,20 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
         self.env = MACDOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
-                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "take_profit": Real(bounds=(0.0001, 1.0000)),
-                          "long_enter_at": Real(bounds=(0.001, 1.000)),
-                          "long_close_at": Real(bounds=(0.001, 1.000)),
-                          "short_enter_at": Real(bounds=(0.001, 1.000)),
-                          "short_close_at": Real(bounds=(0.001, 1.000)),
+        macd_variables = {"position_ratio": Integer(bounds=(1, 100)),
                           "fast_period": Integer(bounds=(2, 1_000)),
                           "slow_period": Integer(bounds=(2, 1_000)),
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
                           "signal_ma_type": Integer(bounds=(0, 25)),
-                          "leverage": Integer(bounds=(1, 125))}
+                          "leverage": Integer(bounds=(1, 125)),
+                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
+                          "long_enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "long_close_at": Choice(options=[.25, .5, .75, 1.]),
+                          "short_enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "short_close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -79,17 +80,17 @@ class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.env = MACDOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        macd_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
-                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "take_profit": Real(bounds=(0.0001, 1.0000)),
-                          "enter_at": Real(bounds=(0.001, 1.000)),
-                          "close_at": Real(bounds=(0.001, 1.000)),
+        macd_variables = {"save_ratio": Integer(bounds=(1, 100)),
                           "fast_period": Integer(bounds=(2, 1_000)),
                           "slow_period": Integer(bounds=(2, 1_000)),
                           "signal_period": Integer(bounds=(2, 1_000)),
                           "fast_ma_type": Integer(bounds=(0, 37)),
                           "slow_ma_type": Integer(bounds=(0, 37)),
-                          "signal_ma_type": Integer(bounds=(0, 25))}
+                          "signal_ma_type": Integer(bounds=(0, 25)),
+                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, 1.0000)),
+                          "enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -110,21 +111,21 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
         self.env = MACDOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        macd_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
-                          "save_ratio": Real(bounds=(0.0, 1.0)),
-                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "take_profit": Real(bounds=(0.0001, 1.0000)),
-                          "long_enter_at": Real(bounds=(0.001, 1.000)),
-                          "long_close_at": Real(bounds=(0.001, 1.000)),
-                          "short_enter_at": Real(bounds=(0.001, 1.000)),
-                          "short_close_at": Real(bounds=(0.001, 1.000)),
+        macd_variables = {"position_ratio": Integer(bounds=(1, 100)),
+                          "save_ratio": Integer(bounds=(1, 100)),
                           "fast_period": Integer(bounds=(2, 1000)),
                           "slow_period": Integer(bounds=(2, 1000)),
                           "signal_period": Integer(bounds=(2, 1000)),
                           "fast_ma_type": Integer(bounds=(0, 36)),
                           "slow_ma_type": Integer(bounds=(0, 36)),
                           "signal_ma_type": Integer(bounds=(0, 25)),
-                          "leverage": Integer(bounds=(1, 125))}
+                          "leverage": Integer(bounds=(1, 125)),
+                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                          "take_profit": Real(bounds=(0.0001, .5)),
+                          "long_enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "long_close_at": Choice(options=[.25, .5, .75, 1.]),
+                          "short_enter_at": Choice(options=[.25, .5, .75, 1.]),
+                          "short_close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):

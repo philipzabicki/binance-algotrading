@@ -12,12 +12,12 @@ class ChaikinOscillatorSpotMixedVariableProblem(ElementwiseProblem):
         self.env = ChaikinOscillatorOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        chaikin_variables = {"stop_loss": Real(bounds=(0.0001, 0.0150)),
-                             "take_profit": Real(bounds=(0.0001, 1.0000)),
-                             "fast_period": Integer(bounds=(2, 1_000)),
+        chaikin_variables = {"fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
                              "fast_ma_type": Integer(bounds=(0, 25)),
-                             "slow_ma_type": Integer(bounds=(0, 25))}
+                             "slow_ma_type": Integer(bounds=(0, 25)),
+                             "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                             "take_profit": Real(bounds=(0.0001, 1.0000))}
         super().__init__(vars=chaikin_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -37,14 +37,14 @@ class ChaikinOscillatorFuturesMixedVariableProblem(ElementwiseProblem):
         self.env = ChaikinOscillatorOptimizeFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        chaikin_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
-                             "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                             "take_profit": Real(bounds=(0.0001, 1.0000)),
+        chaikin_variables = {"position_ratio": Integer(bounds=(1, 100)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
                              "fast_ma_type": Integer(bounds=(0, 25)),
                              "slow_ma_type": Integer(bounds=(0, 25)),
-                             "leverage": Integer(bounds=(1, 125))}
+                             "leverage": Integer(bounds=(1, 125)),
+                             "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                             "take_profit": Real(bounds=(0.0001, 1.0000))}
         super().__init__(vars=chaikin_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -67,13 +67,13 @@ class ChaikinOscillatorSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.env = ChaikinOscillatorOptimizeSavingSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        chaikin_variables = {"save_ratio": Real(bounds=(0.0, 1.0)),
-                             "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                             "take_profit": Real(bounds=(0.0001, 1.0000)),
+        chaikin_variables = {"save_ratio": Integer(bounds=(1, 100)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
                              "fast_ma_type": Integer(bounds=(0, 25)),
-                             "slow_ma_type": Integer(bounds=(0, 25))}
+                             "slow_ma_type": Integer(bounds=(0, 25)),
+                             "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                             "take_profit": Real(bounds=(0.0001, 1.0000))}
         super().__init__(vars=chaikin_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):
@@ -93,15 +93,15 @@ class ChaikinOscillatorSavingFuturesMixedVariableProblem(ElementwiseProblem):
         self.env = ChaikinOscillatorOptimizeSavingFuturesEnv(df=df, df_mark=df_mark, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        chaikin_variables = {"position_ratio": Real(bounds=(0.01, 1.00)),
-                             "save_ratio": Real(bounds=(0.0, 1.0)),
-                             "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                             "take_profit": Real(bounds=(0.0001, 1.0000)),
+        chaikin_variables = {"position_ratio": Integer(bounds=(1, 100)),
+                             "save_ratio": Integer(bounds=(1, 100)),
                              "fast_period": Integer(bounds=(2, 1_000)),
                              "slow_period": Integer(bounds=(2, 1_000)),
                              "fast_ma_type": Integer(bounds=(0, 25)),
                              "slow_ma_type": Integer(bounds=(0, 25)),
-                             "leverage": Integer(bounds=(1, 125))}
+                             "leverage": Integer(bounds=(1, 125)),
+                             "stop_loss": Real(bounds=(0.0001, 0.0150)),
+                             "take_profit": Real(bounds=(0.0001, 1.0000))}
         super().__init__(vars=chaikin_variables, n_obj=1, **kwargs)
 
     def _evaluate(self, X, out, *args, **kwargs):

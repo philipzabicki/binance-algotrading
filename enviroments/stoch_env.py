@@ -8,6 +8,7 @@ from utils.ta_tools import custom_StochasticOscillator, StochasticOscillator_sig
 from .signal_env import SignalExecuteSpotEnv, SignalExecuteFuturesEnv
 
 
+# TODO: Check gym standards for action and observation spaces
 ########################################################################################################################
 # EXECUTING ENVIRONMENTS
 class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
@@ -20,8 +21,8 @@ class _StochExecuteSpotEnv(SignalExecuteSpotEnv):
         self.slowD_period = slowD_period
         self.slowK_ma_type = slowK_ma_type
         self.slowD_ma_type = slowD_ma_type
-        self.oversold_threshold = oversold_threshold
-        self.overbought_threshold = overbought_threshold
+        self.oversold_threshold = oversold_threshold if isinstance(oversold_threshold, float) else oversold_threshold/10
+        self.overbought_threshold = overbought_threshold if isinstance(overbought_threshold, float) else overbought_threshold/10
         # Some MAs need as much additional previous data as 25 times period length to return repetitive values.
         # E.g. MA15 from 100 datapoints may be not the same as MA15 from 1000 datapoints, but we ignore that for now.
         _max_period = self.fastK_period + self.slowK_period * ADDITIONAL_DATA_BY_MA[slowK_ma_type] + self.slowD_period * \
@@ -115,23 +116,16 @@ class _StochExecuteFuturesEnv(SignalExecuteFuturesEnv):
 class StochOptimizeSpotEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _StochExecuteSpotEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.0001, 0.0001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0]
         action_upper = [0.0500, 1.0000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 25, 25]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, take_profit=None, enter_at=1.0, close_at=1.0,
-              fastK_period=14, slowK_period=1, slowD_period=3,
-              slowK_ma_type=0, slowD_ma_type=0,
-              oversold_threshold=20.0, overbought_threshold=80.0):
-        return self.exec_env.reset(stop_loss=stop_loss, take_profit=take_profit, enter_at=enter_at, close_at=close_at,
-                                   fastK_period=fastK_period, slowK_period=slowK_period, slowD_period=slowD_period,
-                                   slowK_ma_type=slowK_ma_type, slowD_ma_type=slowD_ma_type,
-                                   oversold_threshold=oversold_threshold, overbought_threshold=overbought_threshold)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(stop_loss=action[0], take_profit=action[1], enter_at=action[2], close_at=action[3],
@@ -144,29 +138,16 @@ class StochOptimizeSpotEnv(Env):
 class StochOptimizeFuturesEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _StochExecuteFuturesEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0, 1]
         action_upper = [1.00, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 25, 25, 125]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, leverage=5,
-              stop_loss=None, take_profit=None,
-              long_enter_at=1.0, long_close_at=1.0,
-              short_enter_at=1.0, short_close_at=1.0,
-              fastK_period=14, slowK_period=1, slowD_period=3,
-              slowK_ma_type=0, slowD_ma_type=0,
-              oversold_threshold=20.0, overbought_threshold=80.0):
-        return self.exec_env.reset(position_ratio=position_ratio, stop_loss=stop_loss, take_profit=take_profit,
-                                   long_enter_at=long_enter_at, long_close_at=long_close_at,
-                                   short_enter_at=short_enter_at, short_close_at=short_close_at,
-                                   fastK_period=fastK_period, slowK_period=slowK_period, slowD_period=slowD_period,
-                                   slowK_ma_type=slowK_ma_type, slowD_ma_type=slowD_ma_type,
-                                   oversold_threshold=oversold_threshold, overbought_threshold=overbought_threshold,
-                                   leverage=leverage)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(position_ratio=action[0], stop_loss=action[1], take_profit=action[2],
@@ -184,25 +165,16 @@ class StochOptimizeFuturesEnv(Env):
 class StochOptimizeSavingSpotEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _StochExecuteSpotEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.000, 0.0001, 0.0001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0]
         action_upper = [1.000, 0.0500, 1.0000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 25, 25]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, stop_loss=None, take_profit=None, save_ratio=None,
-              enter_at=1.0, close_at=1.0,
-              fastK_period=14, slowK_period=1, slowD_period=3,
-              slowK_ma_type=0, slowD_ma_type=0,
-              oversold_threshold=20.0, overbought_threshold=80.0):
-        return self.exec_env.reset(save_ratio=save_ratio, stop_loss=stop_loss, take_profit=take_profit,
-                                   enter_at=enter_at, close_at=close_at,
-                                   fastK_period=fastK_period, slowK_period=slowK_period, slowD_period=slowD_period,
-                                   slowK_ma_type=slowK_ma_type, slowD_ma_type=slowD_ma_type,
-                                   oversold_threshold=oversold_threshold, overbought_threshold=overbought_threshold)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(save_ratio=action[0], stop_loss=action[1], take_profit=action[2],
@@ -216,31 +188,17 @@ class StochOptimizeSavingSpotEnv(Env):
 class StochOptimizeSavingFuturesEnv(Env):
     def __init__(self, *args, **kwargs):
         self.exec_env = _StochExecuteFuturesEnv(*args, **kwargs)
-        obs_lower_bounds = array([-inf for _ in range(8)])
-        obs_upper_bounds = array([inf for _ in range(8)])
+        # To keep compatibility with gym env standards
+        obs_lower_bounds = array([-inf for _ in range(1)])
+        obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        ### ACTION BOUNDARIES ###
         action_lower = [0.01, 0.000, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 0, 50, 2, 2, 2, 0, 0, 1]
         action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 50, 100, 10_000, 10_000, 10_000, 25,
                         25, 125]
-        #########################
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
-    def reset(self, position_ratio=1.0, leverage=5,
-              stop_loss=None, take_profit=None, save_ratio=None,
-              long_enter_at=1.0, long_close_at=1.0,
-              short_enter_at=1.0, short_close_at=1.0,
-              fastK_period=14, slowK_period=1, slowD_period=3,
-              slowK_ma_type=0, slowD_ma_type=0,
-              oversold_threshold=20.0, overbought_threshold=80.0):
-        return self.exec_env.reset(position_ratio=position_ratio, save_ratio=save_ratio,
-                                   stop_loss=stop_loss, take_profit=take_profit,
-                                   long_enter_at=long_enter_at, long_close_at=long_close_at,
-                                   short_enter_at=short_enter_at, short_close_at=short_close_at,
-                                   fastK_period=fastK_period, slowK_period=slowK_period, slowD_period=slowD_period,
-                                   slowK_ma_type=slowK_ma_type, slowD_ma_type=slowD_ma_type,
-                                   oversold_threshold=oversold_threshold, overbought_threshold=overbought_threshold,
-                                   leverage=leverage)
+    def reset(self, *args, **kwargs):
+        return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
         self.reset(position_ratio=action[0], save_ratio=action[1],

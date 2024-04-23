@@ -1,4 +1,5 @@
 from numpy.random import choice
+from numpy import int32
 
 from .base import SpotBacktest, FuturesBacktest
 
@@ -6,8 +7,16 @@ from .base import SpotBacktest, FuturesBacktest
 class SignalExecuteSpotEnv(SpotBacktest):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
-        self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
+        if 'position_ratio' in kwargs:
+            self.position_ratio = kwargs['position_ratio'] / 100 if isinstance(kwargs['position_ratio'], int32) else \
+            kwargs['position_ratio']
+        else:
+            self.position_ratio = 1.0
+        if 'save_ratio' in kwargs:
+            self.position_ratio = kwargs['save_ratio'] / 100 if isinstance(kwargs['save_ratio'], int32) else \
+            kwargs['save_ratio']
+        else:
+            self.position_ratio = None
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
         self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
         self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
@@ -16,8 +25,16 @@ class SignalExecuteSpotEnv(SpotBacktest):
         self.signals = choice([-1, 0, 1], size=self.total_steps)
 
     def reset(self, *args, **kwargs):
-        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
-        self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
+        if 'position_ratio' in kwargs:
+            self.position_ratio = kwargs['position_ratio'] / 100 if isinstance(kwargs['position_ratio'], int32) else \
+            kwargs['position_ratio']
+        else:
+            self.position_ratio = 1.0
+        if 'save_ratio' in kwargs:
+            self.position_ratio = kwargs['save_ratio'] / 100 if isinstance(kwargs['save_ratio'], int32) else \
+                kwargs['save_ratio']
+        else:
+            self.position_ratio = None
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
         self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
         self.enter_threshold = kwargs['enter_at'] if 'enter_at' in kwargs else 1.0
@@ -55,8 +72,16 @@ class SignalExecuteSpotEnv(SpotBacktest):
 class SignalExecuteFuturesEnv(FuturesBacktest):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if 'position_ratio' in kwargs:
+            self.position_ratio = kwargs['position_ratio']/100 if isinstance(kwargs['position_ratio'], int32) else kwargs['position_ratio']
+        else:
+            self.position_ratio = 1.0
         self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
-        self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
+        if 'save_ratio' in kwargs:
+            self.save_ratio = kwargs['save_ratio'] / 100 if isinstance(kwargs['save_ratio'], int32) else \
+                kwargs['save_ratio']
+        else:
+            self.save_ratio = None
         self.leverage = kwargs['leverage'] if 'leverage' in kwargs else 1
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
         self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
@@ -67,8 +92,16 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         self.signals = choice([-1, 0, 1], size=self.total_steps)
 
     def reset(self, *args, **kwargs):
-        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
-        self.save_ratio = kwargs['save_ratio'] if 'save_ratio' in kwargs else None
+        if 'position_ratio' in kwargs:
+            self.position_ratio = kwargs['position_ratio'] / 100 if isinstance(kwargs['position_ratio'], int32) else \
+            kwargs['position_ratio']
+        else:
+            self.position_ratio = 1.0
+        if 'save_ratio' in kwargs:
+            self.save_ratio = kwargs['save_ratio'] / 100 if isinstance(kwargs['save_ratio'], int32) else \
+                kwargs['save_ratio']
+        else:
+            self.save_ratio = None
         self.leverage = kwargs['leverage'] if 'leverage' in kwargs else 1
         self.stop_loss = kwargs['stop_loss'] if 'stop_loss' in kwargs else None
         self.take_profit = kwargs['take_profit'] if 'take_profit' in kwargs else None
