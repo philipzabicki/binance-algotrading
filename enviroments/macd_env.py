@@ -185,10 +185,10 @@ class MACDOptimizeSavingFuturesEnv(Env):
         return self.exec_env.reset(*args, **kwargs)
 
     def step(self, action):
-        self.reset(position_ratio=action[0], save_ratio=action[1], stop_loss=action[2], take_profit=action[3],
-                   long_enter_at=action[4], long_close_at=action[5],
-                   short_enter_at=action[6], short_close_at=action[7],
-                   fast_period=int(action[8]), slow_period=int(action[9]), signal_period=int(action[10]),
-                   fast_ma_type=int(action[11]), slow_ma_type=int(action[12]), signal_ma_type=int(action[13]),
-                   leverage=int(action[14]))
+        self.reset(position_ratio=action[0], save_ratio=action[1],
+                   fast_period=int(action[2]), slow_period=int(action[3]), signal_period=int(action[4]),
+                   fast_ma_type=int(action[5]), slow_ma_type=int(action[6]), signal_ma_type=int(action[7]),
+                   leverage=int(action[8]), stop_loss=action[9], take_profit=action[10],
+                   long_enter_at=action[11], long_close_at=action[12],
+                   short_enter_at=action[13], short_close_at=action[14])
         return self.exec_env()

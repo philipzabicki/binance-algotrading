@@ -113,15 +113,15 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         macd_variables = {"position_ratio": Integer(bounds=(1, 100)),
                           "save_ratio": Integer(bounds=(1, 100)),
-                          "fast_period": Integer(bounds=(2, 1000)),
-                          "slow_period": Integer(bounds=(2, 1000)),
-                          "signal_period": Integer(bounds=(2, 1000)),
+                          "fast_period": Integer(bounds=(2, 250)),
+                          "slow_period": Integer(bounds=(2, 250)),
+                          "signal_period": Integer(bounds=(2, 250)),
                           "fast_ma_type": Integer(bounds=(0, 36)),
                           "slow_ma_type": Integer(bounds=(0, 36)),
                           "signal_ma_type": Integer(bounds=(0, 25)),
                           "leverage": Integer(bounds=(1, 125)),
-                          "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                          "take_profit": Real(bounds=(0.0001, .5)),
+                          "stop_loss": Real(bounds=(0.0001, 0.05)),
+                          "take_profit": Real(bounds=(0.0001, .2)),
                           "long_enter_at": Choice(options=[.25, .5, .75, 1.]),
                           "long_close_at": Choice(options=[.25, .5, .75, 1.]),
                           "short_enter_at": Choice(options=[.25, .5, .75, 1.]),
@@ -130,12 +130,12 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         # print(f'X {X}')
-        action = [X['position_ratio'], X['save_ratio'], X['stop_loss'], X['take_profit'],
-                  X['long_enter_at'], X['long_close_at'],
-                  X['short_enter_at'], X['short_close_at'],
+        action = [X['position_ratio'], X['save_ratio'],
                   X['fast_period'], X['slow_period'], X['signal_period'],
                   X['fast_ma_type'], X['slow_ma_type'], X['signal_ma_type'],
-                  X['leverage']]
+                  X['leverage'], X['stop_loss'], X['take_profit'],
+                  X['long_enter_at'], X['long_close_at'],
+                  X['short_enter_at'], X['short_close_at']]
         if self.n_evals > 1:
             rews = array([-1 * self.env.step(action)[1] for _ in range(self.n_evals)])
             out["F"] = array([reward_from_metric(rews, self.n_evals, self.metric)])

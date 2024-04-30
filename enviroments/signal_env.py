@@ -73,12 +73,11 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'position_ratio' in kwargs:
-            self.position_ratio = kwargs['position_ratio']/100 if isinstance(kwargs['position_ratio'], int32) else kwargs['position_ratio']
+            self.position_ratio = kwargs['position_ratio']/100 if kwargs['position_ratio']>1 else kwargs['position_ratio']
         else:
             self.position_ratio = 1.0
-        self.position_ratio = kwargs['position_ratio'] if 'position_ratio' in kwargs else 1.0
         if 'save_ratio' in kwargs:
-            self.save_ratio = kwargs['save_ratio'] / 100 if isinstance(kwargs['save_ratio'], int32) else \
+            self.save_ratio = kwargs['save_ratio'] / 100 if kwargs['save_ratio']>1 else \
                 kwargs['save_ratio']
         else:
             self.save_ratio = None
@@ -93,12 +92,12 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
 
     def reset(self, *args, **kwargs):
         if 'position_ratio' in kwargs:
-            self.position_ratio = kwargs['position_ratio'] / 100 if isinstance(kwargs['position_ratio'], int32) else \
-            kwargs['position_ratio']
+            self.position_ratio = kwargs['position_ratio'] / 100 if kwargs['position_ratio'] > 1 else kwargs[
+                'position_ratio']
         else:
             self.position_ratio = 1.0
         if 'save_ratio' in kwargs:
-            self.save_ratio = kwargs['save_ratio'] / 100 if isinstance(kwargs['save_ratio'], int32) else \
+            self.save_ratio = kwargs['save_ratio'] / 100 if kwargs['save_ratio'] > 1 else \
                 kwargs['save_ratio']
         else:
             self.save_ratio = None

@@ -54,6 +54,8 @@ class SpotTaker:
                 "You should provide at least 'enter_at', 'close_at' and 'stop_loss' inside settings dict.")
         for key, value in settings.items():
             setattr(self, key, value)
+        self.position_ratio /= 100 if self.position_ratio > 1 else self.position_ratio
+        self.save_ratio /= 100 if self.save_ratio > 1 else self.save_ratio
         self.buy_slipp_file = f'{SLIPPAGE_DIR}{market}/{self.symbol}{itv}/market_buy.csv'
         self.sell_slipp_file = f'{SLIPPAGE_DIR}{market}/{self.symbol}{itv}/market_sell.csv'
         self.stoploss_slipp_file = f'{SLIPPAGE_DIR}{market}/{self.symbol}{itv}/limit_stop_loss.csv'
@@ -273,6 +275,8 @@ class FuturesTaker:
         self.symbol = base + quote
         for key, value in settings.items():
             setattr(self, key, value)
+        self.position_ratio /= 100 if self.position_ratio > 1 else self.position_ratio
+        self.save_ratio /= 100 if self.save_ratio > 1 else self.save_ratio
         # Slippage reporting files
         self.buy_slipp_file = f'{SLIPPAGE_DIR}{market}/{self.symbol}{itv}/market_buy.csv'
         self.sell_slipp_file = f'{SLIPPAGE_DIR}{market}/{self.symbol}{itv}/market_sell.csv'

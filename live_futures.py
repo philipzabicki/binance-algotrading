@@ -6,11 +6,11 @@ BASE_TICKER = 'BTC'
 QUOTE_TICKER = 'USDT'
 MARKET = 'um'
 INTERVAL = '5m'
-trade_balance = 47.5
+trade_balance = 22.0
 
 # MACD settings:
-position_ratio, save_ratio, stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.9739761490339832, 0.0023474336243086533, 0.009547634906105978, 0.1214134883370534, 0.2927025528725881, 0.197630060490126, 0.15963986755527587, 0.6213901635337873
-fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 342, 450, 504, 4, 34, 24, 27
+position_ratio, save_ratio, fast_period, slow_period, signal_period, fast_ma_type, slow_ma_type, signal_ma_type, leverage = 99, 6, 765, 681, 17, 13, 25, 20, 39
+stop_loss, take_profit, long_enter_at, long_close_at, short_enter_at, short_close_at = 0.0032737095724112856, 0.11146018914991652, 1.0, 0.5, 0.75, 1.0
 SETTINGS = {"trade_balance": trade_balance,
             "position_ratio": position_ratio,
             "save_ratio": save_ratio,

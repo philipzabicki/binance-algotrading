@@ -17,13 +17,14 @@ CPU_CORES = cpu_count()
 N_TEST = 10_000
 N_STEPS = 8_640
 TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
-TRADE_START_DATE = '2021-11-17'
-TRADE_END_DATE = '2022-03-17'
+TRADE_START_DATE = '2021-05-01'
+TRADE_END_DATE = '2021-08-29'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2021-07-17'
-DF_END_DATE = '2022-03-18'
+DF_START_DATE = '2021-01-01'
+DF_END_DATE = '2021-08-30'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [0.9739761490339832, 0.0023474336243086533, 0.009547634906105978, 0.1214134883370534, 0.2927025528725881, 0.197630060490126, 0.15963986755527587, 0.6213901635337873, 342, 450, 504, 4, 34, 24, 27]
+ACTION = [99, 6, 765, 681, 17, 13, 25, 20, 39, 0.0032737095724112856, 0.11146018914991652, 1.0, 0.5, 0.75, 1.0]
+# ACTION = [7, 36, 140, 179, 190, 7, 14, 18, 19, 0.016962438614330024, 0.15421922830595475, 1.0, 0.5, 0.5, 0.25]
 
 
 def parallel_test(pool_nb, df, df_mark=None):
@@ -78,13 +79,12 @@ if __name__ == "__main__":
                                delay=345_600)
     if N_STEPS > 0:
         _size = N_STEPS
-        additional_periods = _size + 1 * (max(ACTION[-7] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-4]],
-                                              ACTION[-6] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]]) + ACTION[-5] *
-                                          ADDITIONAL_DATA_BY_MA[ACTION[-2]])
+        additional_periods = _size + 1 * (max(ACTION[2] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[5]],
+                                              ACTION[3] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[6]]) + ACTION[4] *
+                                          ADDITIONAL_DATA_BY_MA[ACTION[7]])
         print(f'additional_periods={additional_periods}')
-        macd, signal = custom_MACD(df.iloc[-additional_periods:, 1:6].to_numpy(), ACTION[-7], ACTION[-6], ACTION[-5],
-                                   ACTION[-4], ACTION[-3],
-                                   ACTION[-2])
+        macd, signal = custom_MACD(df.iloc[-additional_periods:, 1:6].to_numpy(), ACTION[2], ACTION[3], ACTION[4],
+                                   ACTION[5], ACTION[6], ACTION[7])
         signals = MACD_cross_signal(macd, signal)
         df_plot = df.tail(_size).copy()
         df_plot['MACD'] = macd[-_size:]

@@ -45,9 +45,9 @@ def get_variables_plot(x_variables, problem, fname, save=True, dpi=75):
     sample_gen = x_variables[0]
     if not isinstance(sample_gen, dict):
         raise NotImplementedError("Currently supports only list of dict type populations")
-    print(f'x_variables {x_variables}')
+    # print(f'x_variables {x_variables}')
     X_array = array([list(map(float, entry.values())) for entry in x_variables])
-    print(f'X_array {X_array}')
+    # print(f'X_array {X_array}')
     pop_size = len(X_array)
     # Handling chart displayed boundaries for different variable types
     labels = [*sample_gen.keys()]
@@ -57,9 +57,9 @@ def get_variables_plot(x_variables, problem, fname, save=True, dpi=75):
             bounds.append(problem.vars[name].bounds)
         elif isinstance(problem.vars[name], Choice):
             bounds.append((min(problem.vars[name].options), max(problem.vars[name].options)))
-            print(f'choices.options {problem.vars[name].options}')
+            # print(f'choices.options {problem.vars[name].options}')
     bounds = array(bounds).T
-    print(bounds)
+    # print(bounds)
     # bounds = array([problem.vars[name].bounds for name in labels]).T
     # bounds = array([problem.vars[name].bounds for name in labels if hasattr(problem.vars[name], 'bounds')]).T
     plot = PCP(figsize=(21, 9), labels=labels, bounds=bounds, tight_layout=True)

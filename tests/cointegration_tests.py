@@ -2,7 +2,7 @@
 from random import randint
 
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from statsmodels.tsa.stattools import coint
 from talib import *
 
@@ -13,7 +13,7 @@ ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 N_RND_SERIES = 100_000
-N_LAST_INTERVALS = 17_280  # 60 days
+N_LAST_INTERVALS = 25_920  # 7 days
 
 if __name__ == "__main__":
     full_df = by_BinanceVision(ticker=TICKER,
@@ -28,11 +28,11 @@ if __name__ == "__main__":
     # full_df['RSI'] = RSI(full_df['Close'], timeperiod=14)
     # full_df['ULTOSC'] = ULTOSC(full_df['High'], full_df['Low'], full_df['Close'], timeperiod1=7, timeperiod2=14, timeperiod3=28)
     # full_df['MFI'] = MFI(full_df['High'], full_df['Low'], full_df['Close'], full_df['Volume'], timeperiod=N_LAST_INTERVALS//100)
-    full_df['ATR'] = ATR(full_df['High'], full_df['Low'], full_df['Close'], timeperiod=N_LAST_INTERVALS // 100)
+    # full_df['ATR'] = ATR(full_df['High'], full_df['Low'], full_df['Close'], timeperiod=N_LAST_INTERVALS // 100)
     full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])
     full_df['HL2'] = MEDPRICE(full_df['High'], full_df['Low'])
     # full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])
-    full_df[['ADL', 'OBV', 'HL2', 'ATR']].ffill(inplace=True)
+    full_df[['ADL', 'OBV', 'HL2']].ffill(inplace=True)
     # scaler_std = StandardScaler()
     # scaler_mm = MinMaxScaler()
     # full_df.loc[:, 'ADL'] = scaler_std.fit_transform(full_df[['ADL']])
@@ -41,7 +41,8 @@ if __name__ == "__main__":
     # full_df.loc[:, 'RSI'] = scaler_mm.fit_transform(full_df[['RSI']])
     # full_df.loc[:, 'ULTOSC'] = scaler_mm.fit_transform(full_df[['ULTOSC']])
     # full_df.loc[:, 'MFI'] = scaler_mm.fit_transform(full_df[['MFI']])
-    full_df['target'] = full_df[['ADL', 'OBV', 'HL2', 'ATR']].sum(axis=1)
+    full_df['target'] = full_df[['ADL', 'OBV', 'HL2']].sum(axis=1)
+    full_df['target'] = StandardScaler().fit_transform(full_df[['target']])
     # scaler = MinMaxScaler()
     # full_df.loc[:, 'HL2'] = scaler.fit_transform(full_df[['ADL']])
     # full_df['OBV'].ffill(inplace=True)
