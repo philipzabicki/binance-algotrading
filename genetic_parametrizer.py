@@ -18,19 +18,19 @@ CPU_CORES_COUNT = cpu_count()
 POP_SIZE = 1024
 N_GEN = 5
 TICKER = 'BTCUSDT'
-ITV = '15m'
+ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-TRADE_START_DATE = '2021-05-01'
-TRADE_END_DATE = '2021-08-29'
+TRADE_START_DATE = '2021-04-07'
+TRADE_END_DATE = '2021-08-05'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2021-01-01'
-DF_END_DATE = '2021-08-30'
+DF_START_DATE = '2021-01-06'
+DF_END_DATE = '2021-08-06'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
 PROBLEM_N_EVALS = 8
 PROBLEM_METRIC = 'max'
 ALGORITHM = NSGA2
-TERMINATION = ("time", "00:20:00")
+TERMINATION = ("time", "10:00:00")
 # TERMINATION = ('n_gen', N_GEN)
 ENV_KWARGS = {'max_steps': 8_640,
               'start_date': TRADE_START_DATE,
