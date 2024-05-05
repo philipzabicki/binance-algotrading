@@ -13,7 +13,7 @@ class BandsSpotMixedVariableProblem(ElementwiseProblem):
         self.n_evals = n_evals
         self.metric = metric
         bands_variables = {"atr_period": Integer(bounds=(2, 1_000)),
-                           "ma_type": Integer(bounds=(0, 37)),
+                           "ma_type": Integer(bounds=(0, 36)),
                            "ma_period": Integer(bounds=(2, 1_000)),
                            "stop_loss": Real(bounds=(0.0001, 0.0500)),
                            "take_profit": Real(bounds=(0.0001, 1.0000)),
@@ -41,7 +41,7 @@ class BandsFuturesMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         bands_variables = {"position_ratio": Integer(bounds=(1, 100)),
                            "atr_period": Integer(bounds=(2, 1_000)),
-                           "ma_type": Integer(bounds=(0, 37)),
+                           "ma_type": Integer(bounds=(0, 36)),
                            "ma_period": Integer(bounds=(2, 1_000)),
                            "leverage": Integer(bounds=(1, 125)),
                            "stop_loss": Real(bounds=(0.0001, 0.0150)),
@@ -76,7 +76,7 @@ class BandsSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         bands_variables = {"save_ratio": Integer(bounds=(1, 100)),
                            "atr_period": Integer(bounds=(2, 1_000)),
-                           "ma_type": Integer(bounds=(0, 37)),
+                           "ma_type": Integer(bounds=(0, 36)),
                            "ma_period": Integer(bounds=(2, 1_000)),
                            "stop_loss": Real(bounds=(0.0001, 0.0500)),
                            "take_profit": Real(bounds=(0.0001, 1.0000)),
@@ -105,7 +105,7 @@ class BandsSavingFuturesMixedVariableProblem(ElementwiseProblem):
         bands_variables = {"position_ratio": Integer(bounds=(1, 100)),
                            "save_ratio": Integer(bounds=(1, 100)),
                            "atr_period": Integer(bounds=(2, 1_000)),
-                           "ma_type": Integer(bounds=(0, 37)),
+                           "ma_type": Integer(bounds=(0, 36)),
                            "ma_period": Integer(bounds=(2, 1_000)),
                            "leverage": Integer(bounds=(1, 125)),
                            "stop_loss": Real(bounds=(0.0001, 0.0150)),
@@ -119,12 +119,12 @@ class BandsSavingFuturesMixedVariableProblem(ElementwiseProblem):
 
     def _evaluate(self, X, out, *args, **kwargs):
         action = [X['position_ratio'], X['save_ratio'],
+                  X['atr_period'], X['ma_type'],
+                  X['ma_period'], X['leverage'],
                   X['stop_loss'], X['take_profit'],
                   X['long_enter_at'], X['long_close_at'],
                   X['short_enter_at'], X['short_close_at'],
-                  X['atr_multi'], X['atr_period'],
-                  X['ma_type'], X['ma_period'],
-                  X['leverage']]
+                  X['atr_multi']]
 
         if self.n_evals > 1:
             rews = array([-1 * self.env.step(action)[1] for _ in range(self.n_evals)])

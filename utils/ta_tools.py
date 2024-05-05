@@ -1202,7 +1202,7 @@ def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
 
 
 def custom_StochasticOscillator(ohlcv, fastK_period, slowK_period, slowD_period, slowK_ma_type, slowD_ma_type):
-    fastK, _ = talib.STOCHF(ohlcv[:, 1], ohlcv[:, 2], ohlcv[:, 3], fastk_period=fastK_period, fastd_period=1,
+    fastK, _ = talib.STOCHF(*ohlcv[:, 1:4].T.astype(float), fastk_period=fastK_period, fastd_period=1,
                             fastd_matype=0)
     slowK = get_1D_MA(fastK, slowK_ma_type, slowK_period)
     slowD = get_1D_MA(slowK, slowD_ma_type, slowD_period)
@@ -1229,8 +1229,8 @@ def anyMA_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_
 
 
 def get_MA_band_signal(np_df: np.ndarray, ma_type: int, ma_period: int, atr_period: int, atr_multi: float):
-    # print(hex(id(np_df)))
-    # print(f' {np_df} {type} {MA_period} {ATR_period} {ATR_multi}')
+    # print(np_df)
+    # print(f' {np_df} ma_type:{ma_type} ma_period:{ma_period} atr_period:{atr_period} atr_multi:{atr_multi}')
     atr = talib.ATR(np_df[:, 1], np_df[:, 2], np_df[:, 3], atr_period)
     # print(f'atr: {atr}')
     '''np_df[:,-1] = anyMA_sig(np_df[:,3],

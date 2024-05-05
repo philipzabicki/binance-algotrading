@@ -13,17 +13,22 @@ from utils.ta_tools import get_MA_band_signal, get_MA
 
 CPU_CORES = cpu_count()
 N_TEST = 10_000
-N_STEPS = 288
-TICKER, ITV, MARKET_TYPE, DATA_TYPE, START_DATE = 'BTCUSDT', '5m', 'um', 'klines', '2020-01-01'
+N_STEPS = 8_640
+TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
+TRADE_START_DATE = '2021-04-07'
+TRADE_END_DATE = '2021-08-05'
+# Better to take more previous data for some TA features
+DF_START_DATE = '2021-01-07'
+DF_END_DATE = '2021-08-06'
 ENV = BandsOptimizeSavingFuturesEnv
-ACTION = [0.5257579118931448, 0.91083587571587, 0.014912515150185603, 0.9468517684714486, 0.8565969389188695,
-          0.20386928526372067, 0.4189846100381565, 0.722426931594155, 6.449973153997845, 211, 34, 742, 41]
+ACTION = [15, 21, 244, 22, 242, 3, 0.007323772650153117, 0.9231644815460224, 0.03336436648676175, 0.036715294645426, 0.24368303659766918, 0.937191485799508, 10.455677675503289]
 
 
-def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
+def parallel_test(pool_nb, df, df_mark=None):
     env = ENV(df=df,
               df_mark=df_mark,
-              dates_df=dates_df,
+              start_date=TRADE_START_DATE,
+              end_date=TRADE_END_DATE,
               max_steps=N_STEPS,
               init_balance=50,
               no_action_finish=inf,
@@ -36,8 +41,9 @@ def parallel_test(pool_nb, df, df_mark=None, dates_df=None):
     for _ in range(N_TEST // CPU_CORES):
         _, reward, _, _, _ = env.step(ACTION)
         results.append(reward)
-        if reward > 0:
-            gains.append(env.exec_env.balance - env.exec_env.init_balance)
+        _diff = env.exec_env.balance - env.exec_env.init_balance
+        if reward > 0 and _diff > 0:
+            gains.append(_diff)
     return results, gains
 
 
@@ -46,24 +52,27 @@ if __name__ == "__main__":
                           interval=ITV,
                           market_type=MARKET_TYPE,
                           data_type=DATA_TYPE,
-                          start_date=START_DATE,
+                          start_date=DF_START_DATE,
+                          end_date=DF_END_DATE,
                           split=False,
                           delay=345_600)
-    _, df_mark = by_BinanceVision(ticker=TICKER,
-                                  interval=ITV,
-                                  market_type=MARKET_TYPE,
-                                  data_type='markPriceKlines',
-                                  start_date=START_DATE,
-                                  split=True,
-                                  delay=345_600)
-    additional_periods = N_STEPS + max(ACTION[-2] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[-3]],
-                                       ACTION[-4])
+    df_mark = by_BinanceVision(ticker=TICKER,
+                               interval=ITV,
+                               market_type=MARKET_TYPE,
+                               data_type='markPriceKlines',
+                               start_date=DF_START_DATE,
+                               end_date=DF_END_DATE,
+                               split=False,
+                               delay=345_600)
+    additional_periods = N_STEPS + max(ACTION[4] * ADDITIONAL_DATA_BY_OHLCV_MA[ACTION[3]],
+                                       ACTION[2])
+    print(f'ACTION {ACTION}')
     ohlcv_np = df.iloc[:, 1:6].to_numpy()
-    signals = get_MA_band_signal(ohlcv_np[-additional_periods:, ], ACTION[-3], ACTION[-2], ACTION[-4], ACTION[-5])
+    signals = get_MA_band_signal(ohlcv_np[-additional_periods:, ], ACTION[3], ACTION[4], ACTION[2], ACTION[-1])
     atr = ATR(ohlcv_np[-additional_periods:, 1], ohlcv_np[-additional_periods:, 2], ohlcv_np[-additional_periods:, 3],
-              ACTION[-4])
-    up_band = get_MA(ohlcv_np[-additional_periods:, ], ACTION[-3], ACTION[-2]) + atr * ACTION[-5]
-    low_band = get_MA(ohlcv_np[-additional_periods:, ], ACTION[-3], ACTION[-2]) - atr * ACTION[-5]
+              ACTION[2])
+    up_band = get_MA(ohlcv_np[-additional_periods:, ], ACTION[3], ACTION[4]) + atr * ACTION[12]
+    low_band = get_MA(ohlcv_np[-additional_periods:, ], ACTION[3], ACTION[4]) - atr * ACTION[12]
     df_plot = df.tail(N_STEPS).copy()
     # df_plot['MACD'] = macd[-N_STEPS:]
     # df_plot['signal'] = signal[-N_STEPS:]
@@ -81,17 +90,17 @@ if __name__ == "__main__":
     axs[1].plot(df_plot.index, df_plot['lower'], label='Lower band')
     axs[1].legend(loc='upper left')
     axs[2].plot(df_plot.index, df_plot['signals'], label='Signal line')
-    axs[2].axhline(y=ACTION[4], label='Long open', color='green', linestyle='--')
-    axs[2].axhline(y=-ACTION[5], label='Long close', color='red', linestyle='--')
-    axs[2].axhline(y=-ACTION[6], label='Short open', color='red', linestyle='dotted')
-    axs[2].axhline(y=ACTION[7], label='Short close', color='green', linestyle='dotted')
+    axs[2].axhline(y=ACTION[8], label='Long open', color='green', linestyle='--')
+    axs[2].axhline(y=-ACTION[9], label='Long close', color='red', linestyle='--')
+    axs[2].axhline(y=-ACTION[10], label='Short open', color='red', linestyle='dotted')
+    axs[2].axhline(y=ACTION[11], label='Short close', color='green', linestyle='dotted')
     axs[2].legend(loc='upper left')
 
     plt.tight_layout()
     plt.show()
 
     with Pool(processes=CPU_CORES) as pool:
-        results = pool.starmap(parallel_test, [(i, df.iloc[:, 1:6], df_mark, df['Opened']) for i in range(CPU_CORES)])
+        results = pool.starmap(parallel_test, [(i, df, df_mark) for i in range(CPU_CORES)])
     joined_res = []
     joined_gains = []
     for el in results:

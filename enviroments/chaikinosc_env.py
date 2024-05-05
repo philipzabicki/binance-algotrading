@@ -57,7 +57,7 @@ class _ChaikinOscillatorExecuteSpotEnv(SignalExecuteSpotEnv):
 class _ChaikinOscillatorExecuteFuturesEnv(SignalExecuteFuturesEnv):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.adl = AD(self.df[:, 2], self.df[:, 3], self.df[:, 4], self.df[:, 5])
+        self.adl = AD(*self.df[:, 2:6].T.astype(float))
         # print(f'futures self.adl {self.adl}')
         # print(f'len(self.adl) {len(self.adl)}')
 

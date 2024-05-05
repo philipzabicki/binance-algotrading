@@ -7,7 +7,7 @@ from time import time
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
-from numpy import array, mean, std, inf, searchsorted
+from numpy import array, mean, std, inf, searchsorted, float64
 from pandas import to_datetime
 
 from definitions import REPORT_DIR

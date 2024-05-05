@@ -11,21 +11,24 @@ from pymoo.optimize import minimize
 from genetic_search.base import save_results, get_callback_plot, get_variables_plot, \
     MinAvgMaxNonzeroSingleObjCallback
 from genetic_search.macd_parametrizer import MACDSavingFuturesMixedVariableProblem
+from genetic_search.bands_parametrizer import BandsSavingFuturesMixedVariableProblem
+from genetic_search.chaikinosc_parametrizer import ChaikinOscillatorSavingFuturesMixedVariableProblem
+from genetic_search.stoch_parametrizer import StochSavingFuturesMixedVariableProblem
 from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 1024
-N_GEN = 5
+POP_SIZE = 512
+N_GEN = 10
 TICKER = 'BTCUSDT'
 ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-TRADE_START_DATE = '2021-04-07'
-TRADE_END_DATE = '2021-08-05'
+TRADE_START_DATE = '2021-04-10'
+TRADE_END_DATE = '2021-08-08'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2021-01-06'
-DF_END_DATE = '2021-08-06'
+DF_START_DATE = '2021-01-10'
+DF_END_DATE = '2021-08-09'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
 PROBLEM_N_EVALS = 8
 PROBLEM_METRIC = 'max'

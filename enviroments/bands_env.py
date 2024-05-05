@@ -31,7 +31,7 @@ class _BandsExecuteSpotEnv(SignalExecuteSpotEnv):
             prev_values = 0
             warn(
                 f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
-        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, 1:6],
+        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, 1:6].astype(float),
                                           self.ma_type, self.ma_period,
                                           self.atr_period, self.atr_multi)[self.start_step - prev_values:]
         return _ret
@@ -67,7 +67,8 @@ class _BandsExecuteFuturesEnv(SignalExecuteFuturesEnv):
             prev_values = 0
             warn(
                 f'Previous data required for consistent MAs calculation is larger than previous values existing in df. ({_max_period} vs {self.start_step})')
-        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, 1:6],
+        # print(f'self.df[prev_values:self.end_step, 1:6] {self.df[prev_values:self.end_step, 1:6].dtype}')
+        self.signals = get_MA_band_signal(self.df[prev_values:self.end_step, 1:6].astype(float),
                                           self.ma_type, self.ma_period,
                                           self.atr_period, self.atr_multi)[self.start_step - prev_values:]
         return _ret
@@ -167,9 +168,10 @@ class BandsOptimizeSavingFuturesEnv(Env):
 
     def step(self, action):
         self.reset(position_ratio=action[0], save_ratio=action[1],
-                   stop_loss=action[2], take_profit=action[3],
-                   long_enter_at=action[4], long_close_at=action[5],
-                   short_enter_at=action[6], short_close_at=action[7],
-                   atr_multi=action[8], atr_period=int(action[9]),
-                   ma_type=int(action[10]), ma_period=int(action[11]), leverage=int(action[12]))
+                   atr_period=int(action[2]), ma_type=int(action[3]),
+                   ma_period=int(action[4]), leverage=int(action[5]),
+                   stop_loss=action[6], take_profit=action[7],
+                   long_enter_at=action[8], long_close_at=action[9],
+                   short_enter_at=action[10], short_close_at=action[11],
+                   atr_multi=action[12])
         return self.exec_env()
