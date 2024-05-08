@@ -202,11 +202,10 @@ class StochOptimizeSavingFuturesEnv(Env):
 
     def step(self, action):
         self.reset(position_ratio=action[0], save_ratio=action[1],
-                   stop_loss=action[2], take_profit=action[3],
-                   long_enter_at=action[4], long_close_at=action[5],
-                   short_enter_at=action[6], short_close_at=action[7],
-                   oversold_threshold=action[8], overbought_threshold=action[9],
-                   fastK_period=int(action[10]), slowK_period=int(action[11]), slowD_period=int(action[12]),
-                   slowK_ma_type=int(action[13]), slowD_ma_type=int(action[14]),
-                   leverage=int(action[15]))
+                   oversold_threshold=action[2], overbought_threshold=action[3],
+                   fastK_period=int(action[4]), slowK_period=int(action[5]), slowD_period=int(action[6]),
+                   slowK_ma_type=int(action[7]), slowD_ma_type=int(action[8]),
+                   leverage=int(action[9]), stop_loss=action[10], take_profit=action[11],
+                   long_enter_at=action[12], long_close_at=action[13],
+                   short_enter_at=action[14], short_close_at=action[15])
         return self.exec_env()

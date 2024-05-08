@@ -12,11 +12,11 @@ class BandsSpotMixedVariableProblem(ElementwiseProblem):
         self.env = BandsOptimizeSpotEnv(df=df, **env_kwargs)
         self.n_evals = n_evals
         self.metric = metric
-        bands_variables = {"atr_period": Integer(bounds=(2, 1_000)),
+        bands_variables = {"atr_period": Integer(bounds=(2, 250)),
                            "ma_type": Integer(bounds=(0, 36)),
-                           "ma_period": Integer(bounds=(2, 1_000)),
-                           "stop_loss": Real(bounds=(0.0001, 0.0500)),
-                           "take_profit": Real(bounds=(0.0001, 1.0000)),
+                           "ma_period": Integer(bounds=(2, 250)),
+                           "stop_loss": Real(bounds=(.0001, .25)),
+                           "take_profit": Real(bounds=(.0001, .25)),
                            "enter_at": Real(bounds=(0.001, 1.000)),
                            "close_at": Real(bounds=(0.001, 1.000)),
                            "atr_multi": Real(bounds=(0.001, 15.000))}
@@ -40,12 +40,12 @@ class BandsFuturesMixedVariableProblem(ElementwiseProblem):
         self.n_evals = n_evals
         self.metric = metric
         bands_variables = {"position_ratio": Integer(bounds=(1, 100)),
-                           "atr_period": Integer(bounds=(2, 1_000)),
+                           "atr_period": Integer(bounds=(2, 250)),
                            "ma_type": Integer(bounds=(0, 36)),
-                           "ma_period": Integer(bounds=(2, 1_000)),
+                           "ma_period": Integer(bounds=(2, 250)),
                            "leverage": Integer(bounds=(1, 125)),
-                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                           "take_profit": Real(bounds=(0.0001, 1.0000)),
+                           "stop_loss": Real(bounds=(.0001, .25)),
+                           "take_profit": Real(bounds=(.0001, .25)),
                            "long_enter_at": Real(bounds=(0.001, 1.000)),
                            "long_close_at": Real(bounds=(0.001, 1.000)),
                            "short_enter_at": Real(bounds=(0.001, 1.000)),
@@ -75,11 +75,11 @@ class BandsSavingSpotMixedVariableProblem(ElementwiseProblem):
         self.n_evals = n_evals
         self.metric = metric
         bands_variables = {"save_ratio": Integer(bounds=(1, 100)),
-                           "atr_period": Integer(bounds=(2, 1_000)),
+                           "atr_period": Integer(bounds=(2, 250)),
                            "ma_type": Integer(bounds=(0, 36)),
-                           "ma_period": Integer(bounds=(2, 1_000)),
-                           "stop_loss": Real(bounds=(0.0001, 0.0500)),
-                           "take_profit": Real(bounds=(0.0001, 1.0000)),
+                           "ma_period": Integer(bounds=(2, 250)),
+                           "stop_loss": Real(bounds=(.0001, .25)),
+                           "take_profit": Real(bounds=(.0001, .25)),
                            "enter_at": Real(bounds=(0.001, 1.000)),
                            "close_at": Real(bounds=(0.001, 1.000)),
                            "atr_multi": Real(bounds=(0.001, 15.000))}
@@ -104,12 +104,12 @@ class BandsSavingFuturesMixedVariableProblem(ElementwiseProblem):
         self.metric = metric
         bands_variables = {"position_ratio": Integer(bounds=(1, 100)),
                            "save_ratio": Integer(bounds=(1, 100)),
-                           "atr_period": Integer(bounds=(2, 1_000)),
+                           "atr_period": Integer(bounds=(2, 250)),
                            "ma_type": Integer(bounds=(0, 36)),
-                           "ma_period": Integer(bounds=(2, 1_000)),
+                           "ma_period": Integer(bounds=(2, 250)),
                            "leverage": Integer(bounds=(1, 125)),
-                           "stop_loss": Real(bounds=(0.0001, 0.0150)),
-                           "take_profit": Real(bounds=(0.0001, 1.0000)),
+                           "stop_loss": Real(bounds=(.0001, .25)),
+                           "take_profit": Real(bounds=(.0001, .25)),
                            "long_enter_at": Real(bounds=(0.001, 1.000)),
                            "long_close_at": Real(bounds=(0.001, 1.000)),
                            "short_enter_at": Real(bounds=(0.001, 1.000)),
