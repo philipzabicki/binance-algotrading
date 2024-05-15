@@ -374,31 +374,27 @@ class FuturesTaker:
         if self.SL_order is not None:
             if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
                     (float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
+                self._cancel_all_orders()
                 order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
                 if order['status'] != 'FILLED':
                     self.logger.warning(f'STOP_LOSS was not filled. orderID:{self.SL_order["orderId"]}')
                     self._partially_filled_problem(self.stoploss_price)
                 else:
                     self.logger.info(f'STOP_LOSS was filled.')
-                self._cancel_all_orders()
                 self._update_balances()
-                self.SL_order, self.TP_order = None, None
                 self.in_long_position, self.in_short_position = False, False
-                self.stoploss_price, self.takeprofit_price = 0.0, 0.0
         if self.TP_order is not None:
             if ((float(data_k['h']) >= self.takeprofit_price) and self.in_long_position) or (
                     (float(data_k['l']) <= self.takeprofit_price) and self.in_short_position):
+                self._cancel_all_orders()
                 order = self.client.query_order(symbol=self.symbol, orderId=self.TP_order['orderId'])
                 if order['status'] != 'FILLED':
                     self.logger.warning(f'TAKE_PROFIT was not filled. orderID:{self.TP_order["orderId"]}')
                     self._partially_filled_problem(self.takeprofit_price)
                 else:
                     self.logger.info(f'TAKE_PROFIT was filled.')
-                self._cancel_all_orders()
                 self._update_balances()
-                self.TP_order, self.SL_order = None, None
                 self.in_long_position, self.in_short_position = False, False
-                self.takeprofit_price, self.stoploss_price = 0.0, 0.0
         # Reopen websocket connection just to avoid timeout DC
         if time() - self.start_t >= 86_340:
             self.ws.close()
@@ -483,11 +479,10 @@ class FuturesTaker:
         # return value / quantity
 
     def _partially_filled_problem(self, req_price):
-        self._cancel_all_orders()
         if self.in_long_position:
             if self._market_sell(self.q):
                 self._report_slipp(self.sell_order, req_price, 'unfilled_stop')
-        if self.in_short_position:
+        elif self.in_short_position:
             if self._market_buy(self.q):
                 self._report_slipp(self.buy_order, req_price, 'unfilled_stop')
         else:
