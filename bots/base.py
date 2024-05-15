@@ -374,25 +374,25 @@ class FuturesTaker:
         if self.SL_order is not None:
             if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
                     (float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
-                self._cancel_all_orders()
                 order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
                 if order['status'] != 'FILLED':
                     self.logger.warning(f'STOP_LOSS was not filled. orderID:{self.SL_order["orderId"]}')
                     self._partially_filled_problem(self.stoploss_price)
                 else:
                     self.logger.info(f'STOP_LOSS was filled.')
+                self._cancel_all_orders()
                 self._update_balances()
                 self.in_long_position, self.in_short_position = False, False
         if self.TP_order is not None:
             if ((float(data_k['h']) >= self.takeprofit_price) and self.in_long_position) or (
                     (float(data_k['l']) <= self.takeprofit_price) and self.in_short_position):
-                self._cancel_all_orders()
                 order = self.client.query_order(symbol=self.symbol, orderId=self.TP_order['orderId'])
                 if order['status'] != 'FILLED':
                     self.logger.warning(f'TAKE_PROFIT was not filled. orderID:{self.TP_order["orderId"]}')
                     self._partially_filled_problem(self.takeprofit_price)
                 else:
                     self.logger.info(f'TAKE_PROFIT was filled.')
+                self._cancel_all_orders()
                 self._update_balances()
                 self.in_long_position, self.in_short_position = False, False
         # Reopen websocket connection just to avoid timeout DC
@@ -423,8 +423,8 @@ class FuturesTaker:
                 q = str(trade_q)[:len(str(self.step_size))]
                 if self._market_buy(q):
                     self.stoploss_price = round_step_size(self.close * (1 - self.stop_loss), self.tick_size)
-                    self.takeprofit_price = round_step_size(self.close * (1 + self.take_profit), self.tick_size)
                     self._stop_loss(q, self.stoploss_price, 'SELL')
+                    self.takeprofit_price = round_step_size(self.close * (1 + self.take_profit), self.tick_size)
                     self._take_profit(q, self.takeprofit_price, 'SELL')
                     self._report_slipp(self.buy_order, self.close, 'buy')
                     self.q = q
@@ -434,8 +434,8 @@ class FuturesTaker:
                 q = str(trade_q)[:len(str(self.step_size))]
                 if self._market_sell(q):
                     self.stoploss_price = round_step_size(self.close * (1 + self.stop_loss), self.tick_size)
-                    self.takeprofit_price = round_step_size(self.close * (1 - self.take_profit), self.tick_size)
                     self._stop_loss(q, self.stoploss_price, 'BUY')
+                    self.takeprofit_price = round_step_size(self.close * (1 - self.take_profit), self.tick_size)
                     self._take_profit(q, self.takeprofit_price, 'BUY')
                     self._report_slipp(self.sell_order, self.close, 'sell')
                     self.q = q
