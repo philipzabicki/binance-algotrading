@@ -375,24 +375,24 @@ class FuturesTaker:
             if ((float(data_k['l']) <= self.stoploss_price) and self.in_long_position) or (
                     (float(data_k['h']) >= self.stoploss_price) and self.in_short_position):
                 order = self.client.query_order(symbol=self.symbol, orderId=self.SL_order['orderId'])
+                self._cancel_all_orders()
                 if order['status'] != 'FILLED':
                     self.logger.warning(f'STOP_LOSS was not filled. orderID:{self.SL_order["orderId"]}')
                     self._partially_filled_problem(self.stoploss_price)
                 else:
                     self.logger.info(f'STOP_LOSS was filled.')
-                self._cancel_all_orders()
                 self._update_balances()
                 self.in_long_position, self.in_short_position = False, False
         if self.TP_order is not None:
             if ((float(data_k['h']) >= self.takeprofit_price) and self.in_long_position) or (
                     (float(data_k['l']) <= self.takeprofit_price) and self.in_short_position):
                 order = self.client.query_order(symbol=self.symbol, orderId=self.TP_order['orderId'])
+                self._cancel_all_orders()
                 if order['status'] != 'FILLED':
                     self.logger.warning(f'TAKE_PROFIT was not filled. orderID:{self.TP_order["orderId"]}')
                     self._partially_filled_problem(self.takeprofit_price)
                 else:
                     self.logger.info(f'TAKE_PROFIT was filled.')
-                self._cancel_all_orders()
                 self._update_balances()
                 self.in_long_position, self.in_short_position = False, False
         # Reopen websocket connection just to avoid timeout DC
