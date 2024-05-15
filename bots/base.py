@@ -484,7 +484,6 @@ class FuturesTaker:
 
     def _partially_filled_problem(self, req_price):
         self._cancel_all_orders()
-        self.q = self._get_available_balance(self.base)
         if self.in_long_position:
             if self._market_sell(self.q):
                 self._report_slipp(self.sell_order, req_price, 'unfilled_stop')
