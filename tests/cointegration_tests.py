@@ -13,7 +13,7 @@ ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 N_RND_SERIES = 10_000
-N_LAST_INTERVALS = 17_280  # 7 days
+N_LAST_INTERVALS = 25_920  # 30 days
 
 if __name__ == "__main__":
     full_df = by_BinanceVision(ticker=TICKER,
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     # full_df['ADL'].fillna(method='ffill', inplace=True)
     # full_df['OBV'].fillna(method='ffill', inplace=True)
 
-    last_month = full_df.tail(N_LAST_INTERVALS)
+    last_month = full_df.tail(N_LAST_INTERVALS).copy(deep=True)
     # last_month.loc[:, 'ADL'] = AD(last_month['High'], last_month['Low'], last_month['Close'], last_month['Volume'])
 
     for i in range(N_RND_SERIES):
@@ -86,6 +86,6 @@ if __name__ == "__main__":
             print(f'start_date: {rnd_df.iloc[0, 0]} end_date: {rnd_df.iloc[-1, 0]}')
             # last_month.loc[:, 'target'] = scaler1.fit_transform(last_month[['target']])
             # rnd_df.loc[:, 'target'] = scaler2.fit_transform(rnd_df[['target']])
-            plt.plot(MinMaxScaler().fit_transform(last_month[['target']]))
-            plt.plot(MinMaxScaler().fit_transform(rnd_df[['target']]))
+            plt.plot(MinMaxScaler().fit_transform(last_month[['target']].copy(deep=True)))
+            plt.plot(MinMaxScaler().fit_transform(rnd_df[['target']].copy(deep=True)))
             plt.show()

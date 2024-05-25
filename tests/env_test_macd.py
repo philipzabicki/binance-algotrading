@@ -17,13 +17,13 @@ CPU_CORES = cpu_count()
 N_TEST = 10_000
 N_STEPS = 8_640
 TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
-TRADE_START_DATE = '2022-10-24'
-TRADE_END_DATE = '2023-02-21'
+TRADE_START_DATE = '2021-04-17'
+TRADE_END_DATE = '2021-09-14'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2022-08-24'
-DF_END_DATE = '2023-02-22'
+DF_START_DATE = '2021-01-17'
+DF_END_DATE = '2021-09-15'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [96, 46, 140, 245, 167, 36, 29, 14, 14, 0.22610324176670493, 0.24965909584881185, 1.0, 1.0, 0.75, 0.5]
+ACTION = [97, 6, 126, 238, 120, 33, 32, 22, 8, 0.16132618215432273, 0.1670759342665238, 0.75, 1.0, 0.25, 0.25]
 # ACTION = [7, 36, 140, 179, 190, 7, 14, 18, 19, 0.016962438614330024, 0.15421922830595475, 1.0, 0.5, 0.5, 0.25]
 
 
@@ -33,7 +33,7 @@ def parallel_test(pool_nb, df, df_mark=None):
               start_date=TRADE_START_DATE,
               end_date=TRADE_END_DATE,
               max_steps=N_STEPS,
-              init_balance=500,
+              init_balance=100,
               no_action_finish=inf,
               fee=0.0005,
               coin_step=0.001,
