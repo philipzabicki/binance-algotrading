@@ -24,19 +24,19 @@ TICKER = 'BTCUSDT'
 ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
-TRADE_START_DATE = '2021-04-17'
-TRADE_END_DATE = '2021-09-14'
+TRADE_START_DATE = '2021-04-25'
+TRADE_END_DATE = '2021-10-22'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2021-01-17'
-DF_END_DATE = '2021-09-15'
+DF_START_DATE = '2021-01-25'
+DF_END_DATE = '2021-10-23'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
-PROBLEM_N_EVALS = 11
+PROBLEM_N_EVALS = 9
 
 PROBLEM_METRIC = 'max'
 ALGORITHM = NSGA2
 TERMINATION = ("time", "10:00:00")
 # TERMINATION = ('n_gen', N_GEN)
-ENV_KWARGS = {'max_steps': 8_640, # 30 days
+ENV_KWARGS = {'max_steps': 12_960, # 45 days
               'start_date': TRADE_START_DATE,
               'end_date': TRADE_END_DATE,
               'init_balance': 100,

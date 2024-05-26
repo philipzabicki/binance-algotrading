@@ -13,7 +13,7 @@ ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 N_RND_SERIES = 10_000
-N_LAST_INTERVALS = 25_920  # 30 days
+N_LAST_INTERVALS = 17_280  # 30 days
 
 if __name__ == "__main__":
     full_df = by_BinanceVision(ticker=TICKER,
