@@ -19,8 +19,8 @@ class MACDSpotMixedVariableProblem(ElementwiseProblem):
                           "fast_ma_type": Integer(bounds=(0, 36)),
                           "slow_ma_type": Integer(bounds=(0, 36)),
                           "signal_ma_type": Integer(bounds=(0, 25)),
-                          "stop_loss": Real(bounds=(.0001, .25)),
-                          "take_profit": Real(bounds=(.0001, .25)),
+                          "stop_loss": Real(bounds=(.0001, .10)),
+                          "take_profit": Real(bounds=(.0001, .10)),
                           "enter_at": Choice(options=[.25, .5, .75, 1.]),
                           "close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
@@ -50,8 +50,8 @@ class MACDFuturesMixedVariableProblem(ElementwiseProblem):
                           "slow_ma_type": Integer(bounds=(0, 36)),
                           "signal_ma_type": Integer(bounds=(0, 25)),
                           "leverage": Integer(bounds=(1, 125)),
-                          "stop_loss": Real(bounds=(.0001, .25)),
-                          "take_profit": Real(bounds=(.0001, .25)),
+                          "stop_loss": Real(bounds=(.0001, .10)),
+                          "take_profit": Real(bounds=(.0001, .10)),
                           "long_enter_at": Choice(options=[.25, .5, .75, 1.]),
                           "long_close_at": Choice(options=[.25, .5, .75, 1.]),
                           "short_enter_at": Choice(options=[.25, .5, .75, 1.]),
@@ -87,8 +87,8 @@ class MACDSavingSpotMixedVariableProblem(ElementwiseProblem):
                           "fast_ma_type": Integer(bounds=(0, 36)),
                           "slow_ma_type": Integer(bounds=(0, 36)),
                           "signal_ma_type": Integer(bounds=(0, 25)),
-                          "stop_loss": Real(bounds=(.0001, .25)),
-                          "take_profit": Real(bounds=(.0001, .25)),
+                          "stop_loss": Real(bounds=(.0001, .10)),
+                          "take_profit": Real(bounds=(.0001, .10)),
                           "enter_at": Choice(options=[.25, .5, .75, 1.]),
                           "close_at": Choice(options=[.25, .5, .75, 1.])}
         super().__init__(vars=macd_variables, n_obj=1, **kwargs)
@@ -120,8 +120,8 @@ class MACDSavingFuturesMixedVariableProblem(ElementwiseProblem):
                           "slow_ma_type": Integer(bounds=(0, 36)),
                           "signal_ma_type": Integer(bounds=(0, 25)),
                           "leverage": Integer(bounds=(1, 125)),
-                          "stop_loss": Real(bounds=(.0001, .25)),
-                          "take_profit": Real(bounds=(.0001, .25)),
+                          "stop_loss": Real(bounds=(.0001, .10)),
+                          "take_profit": Real(bounds=(.0001, .10)),
                           "long_enter_at": Choice(options=[.25, .5, .75, 1.]),
                           "long_close_at": Choice(options=[.25, .5, .75, 1.]),
                           "short_enter_at": Choice(options=[.25, .5, .75, 1.]),

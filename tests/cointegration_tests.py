@@ -13,7 +13,7 @@ ITV = '5m'
 MARKET_TYPE = 'um'
 DATA_TYPE = 'klines'
 N_RND_SERIES = 10_000
-N_LAST_INTERVALS = 17_280  # 30 days
+N_LAST_INTERVALS = 17_280  # 60 days
 
 if __name__ == "__main__":
     full_df = by_BinanceVision(ticker=TICKER,
@@ -25,14 +25,23 @@ if __name__ == "__main__":
     print(full_df)
 
     full_df['ADL'] = AD(full_df['High'], full_df['Low'], full_df['Close'], full_df['Volume'])
-    # full_df['RSI'] = RSI(full_df['Close'], timeperiod=14)
-    # full_df['ULTOSC'] = ULTOSC(full_df['High'], full_df['Low'], full_df['Close'], timeperiod1=7, timeperiod2=14, timeperiod3=28)
-    # full_df['MFI'] = MFI(full_df['High'], full_df['Low'], full_df['Close'], full_df['Volume'], timeperiod=N_LAST_INTERVALS//100)
-    # full_df['ATR'] = ATR(full_df['High'], full_df['Low'], full_df['Close'], timeperiod=N_LAST_INTERVALS // 100)
     full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])
     full_df['HL2'] = MEDPRICE(full_df['High'], full_df['Low'])
-    # full_df['OBV'] = OBV(full_df['Close'], full_df['Volume'])
-    full_df[['ADL', 'OBV', 'HL2']].ffill(inplace=True)
+
+    full_df['ADL'] = StandardScaler().fit_transform(full_df[['ADL']])
+    full_df['OBV'] = StandardScaler().fit_transform(full_df[['OBV']])
+    full_df['HL2'] = StandardScaler().fit_transform(full_df[['HL2']])
+
+    data_to_plot = full_df[['ADL', 'OBV', 'HL2']].tail(N_LAST_INTERVALS)
+    fig, axs = plt.subplots(nrows=3, ncols=1, figsize=(16, 9))
+    variables = ['ADL', 'OBV', 'HL2']
+    for i, var in enumerate(variables):
+        axs[i].plot(data_to_plot.index, data_to_plot[var])
+        axs[i].set_title(f'Std scaled {var} over last {N_LAST_INTERVALS} intervals')
+        axs[i].set_xlabel('Index')
+        axs[i].set_ylabel(var)
+    plt.tight_layout()
+    plt.show()
     # scaler_std = StandardScaler()
     # scaler_mm = MinMaxScaler()
     # full_df.loc[:, 'ADL'] = scaler_std.fit_transform(full_df[['ADL']])

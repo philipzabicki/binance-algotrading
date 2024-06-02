@@ -15,15 +15,15 @@ from utils.ta_tools import custom_MACD, MACD_cross_signal
 CPU_CORES = cpu_count()
 # CPU_CORES = 1
 N_TEST = 10_000
-N_STEPS = 8_640
+N_STEPS = 12_960
 TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
-TRADE_START_DATE = '2021-04-25'
-TRADE_END_DATE = '2021-10-22'
+TRADE_START_DATE = '2023-12-04'
+TRADE_END_DATE = '2024-06-01'
 # Better to take more previous data for some TA features
-DF_START_DATE = '2021-01-25'
-DF_END_DATE = '2021-10-23'
+DF_START_DATE = '2023-09-04'
+DF_END_DATE = '2024-06-01'
 ENV = MACDOptimizeSavingFuturesEnv
-ACTION = [90, 4, 141, 202, 185, 1, 36, 22, 8, 0.2408579855679936, 0.18251829778372528, 0.25, 1.0, 0.5, 0.75]
+ACTION = [94, 7, 92, 220, 199, 30, 24, 24, 10, 0.03438077063435697, 0.04735855059935182, 0.5, 0.75, 0.5, 0.5]
 # ACTION = [7, 36, 140, 179, 190, 7, 14, 18, 19, 0.016962438614330024, 0.15421922830595475, 1.0, 0.5, 0.5, 0.25]
 
 
@@ -33,7 +33,7 @@ def parallel_test(pool_nb, df, df_mark=None):
               start_date=TRADE_START_DATE,
               end_date=TRADE_END_DATE,
               max_steps=N_STEPS,
-              init_balance=100,
+              init_balance=75,
               no_action_finish=inf,
               fee=0.0005,
               coin_step=0.001,
