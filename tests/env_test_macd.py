@@ -24,8 +24,6 @@ DF_START_DATE = '2023-09-04'
 DF_END_DATE = '2024-06-01'
 ENV = MACDOptimizeSavingFuturesEnv
 ACTION = [94, 7, 92, 220, 199, 30, 24, 24, 10, 0.03438077063435697, 0.04735855059935182, 0.5, 0.75, 0.5, 0.5]
-# ACTION = [7, 36, 140, 179, 190, 7, 14, 18, 19, 0.016962438614330024, 0.15421922830595475, 1.0, 0.5, 0.5, 0.25]
-
 
 def parallel_test(pool_nb, df, df_mark=None):
     env = ENV(df=df,
