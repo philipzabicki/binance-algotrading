@@ -273,6 +273,7 @@ class SpotBacktest(Env):
                 self.with_gain_c += 1
         # Older version:
         # return self._next_observation(), self.reward, self.done, self.info
+        # For now terminated == truncated (==self.done)
         return self._next_observation(), self.reward, self.done, False, self.info
 
     def _finish_episode(self):

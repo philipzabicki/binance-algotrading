@@ -83,7 +83,7 @@ def _collect_to_date(url, output_folder, start_date=date(year=2017, month=1, day
                 data_frames.append(_read_partial_df(output_path))
             else:
                 print(f'"File is not a zip file" - {end_date} datapoint does not exist at BinanceVision')
-                break
+                # break
         end_date -= delta
     # Collecting starts from current date and ends in last existing datapoint,
     # so we need to reverse df order

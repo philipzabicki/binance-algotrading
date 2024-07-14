@@ -108,7 +108,7 @@ class SignalExecuteFuturesEnv(FuturesBacktest):
         self.long_close_threshold = kwargs['long_close_at'] if 'long_close_at' in kwargs else 1.0
         self.short_enter_threshold = kwargs['short_enter_at'] if 'short_enter_at' in kwargs else 1.0
         self.short_close_threshold = kwargs['short_close_at'] if 'short_close_at' in kwargs else 1.0
-        return super().reset()
+        return super().reset(*args, **kwargs)
 
     def _finish_episode(self):
         super()._finish_episode()

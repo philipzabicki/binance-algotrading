@@ -17,7 +17,7 @@ class SpotRL(SpotBacktest):
         # As default, don't use ohlcv values from dataframe as features/obs space
         if self.exclude_cols_left < 5:
             warn(
-                f'ohlcv values are not excluded from features/observation space (exclude_cols_left={self.exclude_cols_left})')
+                f'OHLCV values are not excluded from features/observation space (exclude_cols_left={self.exclude_cols_left})')
         obs_space_dims = len(self.df[0, self.exclude_cols_left:]) + other_obs_count
         obs_lower_bounds = array([-inf for _ in range(obs_space_dims)])
         obs_upper_bounds = array([inf for _ in range(obs_space_dims)])
@@ -76,7 +76,7 @@ class SpotRL(SpotBacktest):
     def step(self, action):
         obs, _, _, _, _ = super().step(action)
         # return obs, self._calculate_reward(), self.done, False, self.info
-        return obs, self._calculate_reward(), self.done, self.info
+        return obs, self._calculate_reward(), self.done, self.done, self.info
 
     def render(self, visualize=False, *args, **kwargs):
         super().render(*args, indicator_or_reward=self.reward, visualize=visualize, **kwargs)

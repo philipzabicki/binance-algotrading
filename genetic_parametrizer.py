@@ -34,11 +34,11 @@ PROBLEM_N_EVALS = 11
 
 PROBLEM_METRIC = 'max'
 ALGORITHM = NSGA2
-TERMINATION = ("time", "02:00:00")
+TERMINATION = ("time", "10:00:00")
 # TERMINATION = ('n_gen', N_GEN)
-ENV_KWARGS = {'max_steps': 12_960, # 45 days
-              'start_date': TRADE_START_DATE,
-              'end_date': TRADE_END_DATE,
+ENV_KWARGS = {'max_steps': 4_032, # 45 days
+              # 'start_date': TRADE_START_DATE,
+              # 'end_date': TRADE_END_DATE,
               'init_balance': 100,
               'no_action_finish': inf,
               'fee': 0.0005,
@@ -60,8 +60,8 @@ def main():
                           interval=ITV,
                           market_type=MARKET_TYPE,
                           data_type=DATA_TYPE,
-                          start_date=DF_START_DATE,
-                          end_date=DF_END_DATE,
+                          # start_date=DF_START_DATE,
+                          # end_date=DF_END_DATE,
                           split=False,
                           delay=0)
     print(f'df used: {df}')
@@ -69,8 +69,8 @@ def main():
                                interval=ITV,
                                market_type=MARKET_TYPE,
                                data_type='markPriceKlines',
-                               start_date=DF_START_DATE,
-                               end_date=DF_END_DATE,
+                               # start_date=DF_START_DATE,
+                               # end_date=DF_END_DATE,
                                split=False,
                                delay=0)
     print(f'df_mark used: {df_mark}')
