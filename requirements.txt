@@ -13,16 +13,7 @@ git+https://github.com/philipzabicki/finta.git@philipzabicki-patch-1
 ta
 pandas_ta
 pympler
-gym
-gymnasium
 pymoo
-stable-baselines3[extra]
-scipy
-torch
-scikit-learn
-statsmodels
-tensorflow
-keras-rl
 binance_data
 python-binance
 binance-futures-connector

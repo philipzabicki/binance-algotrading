@@ -6,15 +6,11 @@ exchange. The whole project is written entirely by me in my free time.
 The main objective of this repository is to get historical data from exchange, utilize them for creating and
 evaluating trading strategies, and ultimately deploy those strategies for live automatic trading on the exchange.
 
-I employ two approaches to develop trading strategies.
+I employ technical analysis approaches to develop trading strategies.
 
-1. **Genetic Algorithm Approach:**
+**Genetic Algorithm Parametrization:**
    Utilizes a genetic algorithm to optimize common technical analysis indicators and other trading variables (e.g.,
    stop_loss). This approach aims to enhance the performance of trading strategies through evolutionary optimization.
-
-2. **Reinforcement Learning Approach:**
-   Applies reinforcement learning to create a profitable trading agent. This approach focuses on developing an
-   intelligent agent that learns and adapts its trading strategies based on feedback from the market.
 
 ## Requirements
 
@@ -443,7 +439,3 @@ class BandsOptimizeSavingFuturesEnv(Env):
 #### Envx
 
 ## Live trading bots
-
-## Reinforcement Learning trading agent
-
-### RL Environment
