@@ -177,8 +177,8 @@ class MACDOptimizeSavingFuturesEnv(Env):
         obs_lower_bounds = array([-inf for _ in range(1)])
         obs_upper_bounds = array([inf for _ in range(1)])
         self.observation_space = spaces.Box(low=obs_lower_bounds, high=obs_upper_bounds)
-        action_lower = [0.01, 0.000, 0.0001, 0.0001, 0.001, 0.001, 0.001, 0.001, 2, 2, 2, 0, 0, 0, 1]
-        action_upper = [1.00, 1.000, 0.0500, 1.0000, 1.000, 1.000, 1.000, 1.000, 1_000, 1_000, 1_000, 36, 36, 25, 125]
+        action_lower = [1, 1, 2, 2, 2, 0, 0, 0, 1, .0001, .0001, .25, .25, .25, .25]
+        action_upper = [100, 100, 250, 250, 250, 36, 36, 25, 125, .10, .10, 1., 1., 1., 1.]
         self.action_space = spaces.Box(low=array(action_lower), high=array(action_upper), dtype=float64)
 
     def reset(self, *args, **kwargs):

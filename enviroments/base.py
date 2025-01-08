@@ -1,13 +1,15 @@
 # from random import normalvariate
 from csv import writer
 from datetime import datetime as dt
-from math import copysign, floor
+from math import copysign, floor, sqrt
 from random import randint
 from time import time
+import logging
+from sys import stdout
 
 from gym import spaces, Env
 from matplotlib.dates import date2num
-from numpy import array, mean, std, inf, searchsorted, float64
+from numpy import array, mean, std, inf, searchsorted, float32, ascontiguousarray
 from pandas import to_datetime
 
 from definitions import REPORT_DIR
@@ -15,6 +17,533 @@ from utils.visualize import TradingGraph
 
 
 class SpotBacktest(Env):
+    def __init__(
+            self,
+            df,
+            start_date="",
+            end_date="",
+            max_steps=0,
+            exclude_cols_left=1,
+            no_action_finish=2_880,
+            steps_passive_penalty=0,
+            init_balance=1_000,
+            position_ratio=1.0,
+            save_ratio=None,
+            stop_loss=None,
+            take_profit=None,
+            fee=0.0002,
+            coin_step=0.001,
+            slippage=None,
+            slipp_std=0,
+            visualize=False,
+            render_range=120,
+            verbose=True,
+            report_to_file=False,
+            *args,
+            **kwargs,
+    ):
+        # Configure logging for this instance
+        logging.basicConfig(
+            level=logging.WARNING,
+            format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+            handlers=[
+                logging.StreamHandler(stdout)
+            ]
+        )
+        self.logger = logging.getLogger(__name__)
+
+        self.creation_t = time()
+        self.df_input = df
+        self.start_date = start_date
+        self.end_date = end_date
+        self.max_steps = max_steps
+        self.exclude_cols_left = exclude_cols_left
+        self.no_action_finish = no_action_finish
+        self.steps_passive_penalty = steps_passive_penalty
+        self.init_balance = init_balance
+        self.position_ratio = position_ratio
+        self.save_ratio = save_ratio
+        self.stop_loss = stop_loss
+        self.take_profit = take_profit
+        self.fee = fee
+        self.coin_step = coin_step
+        self.slippage = slippage
+        self.slipp_std = slipp_std
+        self.visualize = visualize
+        self.render_range = render_range
+        self.verbose = verbose
+        self.report_to_file = report_to_file
+        self.args = args
+        self.kwargs = kwargs
+
+        self._process_input_data()
+        self._initialize_parameters()
+        self._setup_visualization()
+        self._setup_reporting()
+
+    def _process_input_data(self):
+        if self.df_input.isnull().values.any():
+            nan_counts = self.df_input.isnull().sum()
+            nan_columns = nan_counts[nan_counts > 0].index.tolist()
+            raise ValueError(f"Input dataframe contains NaN values in columns: {nan_columns}")
+
+        self.dates = to_datetime(self.df_input['Opened'])
+        self.df = ascontiguousarray(
+            self.df_input.drop(columns=['Opened']).to_numpy(dtype=float32)
+        )
+        self.df_features = self.df_input.columns.tolist()
+
+        if self.start_date != "" and self.end_date != "":
+            start_date_dt = to_datetime(self.start_date)
+            end_date_dt = to_datetime(self.end_date)
+            self.logger.debug(f'Types of start_date {type(start_date_dt)} end_date {type(end_date_dt)}')
+            self.logger.debug(f'Dates dtype {self.dates.dtype}')
+            self.start_index = searchsorted(self.dates, start_date_dt, side="left")
+            self.end_index = searchsorted(self.dates, end_date_dt, side="right") - 1
+        else:
+            self.start_index = 0
+            self.end_index = self.dates.shape[0] - 1
+
+        trade_range_size = self.df[self.start_index:self.end_index, :].shape[0]
+        self.trade_range_size = trade_range_size
+        if trade_range_size < self.max_steps:
+            raise ValueError("max_steps is larger than the number of rows in the dataframe")
+
+    def _initialize_parameters(self):
+        if self.verbose:
+            self.logger.info(f"Environment ({self.__class__.__name__}) created.")
+            self.logger.info(f"Fee: {self.fee}, coin_step: {self.coin_step}")
+            self.logger.info(
+                f"full_df_size: {self.df.shape[0]}, trade_range_size: {self.trade_range_size}, "
+                f"max_steps: {self.max_steps} ({self.max_steps / self.df.shape[0] * 100:.2f}%)"
+            )
+            self.logger.info(f"no_action_finish: {self.no_action_finish}")
+            self.logger.info(f"Sample df row: {self.df[-1, self.exclude_cols_left:]}")
+            self.logger.info(f"Slippage statistics (avg, stddev): {self.slippage}")
+            self.logger.info(f"init_balance: {self.init_balance}, position_ratio: {self.position_ratio}")
+            self.logger.info(
+                f"save_ratio: {self.save_ratio}, stop_loss: {self.stop_loss}, take_profit: {self.take_profit}")
+
+        if self.slippage is not None:
+            self.buy_factor = self.slippage["buy"][0] + self.slippage["buy"][1] * self.slipp_std
+            self.sell_factor = self.slippage["sell"][0] - self.slippage["sell"][1] * self.slipp_std
+            self.stop_loss_factor = self.slippage["stop_loss"][0] - self.slippage["stop_loss"][1] * self.slipp_std
+            self.take_profit_factor = 1.0  # To be updated if needed
+        else:
+            self.buy_factor = 1.0
+            self.sell_factor = 1.0
+            self.stop_loss_factor = 1.0
+            self.take_profit_factor = 1.0
+
+        self.save_balance = 0.0
+        self.cum_pnl = 0.0
+        self.total_steps = len(self.df)
+        if self.steps_passive_penalty == 'auto':
+            self.steps_passive_penalty = int(sqrt(self.max_steps))
+            self.passive_penalty = True
+        elif self.steps_passive_penalty > 0:
+            self.passive_penalty = True
+        else:
+            self.passive_penalty = False
+
+        self.position_size = self.init_balance * self.position_ratio
+        self.balance = self.init_balance
+
+        # Define action and observation spaces
+        self.action_space = spaces.Discrete(3)
+        # TODO: Define observation_space appropriately
+
+    def _setup_visualization(self):
+        self.dates = date2num(self.dates)
+        if self.visualize:
+            self.time_step = self.dates[1] - self.dates[0]
+            if self.verbose:
+                self.logger.info(
+                    f"Visualization enabled, time step: {self.time_step} (as a fraction of a day)"
+                )
+            # Initialize visualization (assuming TradingGraph is defined)
+            self.visualization = TradingGraph(self.render_range, self.time_step)
+        else:
+            self.visualize = False
+            if self.verbose:
+                self.logger.info("Visualization is disabled or no date data provided.")
+
+    def _setup_reporting(self):
+        if self.report_to_file:
+            self.filename = f'{REPORT_DIR}/envs/EP_{self.__class__.__name__}_{dt.now().strftime("%Y-%m-%d_%H-%M")}.csv'
+            self.report_file = open(self.filename, 'w', newline='')
+            self.report_writer = writer(self.report_file)
+            self.report_writer.writerow(self._get_report_header())
+            if self.verbose:
+                self.logger.info(f'Environment will report to file: {self.filename}')
+                self.logger.debug(f'File header: {self._get_report_header()}')
+
+    def _get_report_header(self):
+        return self.df_features + [
+            "trade_no",
+            "leverage",
+            "trade_side",
+            "position_size",
+            "quantity",
+            "balance",
+            "save_balance",
+            "profit_to_pos_ratio",
+            "cumulative_fee",
+        ]
+
+    def _get_report_row(self):
+        return [
+            self.dates[self.current_step],
+            *self.df[self.current_step, :],
+            self.episode_orders,
+            1,  # Constant leverage for spot env
+            self.last_order_type,
+            self.position_size,
+            self.qty,
+            self.balance,
+            self.save_balance,
+            self.absolute_profit / self.position_size,
+            self.cumulative_fees
+        ]
+
+    def _report_to_file(self):
+        self.report_writer.writerow(self._get_report_row())
+
+    def reset(self, **kwargs):
+        self.creation_t = time()
+        self.done = False
+        self.reward = 0
+        self.cum_pnl = 0.0
+        if self.visualize:
+            self.visualization = TradingGraph(self.render_range, self.time_step)
+        if self.report_to_file:
+            self.filename = f'{REPORT_DIR}/envs/EP_{self.__class__.__name__}_{str(dt.today()).replace(":", "-")[:-3]}.csv'
+            self.report_file = open(self.filename, 'w', newline='')
+            self.report_writer = writer(self.report_file)
+            self.report_writer.writerow(self._get_report_header())
+        self.last_order_type = ""
+        self.info = {}
+        self.PLs_and_ratios = []
+        self.balance = self.init_balance
+        self.position_size = self.init_balance * self.position_ratio
+        self.prev_bal = 0
+        self.enter_price = 0
+        self.stop_loss_price, self.take_profit_price = 0, 0
+        self.qty = 0
+        self.pnl = 0
+        self.percentage_profit, self.absolute_profit = 0.0, 0.0
+        self.SL_losses, self.cumulative_fees, self.liquidations, self.take_profits_c = (
+            0,
+            0,
+            0,
+            0,
+        )
+        self.in_position, self.in_position_counter, self.position_closed, self.passive_counter = 0, 0, 0, 0
+        self.episode_orders, self.with_gain_c = 0, 1
+        self.good_trades_count, self.bad_trades_count = 1, 1
+        self.max_drawdown, self.max_profit = 0, 0
+        self.loss_hold_counter, self.profit_hold_counter = 0, 0
+        self.max_balance = self.min_balance = self.balance
+        self.save_balance = 0.0
+        if self.max_steps > 0:
+            self.start_step = randint(self.start_index, self.end_index - self.max_steps)
+            self.end_step = self.start_step + self.max_steps - 1
+        else:
+            self.start_step = self.start_index
+            self.end_step = self.end_index
+        self.current_step = self.start_step
+        self.obs = iter(
+            self.df[self.start_step: self.end_step, self.exclude_cols_left:]
+        )
+        # return self.df[self.current_step, self.exclude_cols_left:]
+        return next(self.obs)
+
+    def _get_full_balance(self):
+        if self.in_position:
+            _pnl = self.df[self.current_step, 3] / self.enter_price - 1
+            return self.balance + (
+                    self.position_size + (self.position_size * _pnl)
+            ) + self.save_balance
+        else:
+            return self.balance + self.save_balance
+
+    def _buy(self, price):
+        if self.stop_loss is not None:
+            self.stop_loss_price = round((1 - self.stop_loss) * price, 2)
+        if self.take_profit is not None:
+            self.take_profit_price = round((1 + self.take_profit) * price, 2)
+        # Considering random factor as in real world scenario #
+        # price = self._random_factor(price, 'market_buy')
+        adj_price = price * self.buy_factor
+        # When there is no fee, subtract 1 just to be sure balance can buy this amount #
+        step_adj_qty = floor(self.position_size / (adj_price * self.coin_step))
+        if step_adj_qty == 0:
+            self._finish_episode()
+            return
+        self.last_order_type = "open_long"
+        self.in_position = 1
+        self.in_position_counter = 1
+        self.passive_counter = 0
+        self.episode_orders += 1
+        self.enter_price = adj_price
+        self.qty = step_adj_qty * self.coin_step
+        self.position_size = self.qty * adj_price
+        self.prev_bal = self.balance
+        self.balance -= self.position_size
+        fee = self.position_size * self.fee
+        self.position_size -= fee
+        self.cumulative_fees += fee
+        self.absolute_profit = -fee
+        # print(f'BOUGHT {self.qty} at {price}({adj_price})')
+
+    def _sell(self, price, sl=False, tp=False):
+        if sl:
+            # price = self._random_factor(price, 'SL')
+            # while price>self.enter_price:
+            #     price = self._random_factor(price, 'SL')
+            adj_price = price * self.stop_loss_factor
+            if adj_price > self.enter_price:
+                raise RuntimeError(
+                    f"Stop loss price is above position enter price. (sl_factor={self.stop_loss_factor})"
+                )
+            self.last_order_type = "stop_loss_long"
+        elif tp:
+            self.take_profits_c += 1
+            adj_price = price * self.take_profit_factor
+            # TODO: add new order type for visualizations
+            self.last_order_type = "take_profit_long"
+        else:
+            # price = self._random_factor(price, 'market_sell')
+            adj_price = price * self.sell_factor
+            self.last_order_type = "close_long"
+        _value = self.qty * adj_price
+        self.balance += round(_value, 2)
+        fee = _value * self.fee
+        self.balance -= fee
+        self.cumulative_fees += fee
+        self.percentage_profit = (self.balance / self.prev_bal) - 1
+        self.absolute_profit = self.balance - self.prev_bal
+        # print(f'SOLD {self.qty} at {price}({adj_price}) profit ${self.balance-self.prev_bal:.2f}')
+        # PROFIT #
+        if self.percentage_profit > 0:
+            if self.save_ratio is not None:
+                save_amount = self.absolute_profit * self.save_ratio
+                self.save_balance += save_amount
+                self.balance -= save_amount
+            if self.balance >= self.max_balance:
+                self.max_balance = self.balance
+            self.good_trades_count += 1
+            if self.max_profit == 0 or self.percentage_profit > self.max_profit:
+                self.max_profit = self.percentage_profit
+        # LOSS #
+        elif self.percentage_profit < 0:
+            if self.balance <= self.min_balance:
+                self.min_balance = self.balance
+            self.bad_trades_count += 1
+            if self.max_drawdown == 0 or self.percentage_profit < self.max_drawdown:
+                self.max_drawdown = self.percentage_profit
+            if sl:
+                self.SL_losses += self.absolute_profit
+        self.PLs_and_ratios.append(
+            (self.percentage_profit, self.good_trades_count / self.bad_trades_count)
+        )
+        self.position_size = self.balance * self.position_ratio
+        # If balance minus position_size and fee is less or eq 0 #
+        if self.position_size < (price * self.coin_step):
+            self._finish_episode()
+        self.qty = 0
+        self.in_position = 0
+        self.in_position_counter = 0
+        self.passive_counter = 0
+        self.position_closed = 1
+        self.stop_loss_price = 0
+
+    def _next_observation(self):
+        try:
+            return next(self.obs)
+        except StopIteration:
+            self.current_step -= 1
+            self._finish_episode()
+            return self.df[self.current_step, self.exclude_cols_left:]
+
+    def step(self, action):
+        self.last_order_type = ""
+        self.absolute_profit = 0.0
+        self.position_closed = 0
+        self.sl_trigger, self.tp_trigger = 0, 0
+        if self.in_position:
+            high, low, close = self.df[self.current_step, 1:4]
+            # print(f'low: {low}, close: {close}, self.enter_price: {self.enter_price}')
+            self.in_position_counter += 1
+            self.pnl = (close / self.enter_price) - 1
+            if self.pnl >= 0:
+                self.profit_hold_counter += 1
+            else:
+                self.loss_hold_counter += 1
+            # Handling stop losses and take profits
+            if (self.stop_loss is not None) and (low <= self.stop_loss_price):
+                self.sl_trigger = 1
+                self._sell(self.stop_loss_price, sl=True)
+            elif (self.take_profit is not None) and (high >= self.take_profit_price):
+                self.tp_trigger = 1
+                self._sell(self.take_profit_price, tp=True)
+            elif action == 2 and self.qty > 0:
+                self._sell(close)
+        elif action == 1:
+            close = self.df[self.current_step, 3]
+            self._buy(close)
+            self.pnl = (close / self.enter_price) - 1
+        elif (not self.episode_orders) and (
+                (self.current_step - self.start_step) > self.no_action_finish
+        ):
+            self._finish_episode()
+        else:
+            self.passive_counter += 1
+            if self.init_balance < self.balance + self.save_balance:
+                self.with_gain_c += 1
+        # Older version:
+        # return self._next_observation(), self.reward, self.done, self.info
+        # For now terminated == truncated (==self.done)
+        self.current_step += 1
+        if self.report_to_file:
+            self._report_to_file()
+        return self._next_observation(), self.reward, self.done, False, self.info
+
+    def _finish_episode(self):
+        if self.report_to_file:
+            self.report_file.close()
+        # print('BacktestEnv._finish_episode()')
+        if self.in_position:
+            self._sell(self.enter_price)
+        self.done = True
+        # Summary
+        self.PNL_arrays = array(self.PLs_and_ratios)
+        self.balance += self.save_balance
+        gain = self.balance - self.init_balance
+        total_return = (self.balance / self.init_balance) - 1
+        risk_free_return = (self.df[self.end_step, 3] / self.df[self.start_step, 3]) - 1
+        above_free = total_return - risk_free_return
+        # if hasattr(self, 'leverage'):
+        # above_free /= self.leverage
+        hold_ratio = (
+            self.profit_hold_counter / self.loss_hold_counter
+            if self.loss_hold_counter > 1 and self.profit_hold_counter > 1
+            else 1.0
+        )
+        if len(self.PNL_arrays) > 1:
+            mean_pnl, stddev_pnl = mean(self.PNL_arrays[:, 0]), std(
+                self.PNL_arrays[:, 0]
+            )
+            profits = self.PNL_arrays[:, 0][self.PNL_arrays[:, 0] > 0]
+            losses = self.PNL_arrays[:, 0][self.PNL_arrays[:, 0] < 0]
+            profits_mean = mean(profits) if len(profits) > 1 else 0.0
+            losses_mean = mean(losses) if len(losses) > 1 else 0.0
+            losses_stddev = std(losses) if len(losses) > 1 else 0.0
+            PnL_trades_ratio = mean(self.PNL_arrays[:, 1])
+            PnL_means_ratio = (
+                abs(profits_mean / losses_mean)
+                if profits_mean * losses_mean != 0
+                else 1.0
+            )
+            # slope_indicator = linear_slope_indicator(PnL_trades_ratio)
+            slope_indicator = 1.000
+            steps = self.max_steps if self.max_steps > 0 else self.total_steps
+            in_gain_indicator = self.with_gain_c / (
+                    steps
+                    - self.profit_hold_counter
+                    - self.loss_hold_counter
+                    - self.episode_orders
+            )
+            # if above_free > 0:
+            #     if hasattr(self, "leverage"):
+            #         above_free_factor = above_free
+            #         # above_free_factor = above_free / self.leverage**(1/3)
+            #         # above_free_factor = above_free/sqrt(self.leverage)
+            #     else:
+            #         above_free_factor = above_free
+            #     self.reward = (
+            #                           above_free_factor
+            #                           * self.episode_orders
+            #                           * PnL_trades_ratio
+            #                           * (hold_ratio ** (1 / 3))
+            #                           * (PnL_means_ratio ** (1 / 3))
+            #                           * in_gain_indicator
+            #                   ) / steps
+            # else:
+            #     self.reward = (
+            #                           above_free
+            #                           * self.episode_orders
+            #                           * 1
+            #                           / PnL_trades_ratio
+            #                           * 1
+            #                           / (hold_ratio ** (1 / 3))
+            #                           * 1
+            #                           / (PnL_means_ratio ** (1 / 3))
+            #                           * 1
+            #                           / in_gain_indicator
+            #                   ) / steps
+            # self.reward = total_return*100
+            self.reward = above_free
+        else:
+            mean_pnl, stddev_pnl = 0.0, 0.0
+            profits_mean, losses_mean, losses_stddev = 0.0, 0.0, 0.0
+            PnL_trades_ratio, PnL_means_ratio = 0.0, 0.0
+            in_gain_indicator = 0.0
+            slope_indicator = 0.000
+            self.reward = -inf
+
+        sharpe_ratio = (
+            (mean_pnl - risk_free_return) / stddev_pnl if stddev_pnl != 0 else -1
+        )
+        sortino_ratio = (
+            (total_return - risk_free_return) / losses_stddev
+            if losses_stddev != 0
+            else -1
+        )
+        # with_gain_c is not incremented when in position and while position is being opened, so we need to subtract those values from 'total_steps
+        # sl_losses_adj_gain = gain-self.SL_losses
+        # self.reward = copysign((abs(gain)**1.5)*self.PL_count_mean*sqrt(hold_ratio)*sqrt(self.PL_ratio)*sqrt(self.episode_orders), gain)/self.total_steps
+        # self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
+        exec_time = time() - self.creation_t
+        # if self.balance >= 1_000_000:
+        #     self.verbose = True
+        if self.verbose:
+            print(
+                f"Episode finished: gain:${gain:.2f}({total_return * 100:.2f}%), gain/step:${gain / (self.end_step - self.start_step):.5f}, cumulative_fees:${self.cumulative_fees:.2f}, SL_losses:${self.SL_losses:.2f} take_profits:{self.take_profits_c}\n"
+                f" stop_loss:{self.stop_loss}, take_profit:{self.take_profit}, save_ratio:{self.save_ratio}, saved_balance:${self.save_balance:.2f}\n"
+                f" trades:{self.episode_orders:_}, trades_with(profit/loss):{self.good_trades_count - 1:_}/{self.bad_trades_count - 1:_}, trades_avg(profit/loss):{profits_mean * 100:.2f}%/{losses_mean * 100:.2f}%, max(profit/drawdown):{self.max_profit * 100:.2f}%/{self.max_drawdown * 100:.2f}%\n"
+                f" PnL_trades_ratio:{PnL_trades_ratio:.3f}, PnL_means_ratio:{PnL_means_ratio:.3f}, hold_ratio:{hold_ratio:.3f}, PNL_mean:{mean_pnl * 100:.2f}%, geo_avg_return:{((self.balance / self.init_balance) ** (1 / (self.end_step - self.start_step)) - 1) * 100:.7f}%\n"
+                f" slope_indicator:{slope_indicator:.4f}, in_gain_indicator:{in_gain_indicator:.3f}, sharpe_ratio:{sharpe_ratio:.2f}, sortino_ratio:{sortino_ratio:.2f}, risk_free:{risk_free_return * 100:.2f}%, above_free:{above_free * 100:.2f}%\n"
+                f" reward:{self.reward:.8f} exec_time:{exec_time:.2f}s"
+            )
+        self.info = {
+            "gain": gain,
+            "PnL_means_ratio": PnL_means_ratio,
+            "PnL_trades_ratio": PnL_trades_ratio,
+            "hold_ratio": hold_ratio,
+            "PNL_mean": mean_pnl,
+            "slope_indicator": slope_indicator,
+            "exec_time": exec_time,
+        }
+
+    def render(self, indicator_or_reward=None, visualize=False, *args, **kwargs):
+        if visualize or self.visualize:
+            if indicator_or_reward is None:
+                indicator_or_reward = self.df[self.current_step, -1]
+            render_row = [
+                self.dates[self.current_step],
+                *self.df[self.current_step, 0:4],
+                indicator_or_reward,
+                self._get_full_balance(),
+            ]
+            trade_info = [self.last_order_type, str(round(self.absolute_profit, 2))]
+            #   print(f'trade_info {trade_info}')
+            self.visualization.append(render_row, trade_info)
+            self.visualization.render()
+
+
+
+class SpotBacktest_old(Env):
     def __init__(self, df, start_date='', end_date='', max_steps=0, exclude_cols_left=1, no_action_finish=2_880,
                  init_balance=1_000, position_ratio=1.0, save_ratio=None, stop_loss=None, take_profit=None,
                  fee=0.0002, coin_step=0.001, slippage=None, slipp_std=0,
@@ -334,6 +863,8 @@ class SpotBacktest(Env):
         # self.reward = copysign(gain**2, gain)+(self.episode_orders/sqrt(self.total_steps))+self.PL_count_mean+sqrt(hold_ratio)+sqrt(self.PL_ratio)
         exec_time = time() - self.creation_t
         if self.balance >= 1_000_000:
+            self.verbose = True
+        if total_return > 3:
             self.verbose = True
         if self.verbose:
             print(

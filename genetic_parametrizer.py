@@ -18,7 +18,7 @@ from utils.get_data import by_BinanceVision
 
 CPU_CORES_COUNT = cpu_count()
 # CPU_CORES_COUNT = 1
-POP_SIZE = 1024
+POP_SIZE = 200
 N_GEN = 100
 TICKER = 'BTCUSDT'
 ITV = '5m'
@@ -30,13 +30,13 @@ TRADE_END_DATE = '2024-06-01'
 DF_START_DATE = '2023-09-04'
 DF_END_DATE = '2024-06-01'
 PROBLEM = MACDSavingFuturesMixedVariableProblem
-PROBLEM_N_EVALS = 11
+PROBLEM_N_EVALS = 10
 
 PROBLEM_METRIC = 'max'
 ALGORITHM = NSGA2
-TERMINATION = ("time", "10:00:00")
-# TERMINATION = ('n_gen', N_GEN)
-ENV_KWARGS = {'max_steps': 4_032, # 45 days
+# TERMINATION = ("time", "10:00:00")
+TERMINATION = ('n_gen', N_GEN)
+ENV_KWARGS = {'max_steps': 8_640, # 30 days (5m)
               # 'start_date': TRADE_START_DATE,
               # 'end_date': TRADE_END_DATE,
               'init_balance': 100,
@@ -48,6 +48,7 @@ ENV_KWARGS = {'max_steps': 4_032, # 45 days
 
 
 def main():
+    print(f'CPUs used: {CPU_CORES_COUNT}')
     # _, df = by_BinanceVision(ticker='BTCFDUSD',
     #                          interval='1m',
     #                          market_type='spot',

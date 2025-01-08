@@ -10,23 +10,25 @@ class TradingGraph:
     # A crypto trading visualization using matplotlib made to render custom prices which come in following way:
     # Date, Open, High, Low, Close, Volume, net_worth, trades
     # call render every step
-    def __init__(self, render_range, time_step=1 / 24, Show_reward=True, Show_indicators=False):
+    def __init__(
+            self, render_range, time_step=1 / 24, Show_reward=True, Show_indicators=False
+    ):
         self.render_queue = deque(maxlen=render_range)
         self.render_arr = array(self.render_queue)
         self.trades = deque(maxlen=render_range)
         self.trades_arr = array(self.trades)
         self.render_range = render_range
-        self.time_step = float(time_step) * .8
+        self.time_step = float(time_step) * 0.8
         # print(f'self.time_step {self.time_step}')
-        self.date_format = mpl_dates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
+        self.date_format = mpl_dates.DateFormatter("%Y-%m-%d\n%H:%M:%S")
 
         self.Show_reward = Show_reward
         self.Show_indicators = Show_indicators
 
         # We are using the style ‘ggplot’
-        plt.style.use('ggplot')
+        plt.style.use("ggplot")
         # close all plots if there are open
-        plt.close('all')
+        plt.close("all")
         # figsize attribute allows us to specify the width and height of a figure in unit inches
         self.fig = plt.figure(figsize=(16, 9), dpi=75)
 
@@ -34,7 +36,9 @@ class TradingGraph:
         self.ax1 = plt.subplot2grid((6, 1), (0, 0), rowspan=5, colspan=1)
 
         # Create bottom subplot for volume which shares its x-axis
-        self.ax2 = plt.subplot2grid((6, 1), (5, 0), rowspan=1, colspan=1, sharex=self.ax1)
+        self.ax2 = plt.subplot2grid(
+            (6, 1), (5, 0), rowspan=1, colspan=1, sharex=self.ax1
+        )
 
         # Create a new axis for net worth which shares its x-axis with price
         self.ax3 = self.ax1.twinx()
@@ -81,24 +85,24 @@ class TradingGraph:
         self.RSI.append(df["RSI"])
 
         # Add Simple Moving Average
-        self.ax1.plot(Date_Render_range, self.sma7, '-')
-        self.ax1.plot(Date_Render_range, self.sma25, '-')
-        self.ax1.plot(Date_Render_range, self.sma99, '-')
+        self.ax1.plot(Date_Render_range, self.sma7, "-")
+        self.ax1.plot(Date_Render_range, self.sma25, "-")
+        self.ax1.plot(Date_Render_range, self.sma99, "-")
 
         # Add Bollinger Bands
-        self.ax1.plot(Date_Render_range, self.bb_bbm, '-')
-        self.ax1.plot(Date_Render_range, self.bb_bbh, '-')
-        self.ax1.plot(Date_Render_range, self.bb_bbl, '-')
+        self.ax1.plot(Date_Render_range, self.bb_bbm, "-")
+        self.ax1.plot(Date_Render_range, self.bb_bbh, "-")
+        self.ax1.plot(Date_Render_range, self.bb_bbl, "-")
 
         # Add Parabolic Stop and Reverse
-        self.ax1.plot(Date_Render_range, self.psar, '.')
+        self.ax1.plot(Date_Render_range, self.psar, ".")
 
         self.ax4.clear()
         # # Add Moving Average Convergence Divergence
-        self.ax4.plot(Date_Render_range, self.MACD, 'r-')
+        self.ax4.plot(Date_Render_range, self.MACD, "r-")
 
         # # Add Relative Strength Index
-        self.ax4.plot(Date_Render_range, self.RSI, 'g-')
+        self.ax4.plot(Date_Render_range, self.RSI, "g-")
 
     # Render the environment to the screen
     # def render(self, Date, Open, High, Low, Close, Volume, net_worth, trades):
@@ -115,6 +119,9 @@ class TradingGraph:
         # print(f'self.trades_arr {self.trades_arr}')
 
     def render(self):
+        ANNOT_TEXT_SIZE_MULTI = 0.08
+        LOWER_MARKER_SCALER = 0.996
+        UPPER_MARKER_SCALER = 1.003
         # print(f'render_arr[:, 0:5] {self.render_arr[:, 0:5]}')
         ohlc_equal = where(self.render_arr[:, 2] == self.render_arr[:, 3])
         # print(f'ohlc_equal {ohlc_equal}')
@@ -124,7 +131,14 @@ class TradingGraph:
 
         # Clear the frame rendered last step
         self.ax1.clear()
-        candlestick_ohlc(self.ax1, self.render_arr, width=self.time_step, colorup='green', colordown='red', alpha=1.0)
+        candlestick_ohlc(
+            self.ax1,
+            self.render_arr,
+            width=self.time_step,
+            colorup="green",
+            colordown="red",
+            alpha=1.0,
+        )
 
         # Put all dates to one list and fill ax2 sublot with volume
         # print(f'Date_Render_range {Date_Render_range}')
@@ -146,80 +160,159 @@ class TradingGraph:
         RANGE = max(self.render_arr[:, 2]) - min(self.render_arr[:, 3])
 
         # sort sell and buy orders, put arrows in appropiate order positions
-        idx = list(*where('' != self.trades_arr[:, 0]))
+        idx = list(*where("" != self.trades_arr[:, 0]))
         # print(f'idx {idx}')
         for i in idx:
             # print(f'i: {i} self.trades_arr[i]: {self.trades_arr[i]}')
-            annotate_text = '$' + self.trades_arr[i, 1] if (self.trades_arr[i, 1] != '0.0') and (
-                    self.trades_arr[i, 1] != '-0.0') else ''
+            value = self.trades_arr[i, 1]
+            if (value != "0.0") and (value != "-0.0"):
+                if value.startswith("-"):
+                    annotate_text = "-" + "$" + value[1:]
+                else:
+                    annotate_text = "$" + value
+            else:
+                annotate_text = ""
+
             x_position = self.render_arr[i, 0]
-            if self.trades_arr[i, 0] == 'open_long' or self.trades_arr[i, 0] == 'close_short' or self.trades_arr[
-                i, 0] == 'take_profit_short':
-                high_low = self.render_arr[i, 3] - RANGE * 0.02
-                ycoords = self.render_arr[i, 3] - RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='green', label='green', s=self.render_range * .55,
-                                 edgecolors='black',
-                                 marker="^")
-                self.ax1.annotate(annotate_text, (x_position, high_low * 0.993), c='black', ha='center', va='center',
-                                  size=self.render_range * .04)
-            elif self.trades_arr[i, 0] == 'open_short' or self.trades_arr[i, 0] == 'close_long' or self.trades_arr[
-                i, 0] == 'take_profit_long':
-                high_low = self.render_arr[i, 2] + RANGE * 0.02
-                ycoords = self.render_arr[i, 2] + RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='red', label='red', s=self.render_range * .5,
-                                 edgecolors='black',
-                                 marker="v")
-                self.ax1.annotate(annotate_text, (x_position, high_low * 1.008), c='black', ha='center', va='center',
-                                  size=self.render_range * .04)
-            elif self.trades_arr[i, 0] == 'stop_loss_long':
-                high_low = self.render_arr[i, 3] - RANGE * 0.02
-                ycoords = self.render_arr[i, 3] - RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='yellow', label='yellow', s=self.render_range * .6,
-                                 edgecolors='black',
-                                 marker="d")
-                self.ax1.annotate(annotate_text, (x_position, high_low * 0.993), c='black', ha='center', va='center',
-                                  size=self.render_range * .04)
-            elif self.trades_arr[i, 0] == 'stop_loss_short':
-                high_low = self.render_arr[i, 2] + RANGE * 0.02
-                ycoords = self.render_arr[i, 2] + RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='yellow', label='yellow', s=self.render_range * .6,
-                                 edgecolors='black',
-                                 marker="d")
-                self.ax1.annotate(annotate_text, (x_position, high_low * 1.007), c='black', ha='center', va='center',
-                                  size=self.render_range * .04)
-            elif self.trades_arr[i, 0] == 'liquidate_long':
-                high_low = self.render_arr[i, 3] - RANGE * 0.02
-                ycoords = self.render_arr[i, 3] - RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='black', label='black', s=self.render_range * .6,
-                                 edgecolors='black',
-                                 marker="X")
-                self.ax1.annotate(annotate_text, (x_position, high_low * 0.993), c='black', ha='center', va='center',
-                                  size=self.render_range * .04)
-            elif self.trades_arr[i, 0] == 'liquidate_short':
-                high_low = self.render_arr[i, 2] + RANGE * 0.02
-                ycoords = self.render_arr[i, 2] + RANGE * 1.10
-                self.ax1.scatter(x_position, high_low, c='black', label='black', s=self.render_range * .6,
-                                 edgecolors='black',
-                                 marker="X")
-                self.ax1.annotate(annotate_text, (x_position - 2 * self.time_step, high_low * 1.007), c='black',
-                                  ha='center', va='center', size=self.render_range * .04)
-            '''try:
+            if (
+                    self.trades_arr[i, 0] == "open_long"
+                    or self.trades_arr[i, 0] == "close_short"
+                    or self.trades_arr[i, 0] == "take_profit_short"
+            ):
+                low_pos = self.render_arr[i, 3] * .9999
+                self.ax1.scatter(
+                    x_position,
+                    low_pos,
+                    c="green",
+                    label="green",
+                    s=self.render_range,
+                    edgecolors="black",
+                    marker="^",
+                )
+                self.ax1.annotate(
+                    annotate_text,
+                    (x_position, low_pos * LOWER_MARKER_SCALER),
+                    c="black",
+                    ha="center",
+                    va="center",
+                    size=self.render_range * ANNOT_TEXT_SIZE_MULTI,
+                )
+            elif (
+                    self.trades_arr[i, 0] == "open_short"
+                    or self.trades_arr[i, 0] == "close_long"
+                    or self.trades_arr[i, 0] == "take_profit_long"
+            ):
+                high_pos = self.render_arr[i, 2] * 1.0001
+                self.ax1.scatter(
+                    x_position,
+                    high_pos,
+                    c="red",
+                    label="red",
+                    s=self.render_range,
+                    edgecolors="black",
+                    marker="v",
+                )
+                self.ax1.annotate(
+                    annotate_text,
+                    (x_position, high_pos * UPPER_MARKER_SCALER),
+                    c="black",
+                    ha="center",
+                    va="center",
+                    size=self.render_range * ANNOT_TEXT_SIZE_MULTI,
+                )
+            elif self.trades_arr[i, 0] == "stop_loss_long":
+                low_pos = self.render_arr[i, 3] * .9999
+                self.ax1.scatter(
+                    x_position,
+                    low_pos,
+                    c="yellow",
+                    label="yellow",
+                    s=self.render_range,
+                    edgecolors="black",
+                    marker="d",
+                )
+                self.ax1.annotate(
+                    annotate_text,
+                    (x_position, low_pos * LOWER_MARKER_SCALER),
+                    c="black",
+                    ha="center",
+                    va="center",
+                    size=self.render_range * ANNOT_TEXT_SIZE_MULTI,
+                )
+            elif self.trades_arr[i, 0] == "stop_loss_short":
+                high_pos = self.render_arr[i, 2] * 1.0001
+                self.ax1.scatter(
+                    x_position,
+                    high_pos,
+                    c="yellow",
+                    label="yellow",
+                    s=self.render_range,
+                    edgecolors="black",
+                    marker="d",
+                )
+                self.ax1.annotate(
+                    annotate_text,
+                    (x_position, high_pos * UPPER_MARKER_SCALER),
+                    c="black",
+                    ha="center",
+                    va="center",
+                    size=self.render_range * ANNOT_TEXT_SIZE_MULTI,
+                )
+            elif self.trades_arr[i, 0] == "liquidate_long":
+                low_pos = self.render_arr[i, 3] * .9999
+                self.ax1.scatter(
+                    x_position,
+                    low_pos,
+                    c="black",
+                    label="black",
+                    s=self.render_range,
+                    edgecolors="black",
+                    marker="X",
+                )
+                self.ax1.annotate(
+                    annotate_text,
+                    (x_position, low_pos * LOWER_MARKER_SCALER),
+                    c="black",
+                    ha="center",
+                    va="center",
+                    size=self.render_range * ANNOT_TEXT_SIZE_MULTI,
+                )
+            elif self.trades_arr[i, 0] == "liquidate_short":
+                high_pos = self.render_arr[i, 2] * 1.0001
+                self.ax1.scatter(
+                    x_position,
+                    high_pos,
+                    c="black",
+                    label="black",
+                    s=self.render_range,
+                    edgecolors="black",
+                    marker="X",
+                )
+                self.ax1.annotate(
+                    annotate_text,
+                    (x_position - 2 * self.time_step, high_pos * UPPER_MARKER_SCALER),
+                    c="black",
+                    ha="center",
+                    va="center",
+                    size=self.render_range * ANNOT_TEXT_SIZE_MULTI,
+                )
+            """try:
                 self.ax1.annotate('{0:.2f}'.format(self.render_arr[i, 5]), (self.render_arr[i, 0] - 0.02, high_low),
                                   xytext=(self.render_arr[i, 0] - 0.02, ycoords),
                                   bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), fontsize="small")
             except Exception as e:
-                print(f'Exception: {e}')'''
+                print(f'Exception: {e}')"""
 
         # we need to set layers every step, because we are clearing subplots every step
         # box1 = dict(facecolor="blue", pad=2, alpha=0.4)
         # box2 = dict(facecolor="red", pad=2, alpha=0.4)
-        self.ax2.set_xlabel('Date')
-        self.ax2.set_ylabel('Indicator/Reward', fontsize=16)
-        self.ax2.yaxis.label.set_color('red')
-        self.ax1.set_ylabel('Price', fontsize=16)
+        self.ax2.set_xlabel("Date")
+        self.ax2.set_ylabel("Indicator/Reward", fontsize=14)
+        self.ax2.yaxis.label.set_color("red")
+        self.ax1.set_ylabel("OHLC", fontsize=14)
         self.ax3.yaxis.set_label_position("right")
-        self.ax3.set_ylabel('Balance', fontsize=16)
-        self.ax3.yaxis.label.set_color('blue')
+        self.ax3.set_ylabel("Balance", fontsize=14)
+        self.ax3.yaxis.label.set_color("blue")
 
         # I use tight_layout to replace plt.subplots_adjustx
         self.fig.tight_layout()
@@ -235,7 +328,7 @@ class TradingGraph:
         # redraw the canvas
         self.fig.canvas.draw()
         # convert canvas to image
-        img = fromstring(self.fig.canvas.tostring_rgb(), dtype=uint8, sep='')
+        img = fromstring(self.fig.canvas.tostring_rgb(), dtype=uint8, sep="")
         img = img.reshape(self.fig.canvas.get_width_height()[::-1] + (3,))
 
         # img is rgb, convert to opencv's default bgr

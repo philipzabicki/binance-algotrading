@@ -1,10 +1,12 @@
 numba
 numpy
+optuna
 pandas
 matplotlib
 mplfinance
 python-dateutil
 opencv-python
+scikit-learn
 websocket-client
 requests
 ta-lib
@@ -17,4 +19,4 @@ pymoo
 binance_data
 python-binance
 binance-futures-connector
-#ccxt~=4.0.86
+#ccxt

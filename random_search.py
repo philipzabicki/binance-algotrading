@@ -1,7 +1,7 @@
 import cProfile
 from csv import writer
 # import pandas as pd
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from statistics import mean
 from time import time
 
@@ -15,8 +15,8 @@ from utils.get_data import by_BinanceVision
 # from utils.utility import get_slippage_stats
 
 # CPU_CORES_COUNT = cpu_count()
-CPU_CORES_COUNT = 1
-EPISODES_PER_CORE = 1024
+CPU_CORES_COUNT = cpu_count()
+EPISODES_PER_CORE = 512
 TICKER, ITV, MARKET_TYPE, DATA_TYPE = 'BTCUSDT', '5m', 'um', 'klines'
 TRADE_START_DATE = '2021-11-20'
 TRADE_END_DATE = '2022-03-20'
@@ -29,11 +29,11 @@ REPORT_FULL_PATH = REPORT_DIR + f'{TICKER}{MARKET_TYPE}{ITV}since{TRADE_START_DA
 
 
 def run_indefinitely(_, df, df_mark=None):
-    profiler = cProfile.Profile()
-    profiler.enable()
+    # profiler = cProfile.Profile()
+    # profiler.enable()
 
-    env = ENVIRONMENT(df=df, df_mark=df_mark, no_action_finish=inf,
-                      start_date=TRADE_START_DATE, end_date=TRADE_END_DATE,
+    env = ENVIRONMENT(df=df, df_mark=df_mark, max_steps=25_920, no_action_finish=inf,
+                      # start_date=TRADE_START_DATE, end_date=TRADE_END_DATE,
                       init_balance=1_000, fee=0.0005, coin_step=0.001,
                       # slippage=SLIPP,
                       visualize=False, verbose=False, render_range=60)
@@ -59,8 +59,8 @@ def run_indefinitely(_, df, df_mark=None):
         # writer.writerow(header)
         _writer.writerows(results)
 
-    profiler.disable()
-    profiler.print_stats(sort='cumtime')
+    # profiler.disable()
+    # profiler.print_stats(sort='cumtime')
 
 
 def main():
@@ -72,16 +72,16 @@ def main():
                               interval=ITV,
                               market_type=MARKET_TYPE,
                               data_type=DATA_TYPE,
-                              start_date=DF_START_DATE,
-                              end_date=DF_END_DATE,
+                              # start_date=DF_START_DATE,
+                              # end_date=DF_END_DATE,
                               split=False,
                               delay=345_600)
         df_mark = by_BinanceVision(ticker=TICKER,
                                    interval=ITV,
                                    market_type=MARKET_TYPE,
                                    data_type='markPriceKlines',
-                                   start_date=DF_START_DATE,
-                                   end_date=DF_END_DATE,
+                                   # start_date=DF_START_DATE,
+                                   # end_date=DF_END_DATE,
                                    split=False,
                                    delay=345_600)
         print(f'df {df}')

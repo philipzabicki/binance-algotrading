@@ -1133,6 +1133,90 @@ def get_MA(np_df: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
     return ma_types[ma_type](np_df.astype(np.float64), ma_period)
 
+def get_ma_from_source(np_df: np.ndarray, ma_type: int, ma_period: int, source: str) -> np.ndarray:
+    # Zakładamy, że kolumny są w kolejności: open, high, low, close, volume
+    open_col = np_df[:, 0]
+    high_col = np_df[:, 1]
+    low_col = np_df[:, 2]
+    close_col = np_df[:, 3]
+
+    if source == "open":
+        s = open_col
+    elif source == "high":
+        s = high_col
+    elif source == "low":
+        s = low_col
+    elif source == "close":
+        s = close_col
+    elif source == "hl2":
+        s = (high_col + low_col) / 2
+    elif source == "hlc3":
+        s = (high_col + low_col + close_col) / 3
+    elif source == "ohlc4":
+        s = (open_col + high_col + low_col + close_col) / 4
+    elif source == "hlcc4":
+        s = (high_col + low_col + close_col + close_col) / 4
+    else:
+        raise ValueError(f"Nieznane źródło: {source}")
+
+    ma_types = {0: lambda ohlcv_array, period: talib.SMA(s, timeperiod=period),
+                1: lambda ohlcv_array, period: talib.EMA(s, timeperiod=period),
+                2: lambda ohlcv_array, period: talib.WMA(s, timeperiod=period),
+                3: lambda ohlcv_array, period: talib.KAMA(s, timeperiod=period),
+                4: lambda ohlcv_array, period: talib.TRIMA(s, timeperiod=period),
+                5: lambda ohlcv_array, period: talib.DEMA(s, timeperiod=period),
+                6: lambda ohlcv_array, period: talib.TEMA(s, timeperiod=period),
+                7: lambda ohlcv_array, period: talib.T3(s, timeperiod=period),
+                8: lambda ohlcv_array, period: talib.MAMA(s)[0],
+                9: lambda ohlcv_array, period: talib.LINEARREG(s, timeperiod=period),
+                10: lambda ohlcv_array, period: p_ta.vwma(pd.Series(s),
+                                                          pd.Series(ohlcv_array[:, 4]),
+                                                          length=period).to_numpy(),
+                # One of Top3 slowest MAs to calculate:
+                11: lambda ohlcv_array, period: p_ta.swma(pd.Series(s),
+                                                          length=period,
+                                                          asc=True).to_numpy(),
+                # One of Top3 slowest MAs to calculate:
+                12: lambda ohlcv_array, period: p_ta.swma(pd.Series(s),
+                                                          length=period,
+                                                          asc=False).to_numpy(),
+                13: lambda ohlcv_array, period: ti.ehma(s, period),
+                14: lambda ohlcv_array, period: ti.lma(s, period),
+                15: lambda ohlcv_array, period: ti.shmma(s, period),
+                16: lambda ohlcv_array, period: ti.ahma(s, period),
+                17: lambda ohlcv_array, period: HullMA(s, max(period, 4)),
+                18: lambda ohlcv_array, period: VWMA(s, ohlcv_array[:, 4], timeperiod=period),
+                19: lambda ohlcv_array, period: RMA(s, timeperiod=period),
+                20: lambda ohlcv_array, period: ALMA(s, timeperiod=period),
+                21: lambda ohlcv_array, period: HammingMA(s, period),
+                22: lambda ohlcv_array, period: LWMA(s, period),
+                23: lambda ohlcv_array, period: MGD(s, period),
+                24: lambda ohlcv_array, period: GMA(s, period),
+                25: lambda ohlcv_array, period: FBA(s, period),
+                26: lambda ohlcv_array, period: NadarayWatsonMA(s, period, kernel=0),
+                27: lambda ohlcv_array, period: NadarayWatsonMA(s, period, kernel=1),
+                28: lambda ohlcv_array, period: NadarayWatsonMA(s, period, kernel=2),
+                29: lambda ohlcv_array, period: NadarayWatsonMA(s, period, kernel=3),
+                30: lambda ohlcv_array, period: NadarayWatsonMA(s, period, kernel=4),
+                31: lambda ohlcv_array, period: NadarayWatsonMA(s, period, kernel=5)}
+    # 22: lambda np_df,period: VAMA(np_df[:,3], np_df[:,4], period),
+    # 31: lambda np_df,period: VIDYA(np_df[:,3], talib.CMO(np_df[:,3], period), period)
+    return ma_types[ma_type](np_df.astype(np.float64), ma_period)
+
+def get_ma_band_signal_by_source(np_df: np.ndarray, ma_type: int, ma_period: int, atr_period: int, atr_multi: float, source: str):
+    def any_ma_sig(np_close: np.ndarray, np_xMA: np.ndarray, np_ATR: np.ndarray, atr_multi: float = 1.0) -> np.ndarray:
+        return ((np_xMA - np_close) / np_ATR) / atr_multi
+
+    atr = talib.ATR(np_df[:, 1], np_df[:, 2], np_df[:, 3], atr_period)
+    try:
+        return any_ma_sig(np_df[:, 3],
+                         get_ma_from_source(np_df, ma_type, ma_period, source),
+                         atr,
+                         atr_multi)
+    except TypeError:
+        print(f'len(np_df) {len(np_df)}')
+        print(f'np_df[:, 3] {np_df[:, 3]}')
+
 
 def get_1D_MA(close: np.ndarray, ma_type: int, ma_period: int) -> np.ndarray:
     """
@@ -1212,6 +1296,14 @@ def custom_StochasticOscillator(ohlcv, fastK_period, slowK_period, slowD_period,
 def custom_ChaikinOscillator(adl, fast_period, slow_period, fast_ma_type, slow_ma_type):
     return get_1D_MA(adl, fast_ma_type, fast_period) - get_1D_MA(adl, slow_ma_type, slow_period)
 
+def custom_MACD_with_source(ohlcv, fast_source, slow_source, fast_period, slow_period, signal_period,
+                fast_ma_type, slow_ma_type, signal_ma_type):
+    # print(f'ohlcv {ohlcv}')
+    # slow = get_MA(ohlcv, slow_ma_type, slow_period)
+    # fast = get_MA(ohlcv, fast_ma_type, fast_period)
+    macd = np.nan_to_num(get_ma_from_source(ohlcv, fast_ma_type, fast_period, fast_source)) - np.nan_to_num(
+        get_ma_from_source(ohlcv, slow_ma_type, slow_period, slow_source))
+    return macd, get_1D_MA(macd, signal_ma_type, signal_period)
 
 def custom_MACD(ohlcv, fast_period, slow_period, signal_period,
                 fast_ma_type, slow_ma_type, signal_ma_type):
